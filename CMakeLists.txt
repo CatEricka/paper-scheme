@@ -43,6 +43,15 @@ if(ENABLE_UNIT_TESTS)
     if (MSVC) 
         target_compile_definitions(base-scheme-test PUBLIC "IS_USE_MSVC")
     endif(MSVC)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 8)
+    # IS_64_BIT_ARCH
+        target_compile_definitions(base-scheme-test PUBLIC "IS_64_BIT_ARCH")
+        message(STATUS "Target is 64 bits")
+    else()
+    # IS_32_BIT_ARCH
+        target_compile_definitions(base-scheme-test PUBLIC "IS_32_BIT_ARCH")
+        message(STATUS "Target is 32 bits")
+endif()
 # 添加测试
     add_test(
         NAME base-scheme-test

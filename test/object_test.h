@@ -4,19 +4,37 @@
 
 #include "base-scheme/object.h"
 
-#define UT(test_name) UTEST(object_test, test_name)
-
 // test case here
-UT(hello_utest) {
+UTEST(object_test, hello_utest) {
     ASSERT_TRUE(1);
 }
 
-UT(struct_offset) {
-    printf("i32 object size: %zd, header size: %zd\n", object_size(doublenum), object_sizeof_header());
+#ifdef IS_64_BIT_ARCH
+UTEST(object_test, arch_64bits) {
+    ASSERT_TRUE(1);
+}
+#else
+UTEST(object_test, arch_32bits) {
+    ASSERT_TRUE(1);
+}
+#endif // IS_64_BIT_ARCH
+
+UTEST(object_test, full_size) {
+    printf("full object size:\t%zd, header size:\t%zd\n", sizeof(struct object_struct_t), object_sizeof_header());
     ASSERT_TRUE(1);
 }
 
-UT(union_print) {
+UTEST(object_test, double_size) {
+    printf("double object size:\t%zd, header size:\t%zd\n", object_size(doublenum), object_sizeof_header());
+    ASSERT_TRUE(1);
+}
+
+UTEST(object_test, i64_size) {
+    printf("i64 object size:\t%zd, header size:\t%zd\n", object_size(i64), object_sizeof_header());
+    ASSERT_TRUE(1);
+}
+
+UTEST(object_test, union_print) {
     struct object_struct_t s = {
         .value.doublenum = 20.0
     };
