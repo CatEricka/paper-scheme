@@ -1,8 +1,10 @@
-#ifndef _BASE_SCHEME_OBJECT_TEST_HEADER_
-#define _BASE_SCHEME_OBJECT_TEST_HEADER_
+#ifndef BASE_SCHEME_OBJECT_TEST_H
+#define BASE_SCHEME_OBJECT_TEST_H
 #pragma once
 
 #include "base-scheme/object.h"
+#include "utest.h"
+
 
 // test case here
 UTEST(object_test, hello_utest) {
@@ -43,4 +45,4 @@ UTEST(object_test, union_print) {
     ASSERT_TRUE(1);
 }
 
-#endif // _BASE_SCHEME_OBJECT_TEST_HEADER_
+#endif // BASE_SCHEME_OBJECT_TEST_H

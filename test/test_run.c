@@ -1,5 +1,3 @@
-#include "utest.h"
-
 // include test file here
 #include "object_test.h"
 #include "gc_test.h"
@@ -13,9 +11,9 @@ int main(int argc, const char *const argv[]) {
 #endif
     int ret = utest_main(argc, argv);
 #ifdef IS_USE_MSVC
-    system("pause");
+//    system("pause");
 #else
-    getchar();
+    //    getchar();
 #endif
     return ret;
 }

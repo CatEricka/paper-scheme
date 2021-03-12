@@ -1,9 +1,16 @@
-#ifndef _BASE_SCHEME_OBJECT_HEADER_
-#define _BASE_SCHEME_OBJECT_HEADER_
+#ifndef BASE_SCHEME_OBJECT_H
+#define BASE_SCHEME_OBJECT_H
 #pragma once
 
+/**
+ * object.h object.c
+ * 对象结构定义
+ */
+
 #include <stdint.h>
+
 #define __STDC_FORMAT_MACROS
+
 #include <inttypes.h>
 #include <stddef.h>
 
@@ -60,6 +67,7 @@ struct object_struct_t
 
     union object_value_u {
         /*  基本对象  */
+
         //定点64位有符号整数
         int64_t i64;
 
@@ -83,10 +91,8 @@ struct object_struct_t
 
 
 /******************************************************************************
-    结构声明
+    复杂结构声明
 ******************************************************************************/
-
-
 
 
 
@@ -94,11 +100,19 @@ struct object_struct_t
 /******************************************************************************
     对象操作 API
 ******************************************************************************/
-// 计算对象大小
+
+/**
+ * 计算对象大小
+ * @param value_field object->value->value_field
+ * @return 对象大小
+ */
 #define object_size(value_field)\
     (offsetof(struct object_struct_t, value) + sizeof(((object)0)->value.value_field))
 
-// 计算对象头大小
+/**
+ * 计算对象头大小
+ * @return 对象头大小
+ */
 #define object_sizeof_header() (object_size(doublenum) - sizeof(double))
 
 
