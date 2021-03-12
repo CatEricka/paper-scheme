@@ -2,18 +2,24 @@
 #define BASE_SCHEME_GC_TEST_H
 #pragma once
 
+#include "base-scheme/object.h"
+#include "base-scheme/heap.h"
+#include "base-scheme/context.h"
 #include "base-scheme/gc.h"
-#include "utest.h"
 
+
+/**
+ * ²âÊÔ context, heap, gc
+ */
 
 // test case here
 UTEST(gc_test, hello_utest) {
     ASSERT_TRUE(1);
 }
 
-UTEST(gc_test, alloc_test) {
-    object obj = mk_i64(0, 200);
-    ASSERT_EQ(obj->value.i64, 200);
+
+UTEST(gc_test, heap_make_free_test) {
+
 }
 
 #endif // BASE_SCHEME_GC_TEST_H

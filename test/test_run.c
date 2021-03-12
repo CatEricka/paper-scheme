@@ -1,8 +1,12 @@
-// include test file here
-#include "object_test.h"
-#include "gc_test.h"
+// test_cases test file here
+
+#include "test_cases/utest.h"
 
 UTEST_STATE();
+
+#include "test_cases/object_test.h"
+#include "test_cases/gc_test.h"
+#include "test_cases/vm_test.h"
 
 int main(int argc, const char *const argv[]) {
 #ifdef IS_USE_MSVC

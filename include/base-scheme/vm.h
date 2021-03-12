@@ -5,33 +5,55 @@
 
 /**
  * vm.h vm.c
- * 包含虚拟机上下文结构定义和虚拟机运行相关的操作
+ * 包含虚拟机上下文结构定义和虚拟机运行相关的操作, 以及各种值类型构造函数
  */
 
+
 #include "base-scheme/util.h"
+#include "base-scheme/object.h"
+#include "base-scheme/heap.h"
+#include "base-scheme/context.h"
 #include "base-scheme/gc.h"
 
 
 
+
 /******************************************************************************
-    解释器上下文结构
+    对象构造 API
 ******************************************************************************/
 /**
- * 上下文结构, 所有 scheme 解释器操作需要这个结构为基础
+ * 构造 i64 类型对象
+ * @param heap
+ * @param v i64 值
+ * @return 如果分配失败, 返回 IMM_FALSE 或 IMM_NIL
  */
-typedef struct scheme_context_t {
-    // 堆
-    heap_t *heap;
-} *context_t;
+EXPORT_API object i64_make(context_t context, int64_t v) {
+    assert(context != NULL);
 
-/**
- * 构造上下文, 虚拟机操作是针对上下文结构进行的
- * @return
- */
-EXPORT_API context_t mk_context() {
-    context_t context = raw_alloc(sizeof(struct scheme_context_t));
-    context->heap = init_scheme_heap();
-    return context;
+    // 此处要注意内存对齐
+    size_t size = aligned_object_size(object_size(i64));
+    object ret = gc_alloc(context, size);
+    if (!is_pointer(ret)) {
+        return ret;
+    }
+    memset(ret, 0, size);
+    ret->type = OBJ_I64;
+    ret->value.i64 = v;
+    return ret;
+}
+
+EXPORT_API object doublenum_make(context_t context, int64_t v) {
+    assert(context != NULL);
+
+    size_t size = aligned_object_size(object_size(doublenum));
+    object ret = gc_alloc(context, size);
+    if (!is_pointer(ret)) {
+        return ret;
+    }
+    memset(ret, 0, size);
+    ret->type = OBJ_I64;
+    ret->value.i64 = v;
+    return ret;
 }
 
 #endif //BASE_SCHEME_VM_H

@@ -3,7 +3,10 @@
 #pragma once
 
 #include "base-scheme/object.h"
-#include "utest.h"
+
+/**
+ * ≤‚ ‘ object
+ */
 
 
 // test case here
@@ -31,14 +34,24 @@ UTEST(object_test, double_size) {
     ASSERT_TRUE(1);
 }
 
+UTEST(object_test, double_align) {
+    printf("double aligned size:\t%zd\n", aligned_object_size(object_size(doublenum)));
+    ASSERT_TRUE((aligned_object_size(object_size(doublenum)) & ALIGN_MASK) == 0);
+}
+
 UTEST(object_test, i64_size) {
     printf("i64 object size:\t%zd, header size:\t%zd\n", object_size(i64), object_sizeof_header());
     ASSERT_TRUE(1);
 }
 
+UTEST(object_test, i64_align) {
+    printf("i64 aligned size:\t%zd\n", aligned_object_size(object_size(i64)));
+    ASSERT_TRUE((aligned_object_size(object_size(i64)) & ALIGN_MASK) == 0);
+}
+
 UTEST(object_test, union_print) {
     struct object_struct_t s = {
-        .value.doublenum = 20.0
+            .value.doublenum = 20.0
     };
     printf("double: %f\n", s.value.doublenum);
     printf("i64: %"PRId64"\n", s.value.i64);

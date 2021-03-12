@@ -8,75 +8,26 @@
  * 包含堆结构定义, 以及在堆结构中分配和回收对象的 API
  */
 
-#include <stdlib.h>
-#include <string.h>
 
-
+#include "base-scheme/util.h"
 #include "base-scheme/object.h"
+#include "base-scheme/heap.h"
+#include "base-scheme/context.h"
 
-
-/******************************************************************************
-    堆结构
-******************************************************************************/
-/**
- * 堆结构
- */
-typedef struct scheme_heap_t {
-    //总大小
-    size_t size;
-    //最大大小
-    size_t max_size;
-    //当前块大小
-    size_t chunk_size;
-    //下一个堆块
-    struct scheme_heap_t *next;
-    /* 注意这里要保证内存对齐 */
-    //当前堆内存指针
-    char *data;
-} *heap_t;
 
 
 /******************************************************************************
     垃圾回收 API
 ******************************************************************************/
-/**
- * malloc() 的封装
- * @param size 字节数
- * @return 分配的内存块, 为空则分配失败
- */
-EXPORT_API void *raw_alloc(size_t size) {
-    void *mem = malloc(size);
-    assert(((((uintptr_t) obj) & ((uintptr_t) 3)) == 0));
-    return mem;
-}
-/**
- * free() 的封装
- * @param obj raw_alloc() 分配的内存
- */
-EXPORT_API void raw_free(void *obj) {
-    assert(((((uintptr_t) obj) & ((uintptr_t) 3)) == 0));
-    free(obj);
-}
-
-/**
- * 从堆中分配内存
- * @param heap 堆结构
- * @param size 要分配的对象大小
- * @return 分配的内存块, 为空则分配失败内存不足
- */
-static object gc_alloc(struct scheme_heap_t *heap, size_t size) {
-    // TODO 真正实现托管的内存上分配
-    return (object) raw_alloc(size);
-}
 
 /**
  * 标记存活对象
  * @param heap 堆结构
  * @return 运行是否成功
  */
-static object gc_mark(struct scheme_heap_t *heap) {
+static object gc_mark(context_t context) {
     // TODO gc_mark
-    return 0;
+    return IMM_TRUE;
 }
 
 /**
@@ -84,76 +35,103 @@ static object gc_mark(struct scheme_heap_t *heap) {
  * @param heap
  * @return
  */
-EXPORT_API object gc_collect(struct scheme_heap_t *heap) {
+EXPORT_API object gc_collect(context_t context) {
     // TODO 实现 gc_collect
-    gc_mark(heap);
-    return 0;
+    gc_mark(context);
+    // context->gc_sink = IMM_FALSE;
+    return IMM_TRUE;
 }
-
 
 /**
- * 初始化堆结构
- * @param init_size 初始块大小
- * @param grown_scale 每次堆增长时, 新的堆是上一次分配堆大小的多少倍
- * @param max_size 最大堆大小
- * @return
+ * 尝试从堆中分配内存, 不会触发 gc, 失败返回 NULL
+ * @param heap 堆结构
+ * @param size 要分配的对象大小
+ * @return 分配的内存块, 为空则分配失败内存不足
  */
-EXPORT_API heap_t init_scheme_heap(size_t init_size, size_t grown_scale, size_t max_size) {
-    // TODO 写测试; 实现内存增长
-    // TODO grown_scale 要存在某个地方
-    // 记得释放 heap_t
-    heap_t new_heap = raw_alloc(sizeof(struct scheme_heap_t));
-    new_heap->next = NULL;
-    new_heap->size = init_size;
-    new_heap->chunk_size = init_size;   // 初始的时候, 第一个 heap 块大小与总的 heap 大小相同
-    new_heap->max_size = max_size;
-    // 记得实放 heap_t->data
-    new_heap->data = raw_alloc(init_size);
+EXPORT_API object gc_try_alloc(context_t context, size_t size) {
+    assert(context != NULL);
+    assert(context->heap != NULL);
+    assert_aligned_size_check(size);
 
-    return new_heap;
-}
+    heap_t heap = context->heap;
+    object obj = NULL;
 
-// 释放堆结构
-EXPORT_API void destroy_scheme_heap(heap_t heap) {
-    // TODO 测试销毁堆结构
-    heap_t next;
-    while (heap != NULL) {
-        next = heap->next;
-        // 释放 heap_t->data
-        raw_free(heap->data);
-        // 释放 heap_t
-        raw_free(heap);
-        heap = next;
+    // 链表中搜索
+    for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
+        size_t used_space = node->free_ptr - node->data;
+        size_t free_space = node->chunk_size - used_space;
+        if (free_space >= size) {
+            // 找到空闲位置
+            obj = (object) node->free_ptr;
+            // 后移 free_ptr
+            node->free_ptr += size;
+            break;
+        }
     }
+
+
+//    if (obj == IMM_NIL) {
+//        // 如果找不到, obj 为 NULL, 设置需要 gc 标记
+//        context->gc_sink = IMM_TRUE;
+//    } else {
+//        // 如果找到, obj 为分配的对象, gc标记为 false
+//        context->gc_sink = IMM_FALSE;
+//    }
+    return obj;
 }
 
-
-/******************************************************************************
-    对象构造 API
-******************************************************************************/
 /**
- * 分配 i64 类型的对象, 对齐到 sizeof void*, 不要直接调用
- * @param heap
- * @return
+ * 从堆中分配内存
+ * @param heap 堆结构
+ * @param size 要分配的对象大小
+ * @return 分配的内存块
+ * IMM_FALSE: 达到最大堆大小
+ * IMM_NIL: 未达到最大堆大小, 但是系统内存不足
  */
-static object alloc_i64(struct scheme_heap_t *heap) {
-    // TODO 实现内存对齐
-    object ret = (object) gc_alloc(heap, object_size(i64));
-    memset(ret, 0, object_size(i64));
-    return ret;
-}
-/**
- * 构造 i64 类型对象
- * @param heap
- * @param v i64 值
- * @return
- */
-EXPORT_API object mk_i64(struct scheme_heap_t *heap, int64_t v) {
-    object ret = alloc_i64(heap);
-    ret->type = OBJ_I64;
-    ret->value.i64 = v;
-    return ret;
+EXPORT_API object gc_alloc(context_t context, size_t size) {
+    assert(context != NULL);
+    assert(context->heap != NULL);
+    assert_aligned_size_check(size);
+
+    // 1. 第一次尝试分配
+    object obj = gc_try_alloc(context, size);
+    // 分配成功, 返回
+    if (obj != NULL) {
+        return obj;
+    }
+
+    // 2. obj 为空, 且需要 gc, 进行一次 gc
+    gc_collect(context);
+
+    // 3. gc 后第二次尝试分配
+    obj = gc_try_alloc(context, size);
+    // 分配成功, 反回
+    if (obj != NULL) {
+        return obj;
+    }
+
+    // 4. 堆空间不足, 尝试增长堆空间后分配
+    object heap_grow_result = heap_grow(context->heap);
+    obj = gc_try_alloc(context, size);
+    // 多次尝试, 直到增长失败或分配成功为止
+    while ((obj == NULL) && (heap_grow_result == IMM_TRUE)) {
+        heap_grow_result = heap_grow(context->heap);
+        obj = gc_try_alloc(context, size);
+    }
+
+    // 5. 最终阶段.
+    // 如果发现分配成功, 返回 obj
+    if (obj != NULL) {
+        return obj;
+    }
+
+    if (heap_grow_result == IMM_FALSE) {
+        return IMM_FALSE;
+    } else {
+        return IMM_NIL;
+    }
+
 }
 
 
-#endif // _BASE_SCHEME_GC_HEADER_
+#endif // BASE_SCHEME_GC_H
