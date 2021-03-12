@@ -6,18 +6,20 @@
 #include <string.h>
 
 
-#include "base-scheme/object.h"
 #include "base-scheme/util.h"
+#include "base-scheme/object.h"
 
 
 /******************************************************************************
     垃圾回收 API
 ******************************************************************************/
-void* base_alloc(size_t size) {
-    return malloc(size);
+static void* base_alloc(size_t size) {
+    void* mem = malloc(size);
+    assert(((((uintptr_t)mem) & 3) == 0));
+    return mem;
 }
 
-void base_free(void* obj) {
+static void base_free(void* obj) {
     free(obj);
 }
 
@@ -39,7 +41,7 @@ EXPORT_API object gc_mark() {
     对象构造 API
 ******************************************************************************/
 EXPORT_API object alloc_i64() {
-    object ret = base_alloc(object_size(i64));
+    object ret = (object)base_alloc(object_size(i64));
     memset(ret, 0, object_size(i64));
     return ret;
 }

@@ -32,7 +32,7 @@
      对象类型标记
  ******************************************************************************/
 enum object_type_enum {
-    FOREIGN_OBJECT,
+    FOREIGN_OBJECT = 0,
     OBJ_I64,
     OBJ_D64,
     OBJ_BOOLEAN,
@@ -46,20 +46,20 @@ COMPILE_TIME_ASSERT(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
 
 
 /******************************************************************************
-    基本对象结构
+    对象内存布局
 ******************************************************************************/
 struct object_struct_t;
 typedef struct object_struct_t* object;
 struct object_struct_t
 {
-    /*  header  */
+    /*  对象头  */
     //对象类型
     uint8_t type;
     //gc状态, 1为存活
     uint32_t marked : 1;
 
-    /*  body  */
-    union {
+    union object_value_u {
+        /*  基本对象  */
         //定点64位有符号整数
         int64_t i64;
 
@@ -67,12 +67,26 @@ struct object_struct_t
         double doublenum;
 
         //pair
-        struct {
+        struct value_pair_t {
             object car;
             object cdr;
         } pair;
+
+
+        /*  运行时结构  */
+
     } value;
+
+    /*  对齐填充, 对齐到 sizeof(void *)  */
 };
+
+
+
+/******************************************************************************
+    结构声明
+******************************************************************************/
+
+
 
 
 
