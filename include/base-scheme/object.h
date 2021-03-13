@@ -33,18 +33,27 @@ COMPILE_TIME_ASSERT(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
 /**
     对象内存布局
 ******************************************************************************/
-/**
- *  内存对齐到 8 字节:
- *  1 << 3 = 8
- */
-#define ALIGN_BITS (3u)
-#define ALIGN_SIZE (8u)
 
 /**
  * 内存对齐掩码
  * B0111 = 7
+ * 对齐到 8 字节整倍数
  */
-#define ALIGN_MASK (7u)
+#ifdef IS_32_BIT_ARCH
+// 32位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
+# define ALIGN_MASK (7u)
+// 指针和内存分配大小的最低 3 bit 必须为 0
+# define ALIGN_BITS (3u)
+// 对齐到 8u bytes
+# define ALIGN_SIZE (8u)
+#else
+// 64位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
+# define ALIGN_MASK (7u)
+// 指针和内存分配大小的最低 3 bit 必须为 0
+# define ALIGN_BITS (3u)
+// 对齐到 8u bytes 的整倍数
+# define ALIGN_SIZE (8u)
+#endif
 
 /**
  * 内存对齐检查
@@ -112,10 +121,7 @@ struct object_struct_t {
  * @param un_aligned_object_size
  * @return
  */
-EXPORT_API size_t aligned_object_size(size_t un_aligned_object_size) {
-    size_t align = un_aligned_object_size & (size_t) ALIGN_MASK;
-    return un_aligned_object_size + (align == 0 ? 0 : 8);
-}
+EXPORT_API size_t aligned_object_size(size_t un_aligned_object_size);
 
 /**
  * 计算对象头大小
@@ -127,33 +133,26 @@ EXPORT_API size_t aligned_object_size(size_t un_aligned_object_size) {
 /**
     malloc & free 封装
 ******************************************************************************/
+
 /**
  * malloc() 的封装
  * @param size 字节数
  * @return 分配的内存块, 为空则分配失败
  */
-EXPORT_API void *raw_alloc(size_t size) {
-    void *obj = malloc(size);
-    memset(obj, 0, size);
-    // 地址对齐到 8bytes
-    assert_aligned_ptr_check(obj);
-    return obj;
-}
+EXPORT_API void *raw_alloc(size_t size);
+
 /**
  * free() 的封装
  * @param obj raw_alloc() 分配的内存
  */
-EXPORT_API void raw_free(void *obj) {
-    assert_aligned_ptr_check(obj);
-    free(obj);
-}
+EXPORT_API void raw_free(void *obj);
 
 
 /**
     立即数标记定义
 ******************************************************************************/
 /**
- *   bits end in       1:  double number
+ *   bits end in       1:  i64 number
  *                    00:  pointer
  *                  0 10:  string cursor (optional)
  *                 01 10:  immediate symbol (optional)
@@ -164,16 +163,20 @@ EXPORT_API void raw_free(void *obj) {
  */
 
 
-
 /**
     普通立即数标记
 ******************************************************************************/
 /**
  * 指针掩码
+ * 1
+ */
+#define I64_MASK (1u)
+
+/**
+ * 指针掩码
  * 00
  */
-#define POINTER_TAG (3u)
-
+#define POINTER_MASK (3u)
 
 
 /**
@@ -186,13 +189,12 @@ EXPORT_API void raw_free(void *obj) {
 /**
  * 常量立即数掩码
  */
-#define UNIQUE_IMMEDIATE_TAG (62u)
+#define UNIQUE_IMMEDIATE_MASK (62u)
 /**
  * 常量立即数生成
  */
 #define MAKE_UNIQUE_IMMEDIATE(n)  ((object) (((n)<<UNIQUE_IMMEDIATE_EXTENDED_BITS) \
-                                          + UNIQUE_IMMEDIATE_TAG))
-
+                                          + UNIQUE_IMMEDIATE_MASK))
 
 
 /**
@@ -216,14 +218,13 @@ EXPORT_API void raw_free(void *obj) {
 // 虚拟机内部类型
 
 
-
 /**
     立即数操作
 ******************************************************************************/
 /**
  * 检查是否为指针
  */
-#define is_pointer(x) ((((uintptr_t)(x)) & POINTER_TAG) == 0)
+#define is_pointer(x) ((((uintptr_t)(x)) & POINTER_MASK) == 0)
 
 
 #endif // _BASE_SCHEME_OBJECT_HEADER_

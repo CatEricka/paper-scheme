@@ -8,21 +8,26 @@ set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_EXTENSIONS OFF)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# 源码目录
-aux_source_directory(src SRCS)
 # 头文件目录
 include_directories(include)
+# 公共库
+aux_source_directory(src SRCS)
+list(REMOVE_ITEM SRCS "src/base-scheme.c")
+add_library(base-scheme-lib STATIC ${SRCS})
 # 可执行文件
-add_executable(base-scheme-exec ${SRCS})
+add_executable(base-scheme-exec src/base-scheme.c)
+target_link_libraries(base-scheme-exec base-scheme-lib)
 
 # 架构探测与宏定义
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     # IS_64_BIT_ARCH
     target_compile_definitions(base-scheme-exec PUBLIC "IS_64_BIT_ARCH")
+    target_compile_definitions(base-scheme-lib PUBLIC "IS_64_BIT_ARCH")
     message(STATUS "Target is 64 bits")
 else ()
     # IS_32_BIT_ARCH
     target_compile_definitions(base-scheme-exec PUBLIC "IS_32_BIT_ARCH")
+    target_compile_definitions(base-scheme-lib PUBLIC "IS_32_BIT_ARCH")
     message(STATUS "Target is 32 bits")
 endif ()
 
@@ -46,6 +51,7 @@ if (ENABLE_UNIT_TESTS)
             PRIVATE
             "test/test_run.c"
             )
+    target_link_libraries(base-scheme-test base-scheme-lib)
     if (MSVC)
         target_compile_definitions(base-scheme-test PUBLIC "IS_USE_MSVC")
     endif (MSVC)

@@ -49,6 +49,16 @@ UTEST(object_test, i64_align) {
     ASSERT_TRUE((aligned_object_size(object_size(i64)) & ALIGN_MASK) == 0);
 }
 
+UTEST(object_test, pair_size) {
+    printf("pair object size:\t%zd, header size:\t%zd\n", object_size(pair), object_sizeof_header());
+    ASSERT_TRUE(1);
+}
+
+UTEST(object_test, pair_align) {
+    printf("pair aligned size:\t%zd\n", aligned_object_size(object_size(pair)));
+    ASSERT_TRUE(1);
+}
+
 UTEST(object_test, union_print) {
     struct object_struct_t s = {
             .value.doublenum = 20.0

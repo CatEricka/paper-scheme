@@ -15,7 +15,7 @@ UTEST(vm_test, hello) {
 
 
 UTEST(gc_test, alloc_test) {
-    context_t context = context_make(16, 2, 111);
+    context_t context = context_make(16u, 2u, 112u);
     printf("heap init total size: %zd\n", context->heap->total_size);
     heap_grow(context->heap);
     object obj1 = i64_make(context, 200);
