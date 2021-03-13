@@ -19,23 +19,30 @@
 #include <string.h>
 #include <assert.h>
 
+/**
+    静态断言
+******************************************************************************/
 #define ___STATIC_ASSERT(COND, MSG) typedef char ___static_assertion_##MSG[(!!(COND))*2-1]
 #define COMPILE_TIME_ASSERT3(X, L) ___STATIC_ASSERT(X,static_assertion_at_line_##L)
 #define COMPILE_TIME_ASSERT2(X, L) COMPILE_TIME_ASSERT3(X,L)
-/**
- * 静态断言
- */
+// 静态断言
 #define COMPILE_TIME_ASSERT(X)    COMPILE_TIME_ASSERT2(X,__LINE__)
 
 /**
- * 导出的API标记
- */
+    导出的 API 标记
+******************************************************************************/
 #define EXPORT_API
 
+
+
+/**
+    辅助宏
+******************************************************************************/
 #ifdef DEBUG_ONLY
 /**
- * 检查ptr是否为空指针
- * 如果为空, 输出 message 并返回 ret
+ * <p>检查ptr是否为空指针<p>
+ * <p>如果为空, 输出 message 并返回 ret</p>
+ * <p>!会修改控制流<p>
  */
 # define notnull_or_return(ptr, message, ret) \
     do { \
@@ -56,5 +63,17 @@
         } \
     } while(0)
 #endif // DEBUG_ONLY
+
+
+
+/**
+    exit() 返回值定义
+******************************************************************************/
+// 未知错误
+#define EXIT_FAILURE_UNKNOWN (-2)
+// 内存不足: 堆增长超过 max_size
+#define EXIT_FAILURE_OUT_OF_MEMORY (-3)
+// malloc() 函数失败
+#define EXIT_FAILURE_MALLOC_FAILED (-4)
 
 #endif // BASE_SCHEME_ASSERT_HELPER_H

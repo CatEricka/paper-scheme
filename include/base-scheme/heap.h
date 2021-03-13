@@ -13,7 +13,7 @@
 #include "base-scheme/object.h"
 
 
-/******************************************************************************
+/**
     堆结构
 ******************************************************************************/
 /**
@@ -49,11 +49,17 @@ typedef struct scheme_heap_t {
 } *heap_t;
 
 
+/**
+ * 构造堆节点, 不要直接调用, 参见 heap_make()
+ * @param chunk_size 节点块大小
+ * @return malloc 失败时返回 NULL
+ */
 EXPORT_API heap_node_t heap_node_make(size_t chunk_size) {
     // TODO heap_node_make 测试
     assert_aligned_size_check(chunk_size);
 
     heap_node_t node = raw_alloc(sizeof(struct scheme_heap_node_t));
+    //return;
     notnull_or_return(node, "heap_node_t node malloc failed", NULL);
     // 初始化
     node->chunk_size = chunk_size;
@@ -65,6 +71,7 @@ EXPORT_API heap_node_t heap_node_make(size_t chunk_size) {
         // 子结构分配失败, 销毁父结构
         raw_free(node);
     }
+    //return;
     notnull_or_return(node->data, "heap_node_t node -> data malloc failed", NULL);
     return node;
 }
@@ -74,7 +81,7 @@ EXPORT_API heap_node_t heap_node_make(size_t chunk_size) {
  * @param init_size 初始块大小 (bytes), 必须是 aligned_object_size() 对齐后的大小
  * @param growth_scale 每次堆增长时, 新的堆是上一次分配堆大小的多少倍
  * @param max_size 最大堆大小, 必须大于 init_size
- * @return
+ * @return malloc 失败时返回 NULL
  */
 EXPORT_API heap_t heap_make(size_t init_size, size_t growth_scale, size_t max_size) {
     // TODO heap_make 测试
@@ -83,6 +90,7 @@ EXPORT_API heap_t heap_make(size_t init_size, size_t growth_scale, size_t max_si
 
     // 记得释放 heap_t
     heap_t new_heap = raw_alloc(sizeof(struct scheme_heap_t));
+    //return;
     notnull_or_return(new_heap, "make heap_t new_heap malloc failed", NULL);
     // 初始化堆结构头
     new_heap->init_size = init_size;
@@ -97,6 +105,7 @@ EXPORT_API heap_t heap_make(size_t init_size, size_t growth_scale, size_t max_si
     if (node == NULL) {
         raw_free(new_heap);
     }
+    //return;
     notnull_or_return(node, "make first heap_node_t node malloc failed", NULL);
     new_heap->first_node = node;
     new_heap->last_node = node;
@@ -105,7 +114,10 @@ EXPORT_API heap_t heap_make(size_t init_size, size_t growth_scale, size_t max_si
 }
 
 
-// 释放堆节点
+/**
+ * 释放堆节点, 不要直接使用, 参见 heap_destroy()
+ * @param node
+ */
 static void heap_node_destroy(heap_node_t node) {
     // TODO heap_node_destroy 测试
     if (node != NULL) {
@@ -116,13 +128,17 @@ static void heap_node_destroy(heap_node_t node) {
     }
 }
 
-// 释放堆结构
+/**
+ * 释放堆结构
+ * @param heap
+ */
 EXPORT_API void heap_destroy(heap_t heap) {
     // TODO heap_destroy 测试
     if (heap == NULL) {
         return;
     }
 
+    // 释放堆块链表
     heap_node_t next = heap->first_node;
     while (next != NULL) {
         heap_node_t tmp = next;
@@ -136,7 +152,7 @@ EXPORT_API void heap_destroy(heap_t heap) {
 /**
  * 增大堆大小
  * @param heap
- * @return IMM_FALSE: 达到 max_size; IMM_TRUE: 增长成功; IMM_NIL: 系统内存不足
+ * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足</li>
  */
 EXPORT_API object heap_grow(heap_t heap) {
     assert(heap != NULL);

@@ -16,14 +16,14 @@
 
 
 
-/******************************************************************************
+/**
     垃圾回收 API
 ******************************************************************************/
 
 /**
  * 标记存活对象
- * @param heap 堆结构
- * @return 运行是否成功
+ * @param context
+ * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
 static object gc_mark(context_t context) {
     // TODO gc_mark
@@ -32,13 +32,12 @@ static object gc_mark(context_t context) {
 
 /**
  * 启动回收垃圾回收
- * @param heap
- * @return
+ * @param context
+ * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
 EXPORT_API object gc_collect(context_t context) {
     // TODO 实现 gc_collect
     gc_mark(context);
-    // context->gc_sink = IMM_FALSE;
     return IMM_TRUE;
 }
 
@@ -46,7 +45,7 @@ EXPORT_API object gc_collect(context_t context) {
  * 尝试从堆中分配内存, 不会触发 gc, 失败返回 NULL
  * @param heap 堆结构
  * @param size 要分配的对象大小
- * @return 分配的内存块, 为空则分配失败内存不足
+ * @return <li>NULL: 找不到足够大的空闲控件</li>
  */
 EXPORT_API object gc_try_alloc(context_t context, size_t size) {
     assert(context != NULL);
@@ -69,24 +68,19 @@ EXPORT_API object gc_try_alloc(context_t context, size_t size) {
         }
     }
 
-
-//    if (obj == IMM_NIL) {
-//        // 如果找不到, obj 为 NULL, 设置需要 gc 标记
-//        context->gc_sink = IMM_TRUE;
-//    } else {
-//        // 如果找到, obj 为分配的对象, gc标记为 false
-//        context->gc_sink = IMM_FALSE;
-//    }
+    // 找不到的话会返回 NULL
     return obj;
 }
 
 /**
  * 从堆中分配内存
+ * <p>注意, 到了底层与托管内存的分界线了</p>
+ * <p>!此函数失败会直接结束进程</p>
  * @param heap 堆结构
  * @param size 要分配的对象大小
- * @return 分配的内存块
- * IMM_FALSE: 达到最大堆大小
- * IMM_NIL: 未达到最大堆大小, 但是系统内存不足
+ * @return
+ * <li>exit(EXIT_FAILURE_OUT_OF_MEMORY): 达到最大堆大小</li>
+ * <li>exit(EXIT_FAILURE_MALLOC_FAILED): 未达到最大堆大小, 但是系统内存不足</li>
  */
 EXPORT_API object gc_alloc(context_t context, size_t size) {
     assert(context != NULL);
@@ -125,10 +119,19 @@ EXPORT_API object gc_alloc(context_t context, size_t size) {
         return obj;
     }
 
+    heap_t heap = context->heap;
     if (heap_grow_result == IMM_FALSE) {
-        return IMM_FALSE;
+        fprintf(context->port_stderr, "[ERROR] Out of Memory:");
+        fprintf(context->port_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+                heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
+        exit(EXIT_FAILURE_OUT_OF_MEMORY);
+        //return IMM_FALSE;
     } else {
-        return IMM_NIL;
+        fprintf(context->port_stderr, "[ERROR] malloc() failed:");
+        fprintf(context->port_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+                heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
+        exit(EXIT_FAILURE_MALLOC_FAILED);
+        //return IMM_NIL;
     }
 
 }
