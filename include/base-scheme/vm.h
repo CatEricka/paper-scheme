@@ -27,7 +27,15 @@
  * @param v i64 值
  * @return
  */
-EXPORT_API object i64_make(context_t context, int64_t v);
+EXPORT_API OUT NOTNULL object i64_make(REF NOTNULL context_t context, IN int64_t v);
+
+/**
+ * 构造 i64 类型对象, 如果值范围属于 [- 2^(63-1), 2^(63-1)-1] 则构造立即数
+ * @param heap
+ * @param v i64 值
+ * @return object 或立即数
+ */
+EXPORT_API OUT NOTNULL object i64_imm_auto_make(REF NOTNULL context_t context, IN int64_t v);
 
 /**
  * 构造 doublenum 类型对象
@@ -35,7 +43,7 @@ EXPORT_API object i64_make(context_t context, int64_t v);
  * @param v
  * @return
  */
-EXPORT_API object doublenum_make(context_t context, int64_t v);
+EXPORT_API OUT NOTNULL object doublenum_make(REF NOTNULL context_t context, int64_t v);
 
 /**
  * 构造 pair 类型对象
@@ -43,6 +51,8 @@ EXPORT_API object doublenum_make(context_t context, int64_t v);
  * @param v
  * @return
  */
-EXPORT_API object pair_make(context_t context, object car, object cdr);
+EXPORT_API OUT NOTNULL object
+pair_make(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr);
+
 
 #endif //BASE_SCHEME_VM_H

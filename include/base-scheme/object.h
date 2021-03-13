@@ -12,7 +12,6 @@
 #include "base-scheme/util.h"
 
 
-
 /**
     对象类型标记
 ******************************************************************************/
@@ -40,19 +39,25 @@ COMPILE_TIME_ASSERT(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
  * 对齐到 8 字节整倍数
  */
 #ifdef IS_32_BIT_ARCH
+COMPILE_TIME_ASSERT(sizeof(uintptr_t) == 4u);
+COMPILE_TIME_ASSERT(sizeof(void *) == 4u);
 // 32位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
 # define ALIGN_MASK (7u)
 // 指针和内存分配大小的最低 3 bit 必须为 0
 # define ALIGN_BITS (3u)
 // 对齐到 8u bytes
 # define ALIGN_SIZE (8u)
-#else
+#elif IS_64_BIT_ARCH
+COMPILE_TIME_ASSERT(sizeof(uintptr_t) == 8u);
+COMPILE_TIME_ASSERT(sizeof(void *) == 8u);
 // 64位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
 # define ALIGN_MASK (7u)
 // 指针和内存分配大小的最低 3 bit 必须为 0
 # define ALIGN_BITS (3u)
 // 对齐到 8u bytes 的整倍数
 # define ALIGN_SIZE (8u)
+#else
+# error("Unknown arch")
 #endif
 
 /**
@@ -72,25 +77,19 @@ struct object_struct_t {
 
     union object_value_u {
         /*  基本对象  */
-
         //定点64位有符号整数
         int64_t i64;
-
         //浮点数
         double doublenum;
-
         //pair
         struct value_pair_t {
             object car;
             object cdr;
         } pair;
 
-
         /*  运行时结构  */
-
     } value;
-
-    /*  对齐填充, 对齐到 sizeof(void *)  */
+    /*  对齐填充, 对齐到 ALIGN_SIZE, 即 sizeof(void *)  */
 };
 
 
@@ -121,7 +120,7 @@ struct object_struct_t {
  * @param un_aligned_object_size
  * @return
  */
-EXPORT_API size_t aligned_object_size(size_t un_aligned_object_size);
+EXPORT_API OUT size_t aligned_object_size(IN size_t un_aligned_object_size);
 
 /**
  * 计算对象头大小
@@ -139,44 +138,70 @@ EXPORT_API size_t aligned_object_size(size_t un_aligned_object_size);
  * @param size 字节数
  * @return 分配的内存块, 为空则分配失败
  */
-EXPORT_API void *raw_alloc(size_t size);
+EXPORT_API OUT NULLABLE void *raw_alloc(IN size_t size);
 
 /**
  * free() 的封装
  * @param obj raw_alloc() 分配的内存
  */
-EXPORT_API void raw_free(void *obj);
+EXPORT_API void raw_free(IN NOTNULL void *obj);
 
 
 /**
     立即数标记定义
+    `*` 标记为已经实现
 ******************************************************************************/
 /**
- *   bits end in       1:  i64 number
+ *   bits end in
+ *           *         1:  i64 number
  *                    00:  pointer
+ *   imm:
  *                  0 10:  string cursor (optional)
  *                 01 10:  immediate symbol (optional)
  *            0000 11 10:  immediate flonum (optional)
- *            0001 11 10:  char
+ *           *0001 11 10:  char, 30u
  *            0010 11 10:  reader label (optional)
- *            0011 11 10:  unique immediate (NULL, TRUE, FALSE or else)
+ *           *0011 11 10:  unique immediate (NULL, TRUE, FALSE or else), 62u
  */
 
 
 /**
     普通立即数标记
 ******************************************************************************/
-/**
- * 指针掩码
- * 1
- */
-#define I64_MASK (1u)
+#define USE_IMMEDIATE
 
-/**
- * 指针掩码
- * 00
- */
-#define POINTER_MASK (3u)
+// i64 立即数最低1位舍弃
+#define I64_EXTENDED_BITS (1u)
+// i64 立即数掩码 B01
+#define I64_TAG_MASK (1u)
+// i64 立即数标记 B01
+#define I64_TAG (1u)
+#ifdef IS_64_BIT_ARCH
+// i64 立即数最小值: - 2^(63-1)
+# define I64_IMM_MIN (-4611686018427387904i64)
+// i64 立即数最大值:   2^(63-1)-1
+# define I64_IMM_MAX (4611686018427387903i64)
+#elif IS_32_BIT_ARCH
+// i64 立即数最小值: - 2^(31-1)
+# define I64_IMM_MIN (-1073741824i32)
+// i64 立即数最大值:   2^(31-1)-1
+# define I64_IMM_MAX (1073741823i32)
+#else
+# error("Unknown arch")
+#endif
+
+// 指针掩码 B0011
+#define POINTER_TAG_MASK (3u)
+
+// 无符号 char (8bits), 立即数最低 8 位舍弃
+#define CHAR_EXTENDED_BITS (8u)
+// char 立即数掩码 B0001 1110
+#define CHAR_TAG_MASK (30u)
+// char 立即数标记 B0001 1110
+#define CHAR_TAG (30u)
+// char 立即数取值MASK
+#define CHAR_VALUE_MASK (255u)
+
 
 
 /**
@@ -187,7 +212,7 @@ EXPORT_API void raw_free(void *obj);
  */
 #define UNIQUE_IMMEDIATE_EXTENDED_BITS (8u)
 /**
- * 常量立即数掩码
+ * 常量立即数标记掩码
  */
 #define UNIQUE_IMMEDIATE_MASK (62u)
 /**
@@ -221,10 +246,43 @@ EXPORT_API void raw_free(void *obj);
 /**
     立即数操作
 ******************************************************************************/
+
+// 检查是否为 i64 立即数
+#define is_i64_imm(x) ((ptr_to_uintptr(x) & I64_TAG_MASK) != 0)
+// 生成 i64 立即数
+#define i64_imm_make(x) ((object) ((ptr_to_uintptr(x) << I64_EXTENDED_BITS) | I64_TAG))
+
+// 检查是否为指针
+#define is_pointer(x) ((ptr_to_uintptr(x) & POINTER_TAG_MASK) == 0)
+
+// 检查是否为 char 立即数, 参数必须为 object
+#define is_char_imm(x) ((ptr_to_uintptr(x) & CHAR_TAG_MASK) != 0)
+// 构造 char 对象/立即数, 参数为 char, 注意类型
+#define char_imm_make(x) ((object) (((ptr_to_uintptr(x) & CHAR_VALUE_MASK) << CHAR_EXTENDED_BITS) | CHAR_TAG))
+// char 立即数取值, 参数必须为 object, 返回值为 char
+#define char_imm_getvalue(x) ((char) ((ptr_to_uintptr(x) >> CHAR_EXTENDED_BITS) & CHAR_VALUE_MASK))
+
+// 检查是否为立即数
+#define is_imm(x) (!is_pointer((x)))
+
+
 /**
- * 检查是否为指针
+    对象值操作
+******************************************************************************/
+
+/**
+ * 获取 i64 对象的值
+ * @param i64
+ * @return
  */
-#define is_pointer(x) ((((uintptr_t)(x)) & POINTER_MASK) == 0)
+EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
+
+/**
+ * 判断 object 是否为 i64
+ * @param i64
+ * @return !0 -> true, 0 -> false
+ */
+EXPORT_API OUT int is_i64(REF NOTNULL object i64);
 
 
 #endif // _BASE_SCHEME_OBJECT_HEADER_

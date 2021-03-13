@@ -24,7 +24,7 @@
  * @param context
  * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
-EXPORT_API object gc_collect(context_t context);
+EXPORT_API CHECKED object gc_collect(REF NOTNULL context_t context);
 
 /**
  * 尝试从堆中分配内存, 不会触发 gc, 失败返回 NULL
@@ -32,7 +32,7 @@ EXPORT_API object gc_collect(context_t context);
  * @param size 要分配的对象大小
  * @return <li>NULL: 找不到足够大的空闲控件</li>
  */
-EXPORT_API object gc_try_alloc(context_t context, size_t size);
+EXPORT_API OUT CHECKED object gc_try_alloc(REF NOTNULL context_t context, IN size_t size);
 
 /**
  * 从堆中分配内存
@@ -44,7 +44,7 @@ EXPORT_API object gc_try_alloc(context_t context, size_t size);
  * <li>exit(EXIT_FAILURE_OUT_OF_MEMORY): 达到最大堆大小</li>
  * <li>exit(EXIT_FAILURE_MALLOC_FAILED): 未达到最大堆大小, 但是系统内存不足</li>
  */
-EXPORT_API object gc_alloc(context_t context, size_t size);
+EXPORT_API OUT object gc_alloc(REF NOTNULL context_t context, IN size_t size);
 
 
 #endif // BASE_SCHEME_GC_H

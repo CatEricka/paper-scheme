@@ -30,10 +30,22 @@
 #define COMPILE_TIME_ASSERT(X)    COMPILE_TIME_ASSERT2(X,__LINE__)
 
 /**
-    导出的 API 标记
+    方法标记
 ******************************************************************************/
+// 公开的 API
 #define EXPORT_API
-
+// 生命周期标记, 传入所有权
+#define IN
+// 生命周期标记, 传出所有权 (gc 分配的对象也属于 context->heap)
+#define OUT
+// 生命周期标记, IN & OUT
+#define REF
+// 返回值标记, 需要检查函数执行结果
+#define CHECKED
+// 参数标记, 非空
+#define NOTNULL
+// 参数标记, 可能为空
+#define NULLABLE
 
 
 /**
@@ -65,6 +77,9 @@
     } while(0)
 #endif // DEBUG_ONLY
 
+
+#define ptr_to_uintptr(x) ((uintptr_t)(x))
+#define ptr_to_intptr(x) ((intptr_t)(x))
 
 
 /**

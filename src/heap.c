@@ -35,7 +35,7 @@ static heap_node_t heap_node_make(size_t chunk_size) {
  * @param max_size 最大堆大小, 必须大于 init_size
  * @return malloc 失败时返回 NULL
  */
-EXPORT_API heap_t heap_make(size_t init_size, size_t growth_scale, size_t max_size) {
+EXPORT_API OUT NULLABLE heap_t heap_make(IN size_t init_size, IN size_t growth_scale, IN size_t max_size) {
     // TODO heap_make 测试
     assert(init_size <= max_size);
     assert_aligned_ptr_check(init_size);
@@ -84,7 +84,7 @@ static void heap_node_destroy(heap_node_t node) {
  * 释放堆结构
  * @param heap
  */
-EXPORT_API void heap_destroy(heap_t heap) {
+EXPORT_API void heap_destroy(IN NOTNULL heap_t heap) {
     // TODO heap_destroy 测试
     if (heap == NULL) {
         return;
@@ -104,12 +104,23 @@ EXPORT_API void heap_destroy(heap_t heap) {
 /**
  * 增大堆大小
  * @param heap
- * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足</li>
+ * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足或堆结构异常</li>
  */
-EXPORT_API object heap_grow(heap_t heap) {
+EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap) {
     assert(heap != NULL);
 
     // TODO heap_grow 测试
+    // 安全检查
+    if (heap->first_node == NULL || heap->last_node == NULL) {
+        return IMM_NIL;
+    }
+    if (heap->first_node->data == NULL || heap->last_node->data == NULL) {
+        return IMM_NIL;
+    }
+    if (heap->first_node->free_ptr == NULL || heap->last_node->free_ptr == NULL) {
+        return IMM_NIL;
+    }
+
     size_t new_node_size = heap->last_node->chunk_size * heap->growth_scale;
     size_t new_total_size = heap->total_size + new_node_size;
 

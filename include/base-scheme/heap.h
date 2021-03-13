@@ -56,20 +56,20 @@ typedef struct scheme_heap_t {
  * @param max_size 最大堆大小, 必须大于 init_size
  * @return malloc 失败时返回 NULL
  */
-EXPORT_API heap_t heap_make(size_t init_size, size_t growth_scale, size_t max_size);
+EXPORT_API OUT NULLABLE heap_t heap_make(IN size_t init_size, IN size_t growth_scale, IN size_t max_size);
 
 /**
  * 释放堆结构
  * @param heap
  */
-EXPORT_API void heap_destroy(heap_t heap);
+EXPORT_API void heap_destroy(IN NOTNULL heap_t heap);
 
 /**
  * 增大堆大小
  * @param heap
- * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足</li>
+ * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足或堆结构异常</li>
  */
-EXPORT_API object heap_grow(heap_t heap);
+EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap);
 
 
 #endif //BASE_SCHEME_HEAP_H

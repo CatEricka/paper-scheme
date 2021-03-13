@@ -3,7 +3,6 @@
 #pragma once
 
 #include "base-scheme/object.h"
-
 /**
  * ≤‚ ‘ object
  */
@@ -14,14 +13,21 @@ UTEST(object_test, hello_utest) {
     ASSERT_TRUE(1);
 }
 
-#ifdef IS_64_BIT_ARCH
-UTEST(object_test, arch_64bits) {
-    ASSERT_TRUE(1);
-}
-#else
+
+#ifdef IS_32_BIT_ARCH
 UTEST(object_test, arch_32bits) {
+    printf("pointer size: %zd\n", sizeof(void *));
     ASSERT_TRUE(1);
 }
+
+#elif IS_64_BIT_ARCH
+UTEST(object_test, arch_64bits) {
+    printf("pointer size: %zd\n", sizeof(void *));
+    ASSERT_TRUE(1);
+}
+
+#else
+# error("Unknown arch")
 #endif // IS_64_BIT_ARCH
 
 UTEST(object_test, full_size) {
@@ -66,6 +72,57 @@ UTEST(object_test, union_print) {
     printf("double: %f\n", s.value.doublenum);
     printf("i64: %"PRId64"\n", s.value.i64);
     ASSERT_TRUE(1);
+}
+
+UTEST(object_test, char_imm_test) {
+    for (int i = SCHAR_MIN; i <= SCHAR_MAX; i++) {
+        char ch = (char) i;
+        //printf("ch = %"PRId8", ch_imm = %"PRId8"\n", ch, char_imm_getvalue(char_imm_make(ch)));
+        object obj = char_imm_make(ch);
+        ASSERT_TRUE(is_char_imm(obj));
+        ASSERT_TRUE(is_imm(obj));
+        ASSERT_FALSE(is_pointer(obj));
+        ASSERT_EQ(ch, char_imm_getvalue(obj));
+    }
+}
+
+UTEST(object_test, i64_imm_test) {
+    size_t n = 20;
+    srand(0);
+    int64_t *tests = malloc(n * sizeof(int64_t));
+
+    // ≤‚ ‘”√¿˝
+    tests[0] = I64_IMM_MIN;
+    tests[1] = I64_IMM_MAX;
+    tests[2] = 0;
+
+    for (size_t i = 3; i < n; i++) {
+        tests[i] = llabs(rand()) % I64_IMM_MAX;
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        object obj = i64_imm_make(tests[i]);
+        printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
+        ASSERT_TRUE(is_i64(obj));
+        ASSERT_TRUE(is_i64_imm(obj));
+        ASSERT_TRUE(is_imm(obj));
+        ASSERT_FALSE(is_pointer(obj));
+        ASSERT_EQ(tests[i], i64_getvalue(obj));
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        tests[i] = -llabs(rand()) % I64_IMM_MAX;
+    }
+
+    for (size_t i = 0; i < n; i++) {
+        object obj = i64_imm_make(tests[i]);
+        printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
+        ASSERT_TRUE(is_i64(obj));
+        ASSERT_TRUE(is_i64_imm(obj));
+        ASSERT_TRUE(is_imm(obj));
+        ASSERT_FALSE(is_pointer(obj));
+        ASSERT_EQ(tests[i], i64_getvalue(obj));
+    }
 }
 
 #endif // BASE_SCHEME_OBJECT_TEST_H

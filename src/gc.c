@@ -11,6 +11,8 @@
  * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
 static object gc_mark(context_t context) {
+    assert(context != NULL);
+
     // TODO gc_mark
     return IMM_TRUE;
 }
@@ -20,7 +22,9 @@ static object gc_mark(context_t context) {
  * @param context
  * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
-EXPORT_API object gc_collect(context_t context) {
+EXPORT_API CHECKED object gc_collect(REF NOTNULL context_t context) {
+    assert(context != NULL);
+
     // TODO 实现 gc_collect
     gc_mark(context);
     return IMM_TRUE;
@@ -32,9 +36,11 @@ EXPORT_API object gc_collect(context_t context) {
  * @param size 要分配的对象大小
  * @return <li>NULL: 找不到足够大的空闲控件</li>
  */
-EXPORT_API object gc_try_alloc(context_t context, size_t size) {
+EXPORT_API OUT CHECKED object gc_try_alloc(REF NOTNULL context_t context, IN size_t size) {
     assert(context != NULL);
     assert(context->heap != NULL);
+    assert(context->heap->first_node != NULL);
+    assert(context->heap->last_node != NULL);
     assert_aligned_size_check(size);
 
     heap_t heap = context->heap;
@@ -42,6 +48,10 @@ EXPORT_API object gc_try_alloc(context_t context, size_t size) {
 
     // 链表中搜索
     for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
+        assert(node->data != NULL);
+        assert(node->free_ptr != NULL);
+        assert(node->free_ptr >= node->data);
+
         size_t used_space = node->free_ptr - node->data;
         size_t free_space = node->chunk_size - used_space;
         if (free_space >= size) {
@@ -67,7 +77,7 @@ EXPORT_API object gc_try_alloc(context_t context, size_t size) {
  * <li>exit(EXIT_FAILURE_OUT_OF_MEMORY): 达到最大堆大小</li>
  * <li>exit(EXIT_FAILURE_MALLOC_FAILED): 未达到最大堆大小, 但是系统内存不足</li>
  */
-EXPORT_API object gc_alloc(context_t context, size_t size) {
+EXPORT_API OUT object gc_alloc(REF NOTNULL context_t context, IN size_t size) {
     assert(context != NULL);
     assert(context->heap != NULL);
     assert_aligned_size_check(size);
