@@ -24,10 +24,10 @@
                                 静态断言
 ******************************************************************************/
 #define ___STATIC_ASSERT(COND, MSG) typedef char ___static_assertion_##MSG[(!!(COND))*2-1]
-#define COMPILE_TIME_ASSERT3(X, L) ___STATIC_ASSERT(X,static_assertion_at_line_##L)
-#define COMPILE_TIME_ASSERT2(X, L) COMPILE_TIME_ASSERT3(X,L)
-// 静态断言
-#define COMPILE_TIME_ASSERT(X)    COMPILE_TIME_ASSERT2(X,__LINE__)
+#define ___COMPILE_TIME_ASSERT3(X, L) ___STATIC_ASSERT(X,static_assertion_at_line_##L)
+#define ___COMPILE_TIME_ASSERT2(X, L) ___COMPILE_TIME_ASSERT3(X,L)
+// 编译时断言
+#define compile_time_assert(X)    ___COMPILE_TIME_ASSERT2(X,__LINE__)
 
 /**
                                 方法标记
@@ -83,8 +83,22 @@
 
 #define is_null(x) ((x) == NULL)
 
+
 /**
-                              exit() 返回值定义
+                                辅助方法
+******************************************************************************/
+
+/**
+ * 保证对 int64_t 类型实现算数右移
+ * @param x 被算数右移值
+ * @param n 右移位数
+ * @return
+ */
+int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
+
+
+/**
+                             exit() 返回值定义
 ******************************************************************************/
 // 未知错误
 #define EXIT_FAILURE_UNKNOWN (-2)

@@ -6,6 +6,7 @@
 /**
  * gc.h gc.c
  * 包含堆结构定义, 以及在堆结构中分配和回收对象的 API
+ * 测试内容见 test/test_cases/gc_test.h
  */
 
 

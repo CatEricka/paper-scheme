@@ -6,6 +6,7 @@
 /**
  * heap.h heap.c
  * 包含堆结构定义
+ * 测试内容见 test/test_cases/gc_test.h
  */
 
 

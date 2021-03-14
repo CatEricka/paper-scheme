@@ -7,6 +7,9 @@
 
 /**
  * 构造上下文, 虚拟机操作是针对上下文结构进行的
+ * @param heap_init_size 堆初始容量, 必须对齐到 ALIGN_SIZE, 参见
+ * @param heap_growth_scale 增长倍率
+ * @param heap_max_size 最大堆大小
  * @return NULL: 内存分配失败
  */
 EXPORT_API OUT NULLABLE context_t

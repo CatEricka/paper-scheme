@@ -88,7 +88,6 @@ EXPORT_API OUT NOTNULL object
 pair_make(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr) {
     assert(context != NULL);
     // TODO ÊµÏÖ±£»¤Á´
-    // TODO pair_make ²âÊÔ
     object ret = raw_object_make(context, OBJ_PAIR, object_size(pair));
     ret->value.pair.car = car;
     ret->value.pair.cdr = cdr;
@@ -107,7 +106,6 @@ symbol_make_from_cstr(REF NOTNULL context_t context, char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
 
-    // TODO symbol_make_from_cstr ²âÊÔ
     // ¿ÕÖ¸ÕëÔò³õÊ¼»¯Îª¿Õ×Ö·û´®
     if (is_null(cstr)) { cstr_len = 1; }
     else { cstr_len = strlen(cstr) + 1; }
@@ -138,7 +136,6 @@ string_make_from_cstr(REF NOTNULL context_t context, char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
 
-    // TODO string_make_from_cstr ²âÊÔ
     // ¿ÕÖ¸ÕëÔò³õÊ¼»¯Îª¿Õ×Ö·û´®
     if (is_null(cstr)) { cstr_len = 1; }
     else { cstr_len = strlen(cstr) + 1; }
@@ -166,7 +163,6 @@ EXPORT_API OUT NOTNULL object
 vector_make(REF NOTNULL context_t context, IN size_t vector_len) {
     assert(context != NULL);
 
-    // TODO vector_make ²âÊÔ
     object ret = raw_object_make(context, OBJ_VECTOR,
                                  object_size(vector) + sizeof(object) * vector_len);
     ret->value.vector.len = vector_len;

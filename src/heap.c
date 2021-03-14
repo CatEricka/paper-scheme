@@ -7,7 +7,6 @@
  * @return malloc  ß∞‹ ±∑µªÿ NULL
  */
 static heap_node_t heap_node_make(size_t chunk_size) {
-    // TODO heap_node_make ≤‚ ‘
     assert_aligned_size_check(chunk_size);
 
     heap_node_t node = raw_alloc(sizeof(struct scheme_heap_node_t));
@@ -36,7 +35,6 @@ static heap_node_t heap_node_make(size_t chunk_size) {
  * @return malloc  ß∞‹ ±∑µªÿ NULL
  */
 EXPORT_API OUT NULLABLE heap_t heap_make(IN size_t init_size, IN size_t growth_scale, IN size_t max_size) {
-    // TODO heap_make ≤‚ ‘
     assert(init_size <= max_size);
     assert_aligned_ptr_check(init_size);
 
@@ -71,7 +69,6 @@ EXPORT_API OUT NULLABLE heap_t heap_make(IN size_t init_size, IN size_t growth_s
  * @param node
  */
 static void heap_node_destroy(heap_node_t node) {
-    // TODO heap_node_destroy ≤‚ ‘
     if (node != NULL) {
         if (node->data != NULL) {
             raw_free(node->data);
@@ -85,7 +82,6 @@ static void heap_node_destroy(heap_node_t node) {
  * @param heap
  */
 EXPORT_API void heap_destroy(IN NOTNULL heap_t heap) {
-    // TODO heap_destroy ≤‚ ‘
     if (heap == NULL) {
         return;
     }
@@ -109,7 +105,6 @@ EXPORT_API void heap_destroy(IN NOTNULL heap_t heap) {
 EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap) {
     assert(heap != NULL);
 
-    // TODO heap_grow ≤‚ ‘
     // ∞≤»´ºÏ≤È
     if (heap->first_node == NULL || heap->last_node == NULL) {
         return IMM_UNIT;

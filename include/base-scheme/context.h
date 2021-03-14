@@ -6,6 +6,7 @@
 /**
  * context.h context.c
  * 上下文结构, 所有 scheme 解释器操作需要这个结构为基础
+ * 测试内容见 test/test_cases/gc_test.h
  */
 
 

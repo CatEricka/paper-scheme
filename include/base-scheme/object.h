@@ -6,6 +6,7 @@
 /**
  * object.h object.c
  * 对象结构定义
+ * 测试内容见 test/test_cases/object_test.h test/test_cases/vm_test.h test/test_cases/value_test.h
  */
 
 
@@ -24,10 +25,13 @@ enum object_type_enum {
     OBJ_SYMBOL,
     OBJ_VECTOR,
     OBJ_PORT,
-// 不能超过 UINT8_MAX
+    OBJ_CHAR,
+    OBJ_BOOL,
+    OBJ_UNIT,
+    // 不能超过 UINT8_MAX
             OBJECT_TYPE_ENUM_MAX,
 };
-COMPILE_TIME_ASSERT(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
+compile_time_assert(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
 
 // 对象头魔数, uint8_t, B1010 1010
 #define OBJECT_HEADER_MAGIC (0xAAu)
@@ -41,8 +45,8 @@ COMPILE_TIME_ASSERT(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
  * 对齐到 8 字节整倍数
  */
 #ifdef IS_32_BIT_ARCH
-COMPILE_TIME_ASSERT(sizeof(uintptr_t) == 4u);
-COMPILE_TIME_ASSERT(sizeof(void *) == 4u);
+compile_time_assert(sizeof(uintptr_t) == 4u);
+compile_time_assert(sizeof(void *) == 4u);
 // 32位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
 # define ALIGN_MASK (7u)
 // 指针和内存分配大小的最低 3 bit 必须为 0
@@ -50,8 +54,8 @@ COMPILE_TIME_ASSERT(sizeof(void *) == 4u);
 // 对齐到 8u bytes
 # define ALIGN_SIZE (8u)
 #elif IS_64_BIT_ARCH
-COMPILE_TIME_ASSERT(sizeof(uintptr_t) == 8u);
-COMPILE_TIME_ASSERT(sizeof(void *) == 8u);
+compile_time_assert(sizeof(uintptr_t) == 8u);
+compile_time_assert(sizeof(void *) == 8u);
 // 64位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
 # define ALIGN_MASK (7u)
 // 指针和内存分配大小的最低 3 bit 必须为 0
@@ -140,11 +144,21 @@ struct object_struct_t {
              * 0011 1110:  unique immediate (IMM_UNIT, IMM_TRUE, IMM_FALSE 或其它), 62u
 
     对于 object, 有三种可能类型:
-        - 真实的 object:     is_object(obj)
-        - 立即数:            is_imm(obj)
-        - NULL:             is_null(obj)    // ((void*)0)
+        - 真实的 object:
+        - 立即数:
+        - NULL:
 
+    对于 NULL:
+        判别:
+            - NULL:             is_null(obj)
     对于立即数:
+        判别:
+            - IMM_UNIT:         is_imm_unit(obj)
+            - IMM_TRUE:         is_imm_true(obj)
+            - IMM_FALSE:        is_imm_false(obj)
+            - all unit:         is_imm(obj)
+            - i64:              is_imm_i64(obj), 不推荐直接使用
+            - char:             is_imm_char(obj)
         立即数构造方法:
             - unique:           MAKE_UNIQUE_IMMEDIATE(), 该方法不应当被直接使用
             - i64:              无, 参见 i64_make_real_object() 和 i64_make()
@@ -156,12 +170,12 @@ struct object_struct_t {
 
     真实的 object:
         判别:
-            - i64:              assert(is_i64(obj))
-            - double number:    assert(is_doublenum(obj)
-            - pair:             assert(is_pair(obj))
-            - string:           assert(is_string(obj))
-            - symbol:           assert(is_symbol(obj))
-            - vector:           assert(is_vector(obj))
+            - i64:              is_i64(obj)
+            - double number:    is_doublenum(obj
+            - pair:             is_pair(obj)
+            - string:           is_string(obj)
+            - symbol:           is_symbol(obj)
+            - vector:           is_vector(obj)
             - port: TODO port 判断 还未实现
         构造:
             - i64:              i64_make()
@@ -174,10 +188,10 @@ struct object_struct_t {
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
-            - pair:             TODO pair_getcar(), pair_getcdr()
-            - string:           TODO string_get_cstr(), string_len(), string_index()
-            - symbol:           TODO symbol_make_get_cstr(), symbol_len(), symbol_index()
-            - vector:           TODO vector_make(), vector_len(), vector_ref()
+            - pair:             pair_getcar(), pair_getcdr()
+            - string:           string_get_cstr(), string_len(), string_index()
+            - symbol:           symbol_make_get_cstr(), symbol_len(), symbol_index()
+            - vector:           vector_make(), vector_len(), vector_ref()
             - port: TODO port 取值 还未实现
 ******************************************************************************/
 
@@ -241,59 +255,44 @@ struct object_struct_t {
 /**
  * 常量立即数生成
  */
-#define MAKE_UNIQUE_IMMEDIATE(n)  ((object) (((n)<<UNIQUE_IMMEDIATE_EXTENDED_BITS) \
-                                          | UNIQUE_IMMEDIATE_TAG))
+#define MAKE_UNIQUE_IMMEDIATE(n) \
+    ((object) (((n)<<UNIQUE_IMMEDIATE_EXTENDED_BITS) | UNIQUE_IMMEDIATE_TAG))
 
-
-// 检查是否为特殊立即数, 注意 NULL 不是特殊立即数
-#define is_unique_imm(x) ((ptr_to_uintptr(x) & UNIQUE_IMMEDIATE_MASK) == UNIQUE_IMMEDIATE_TAG)
 
 /**
                                常量立即数定义
 ******************************************************************************/
 /**
- * 基本类型
- * false
+ * 基本类型 false
  */
 #define IMM_FALSE MAKE_UNIQUE_IMMEDIATE(0u)
 /**
- * 基本类型
- * true
+ * 基本类型 true
  */
 #define IMM_TRUE MAKE_UNIQUE_IMMEDIATE(1u)
 /**
- * 基本类型
- * <li>Unit, 等价于 '()</li>
- * <li>对于内部结构, 应当统一使用 NULL; 但 List 应当以 Unit 结束而不是 NULL</li>
+ * 基本类型 Unit, 等价于 '()
+ * <p>对于内部结构, 应当统一使用 NULL; 但 List 应当以 Unit 结束而不是 NULL; 空 vector 应当以 Unit 填充</p>
  */
 #define IMM_UNIT MAKE_UNIQUE_IMMEDIATE(2u)
-// 虚拟机内部类型
 
+// 虚拟机内部类型
+// TODO 定义虚拟机内部类型
 
 /**
-                               立即数操作
+                               立即数构造
 ******************************************************************************/
 
-// 检查是否为 i64 立即数
-#define is_i64_imm(x) ((ptr_to_uintptr(x) & I64_IMM_MASK) == I64_IMM_TAG)
-// 生成 i64 立即数
+/**
+ * 生成 i64 立即数
+ * @param object
+ */
 #define i64_imm_make(x) ((object) ((ptr_to_uintptr(x) << I64_EXTENDED_BITS) | I64_IMM_TAG))
-
-// 检查是否为对象指针
-// 这意味着如果表达式成立, 则它是个有效的 object 指针
-#define is_object(obj) ((!is_null(obj)) \
-    && ((ptr_to_uintptr(obj) & POINTER_MASK) == POINTER_TAG) \
-    && (((object) (obj))->magic == OBJECT_HEADER_MAGIC))
-
-// 检查是否为 char 立即数, 参数必须为 object
-#define is_char_imm(x) ((ptr_to_uintptr(x) & CHAR_IMM_MASK) == CHAR_IMM_TAG)
-// 构造 char 对象/立即数, 参数为 char, 注意类型
+/**
+ * 构造 char 对象/立即数, 参数为 char, 注意类型
+ * @param object
+ */
 #define char_imm_make(x) ((object) (((ptr_to_uintptr(x) & CHAR_VALUE_MASK) << CHAR_EXTENDED_BITS) | CHAR_IMM_TAG))
-// char 立即数取值, 参数必须为 object, 返回值为 char
-#define char_imm_getvalue(x) ((char) ((ptr_to_uintptr(x) >> CHAR_EXTENDED_BITS) & CHAR_VALUE_MASK))
-
-// 检查是否为立即数
-#define is_imm(x) (!is_null(x) && ((ptr_to_uintptr(x) & POINTER_MASK) != POINTER_TAG))
 
 
 
@@ -308,7 +307,6 @@ struct object_struct_t {
  */
 #define object_size(value_field)\
     (offsetof(struct object_struct_t, value) + sizeof(((object)0)->value.value_field))
-
 /**
  * 计算对齐的大小
  * 用法: aligned_size(object_size(value_field))
@@ -317,13 +315,11 @@ struct object_struct_t {
  * @return
  */
 EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size);
-
 /**
  * 计算对象头大小
  * @return 对象头大小
  */
 #define object_sizeof_header() (offsetof(struct object_struct_t, value))
-
 /**
  * 运行时计算对象大小
  * @param object
@@ -332,9 +328,44 @@ EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj);
 
 
 /**
-                               对象值操作
+                           对象值操作: is_a
 ******************************************************************************/
+/**
+ * 检查是否为特殊立即数, 注意 NULL 不是特殊立即数
+ * @param object
+ */
+#define is_unique_imm(x) \
+    ((ptr_to_uintptr(x) & UNIQUE_IMMEDIATE_MASK) == UNIQUE_IMMEDIATE_TAG)
+/**
+ * 检查是否为 i64 立即数
+ * @param object
+ */
+#define is_imm_i64(x) ((ptr_to_uintptr(x) & I64_IMM_MASK) == I64_IMM_TAG)
+/**
+ * 检查是否为对象指针
+ * <p>这意味着如果表达式成立, 则它是个有效的 object 指针</p>
+ * @param object
+ */
+#define is_object(obj) ((!is_null(obj)) \
+    && ((ptr_to_uintptr(obj) & POINTER_MASK) == POINTER_TAG) \
+    && (((object) (obj))->magic == OBJECT_HEADER_MAGIC))
+/**
+ * 检查是否为 char 立即数, 参数必须为 object
+ * @param object
+ */
+#define is_imm_char(x) ((ptr_to_uintptr(x) & CHAR_IMM_MASK) == CHAR_IMM_TAG)
+/**
+ * 检查是否为立即数
+ * @param object
+ */
+#define is_imm(x) (!is_null(x) && ((ptr_to_uintptr(x) & POINTER_MASK) != POINTER_TAG))
 
+// 是否为 IMM_UNIT
+#define is_imm_unit(obj) ((obj) == IMM_UNIT)
+// 是否为 IMM_TRUE
+#define is_imm_true(obj) ((obj) == IMM_TRUE)
+// 是否为 IMM_FALSE
+#define is_imm_false(obj) ((obj) == IMM_FALSE)
 /**
  * 判断 object 是否为 i64, 可能是立即数, 参见 is_i64_real()
  * @param i64 NULLABLE
@@ -378,12 +409,97 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
  */
 #define is_vector(object) (is_object(object) && ((object)->type == OBJ_VECTOR))
 
+
+/**
+                           对象值操作: get value
+******************************************************************************/
+
+/**
+ * char 立即数取值, 参数必须为 object, 返回值为 char
+ * @param object
+ */
+#define char_imm_getvalue(x) \
+    ((char) ((ptr_to_uintptr(x) >> CHAR_EXTENDED_BITS) & CHAR_VALUE_MASK))
 /**
  * 获取 i64 对象的值
- * @param i64
+ * @param i64: object
  * @return
  */
 EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
+/**
+ * 获取 doublenum 对象的值
+ * @param object
+ * @return
+ */
+#define doublenum_getvalue(obj) ((obj)->value.doublenum)
+/**
+ * 获取 pair 对象的 car
+ * @param object
+ * @return
+ */
+#define pair_car(obj) ((obj)->value.pair.car)
+/**
+ * 获取 pair 对象的 cdr
+ * @param object
+ * @return
+ */
+#define pair_cdr(obj) ((obj)->value.pair.cdr)
+/**
+ * 获取 string 对象的 cstr
+ * @param object
+ * @return
+ */
+#define string_get_cstr(obj) ((obj)->value.string.data)
+/**
+ * 获取 string 对象的 char 个数, 注意不包括 '\0'
+ * @param object
+ * @return
+ */
+#define string_len(obj) ((obj)->value.string.len - 1u)
+/**
+ * 使用索引访问 string 的 cstr 的对应字符, 范围 [ 0, symbol_len(obj) )
+ * @param object
+ * @param i: 索引值
+ * @return char 引用
+ */
+#define string_index(obj, i) ((obj)->value.string.data[(i)])
+/**
+ * 获取 symbol 对象的 cstr
+ * @param object
+ * @return
+ */
+#define symbol_get_cstr(obj) ((obj)->value.symbol.data)
+/**
+ * 获取 symbol 对象的 char 个数, 注意不包括 '\0'
+ * @param object
+ * @return
+ */
+#define symbol_len(obj) ((obj)->value.symbol.len - 1u)
+/**
+ * 使用索引访问 symbol 的 cstr 的对应字符, 范围 [0, len)
+ * @param object
+ * @param i: 索引值
+ * @return 引用
+ */
+#define symbol_index(obj, i) ((obj)->value.symbol.data[(i)])
+/**
+ * 获取 vector 对象的容量
+ * @param object
+ * @return
+ */
+#define vector_len(obj) ((obj)->value.vector.len)
+/**
+ * 使用索引访问 vector 的 cstr 的对应字符, 范围 [0, len)
+ * @param object
+ * @param i: 索引值
+ * @return object 引用
+ */
+#define vector_ref(obj, i) ((obj)->value.vector.data[(i)])
+
+/**
+                           对象值操作: compare
+******************************************************************************/
+// TODO 实现基础对象比较
 
 
 /**

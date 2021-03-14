@@ -6,6 +6,7 @@
 /**
  * vm.h vm.c
  * 包含虚拟机上下文结构定义和虚拟机运行相关的操作, 以及各种值类型构造函数
+ * 测试内容见 test/test_cases/vm_test.h test/test_cases/value_test.h
  */
 
 

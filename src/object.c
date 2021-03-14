@@ -37,6 +37,7 @@ EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj) {
         return 0;
     }
 
+#pragma push_macro("size_helper")
 #define size_helper(value_field, flexible_array_size) \
     (object_size(value_field) + (flexible_array_size) + (obj)->padding_size)
 
@@ -55,12 +56,13 @@ EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj) {
     }
         // TODO 新实现的类型记得修改这里
 
+#pragma push_macro("UNKNOWN_OBJECT_TYPE")
 #define UNKNOWN_OBJECT_TYPE
     // 未知的类型
     assert(UNKNOWN_OBJECT_TYPE
                    0);
-#undef UNKNOWN_OBJECT_TYPE
-#undef size_helper
+#pragma pop_macro("UNKNOWN_OBJECT_TYPE")
+#pragma pop_macro("size_helper")
     return 0;
 }
 
@@ -110,7 +112,8 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64) {
     if (is_object(i64)) {
         return i64->value.i64;
     } else {
-        return (ptr_to_intptr(i64) >> I64_EXTENDED_BITS); // NOLINT(hicpp-signed-bitwise)
+        // 算术右移
+        return i64_arithmetic_right_shift(ptr_to_intptr(i64), I64_EXTENDED_BITS);
     }
 }
 
@@ -120,7 +123,7 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64) {
  * @return !0 -> true, 0 -> false
  */
 EXPORT_API OUT int is_i64(REF NULLABLE object i64) {
-    if (is_i64_imm(i64)) return 1;
+    if (is_imm_i64(i64)) return 1;
     else if (is_object(i64)) return i64->type == OBJ_I64;
     else return 0;
 }
