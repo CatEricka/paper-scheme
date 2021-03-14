@@ -210,14 +210,14 @@ struct object_struct_t {
 
 #ifdef IS_64_BIT_ARCH
 // i64 立即数最小值: - 2^(63-1)
-# define I64_IMM_MIN (-4611686018427387904ll)
+# define I64_IMM_MIN (-4611686018427387904)
 // i64 立即数最大值:   2^(63-1)-1
-# define I64_IMM_MAX (4611686018427387903ll)
+# define I64_IMM_MAX (4611686018427387903)
 #elif IS_32_BIT_ARCH
 // i64 立即数最小值: - 2^(31-1)
-# define I64_IMM_MIN (-1073741824i32ll)
+# define I64_IMM_MIN (-1073741824i32)
 // i64 立即数最大值:   2^(31-1)-1
-# define I64_IMM_MAX (1073741823i32ll)
+# define I64_IMM_MAX (1073741823i32)
 #else
 # error("Unknown arch")
 #endif
