@@ -54,14 +54,10 @@ EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj) {
     } else if (is_vector(obj)) {
         return size_helper(vector, sizeof(object) * obj->value.vector.len);
     }
-        // TODO 新实现的类型记得修改这里
+    // TODO 新实现的类型记得修改这里
 
-#pragma push_macro("UNKNOWN_OBJECT_TYPE")
-#define UNKNOWN_OBJECT_TYPE
     // 未知的类型
-    assert(UNKNOWN_OBJECT_TYPE
-                   0);
-#pragma pop_macro("UNKNOWN_OBJECT_TYPE")
+    assert(("UNKNOWN_OBJECT_TYPE", 0));
 #pragma pop_macro("size_helper")
     return 0;
 }
