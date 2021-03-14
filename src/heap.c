@@ -104,7 +104,7 @@ EXPORT_API void heap_destroy(IN NOTNULL heap_t heap) {
 /**
  * 增大堆大小
  * @param heap
- * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足或堆结构异常</li>
+ * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_UNIT: 系统内存不足或堆结构异常</li>
  */
 EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap) {
     assert(heap != NULL);
@@ -112,13 +112,13 @@ EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap) {
     // TODO heap_grow 测试
     // 安全检查
     if (heap->first_node == NULL || heap->last_node == NULL) {
-        return IMM_NIL;
+        return IMM_UNIT;
     }
     if (heap->first_node->data == NULL || heap->last_node->data == NULL) {
-        return IMM_NIL;
+        return IMM_UNIT;
     }
     if (heap->first_node->free_ptr == NULL || heap->last_node->free_ptr == NULL) {
-        return IMM_NIL;
+        return IMM_UNIT;
     }
 
     size_t new_node_size = heap->last_node->chunk_size * heap->growth_scale;
@@ -134,7 +134,7 @@ EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap) {
     heap_node_t new_node = heap_node_make(new_node_size);
     if (new_node == NULL) {
         // 进程无法获得足够的内存, 也许应当停止解释器运行
-        return IMM_NIL;
+        return IMM_UNIT;
     }
 
     // 只有操作成功才更新的堆大小

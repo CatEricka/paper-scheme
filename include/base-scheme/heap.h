@@ -14,7 +14,7 @@
 
 
 /**
-    堆结构
+                                   堆结构
 ******************************************************************************/
 
 /**
@@ -67,7 +67,7 @@ EXPORT_API void heap_destroy(IN NOTNULL heap_t heap);
 /**
  * 增大堆大小
  * @param heap
- * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_NIL: 系统内存不足或堆结构异常</li>
+ * @return <li>IMM_FALSE: 达到 max_size;</li><li>IMM_TRUE: 增长成功</li><li>IMM_UNIT: 系统内存不足或堆结构异常</li>
  */
 EXPORT_API OUT CHECKED object heap_grow(REF NOTNULL heap_t heap);
 

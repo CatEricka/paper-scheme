@@ -28,7 +28,7 @@ UTEST(gc_test, alloc_test) {
 
     // 分配测试
     for (size_t i = 0; i < n; i++) {
-        objs[i] = i64_make(context, 200);
+        objs[i] = i64_make_real_object(context, 200);
         ASSERT_TRUE(objs[i]);
     }
 
@@ -90,7 +90,7 @@ UTEST(vm_test, auto_imm_test) {
     }
 
     for (size_t i = 0; i < n; i++) {
-        object obj = i64_imm_auto_make(context, tests[i]);
+        object obj = i64_make(context, tests[i]);
         //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
 
         if (tests[i] >= I64_IMM_MIN && tests[i] <= I64_IMM_MAX) {
@@ -120,7 +120,7 @@ UTEST(vm_test, auto_imm_test) {
     tests[3] = INT64_MIN + llabs(rand());
 
     for (size_t i = 0; i < n; i++) {
-        object obj = i64_imm_auto_make(context, tests[i]);
+        object obj = i64_make(context, tests[i]);
         //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
 
         if (tests[i] >= I64_IMM_MIN && tests[i] <= I64_IMM_MAX) {
@@ -143,12 +143,298 @@ UTEST(vm_test, auto_imm_test) {
 
 
 UTEST(vm_test, is_a_test) {
-    context_t context = context_make(0x100, 2, 0x10000);
+    context_t context = context_make(0x100, 2, 0x100000);
+    object obj = NULL;
+    // TODO 实现测试
 
-    // TODO 完成测试设计
     object null_object = NULL;
-    object i64 = i64_make(context, 20);
+    obj = null_object;
+    ASSERT_TRUE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_FALSE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object imm_true = IMM_TRUE;
+    obj = imm_true;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_TRUE(is_imm(obj));
+    ASSERT_TRUE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_FALSE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object imm_false = IMM_FALSE;
+    obj = imm_false;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_TRUE(is_imm(obj));
+    ASSERT_TRUE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_FALSE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object imm_unit = IMM_UNIT;
+    obj = imm_unit;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_TRUE(is_imm(obj));
+    ASSERT_TRUE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_FALSE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object imm_char = char_imm_make('x');
+    obj = imm_char;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_TRUE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_TRUE(is_char_imm(obj));
+    ASSERT_FALSE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object imm_i64 = i64_imm_make(123);
+    obj = imm_i64;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_TRUE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_TRUE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_FALSE(is_object(obj));
+    ASSERT_TRUE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object i64 = i64_make_real_object(context, 20);
+    obj = i64;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_TRUE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_TRUE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
     object doublenum = doublenum_make(context, 200.0);
+    obj = doublenum;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_TRUE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object pair_carImmI64_cdrDouble = pair_make(context, imm_i64, doublenum);
+    obj = pair_carImmI64_cdrDouble;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_TRUE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object string_obj = string_make_from_cstr(context, "this is a string object");
+    obj = string_obj;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_TRUE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object string_null_object = string_make_from_cstr(context, NULL);
+    obj = string_null_object;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_TRUE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object string_empty = string_make_from_cstr(context, "");
+    obj = string_empty;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_TRUE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object symbol_obj = symbol_make_from_cstr(context, "this is a symbol object");
+    obj = symbol_obj;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_TRUE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object symbol_null_object = symbol_make_from_cstr(context, NULL);
+    obj = symbol_null_object;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_TRUE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object symbol_empty = symbol_make_from_cstr(context, "");
+    obj = symbol_empty;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_TRUE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+
+    object vector10 = vector_make(context, 10);
+    obj = vector10;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_TRUE(is_vector(obj));
+
+    object vector20 = vector_make(context, 20);
+    obj = vector20;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_TRUE(is_vector(obj));
+
+    object vector0 = vector_make(context, 0);
+    obj = vector0;
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_i64_imm(obj));
+    ASSERT_FALSE(is_char_imm(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_TRUE(is_vector(obj));
 }
 
 #endif //BASE_SCHEME_VM_TEST_H

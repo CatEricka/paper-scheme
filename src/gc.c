@@ -2,7 +2,7 @@
 
 
 /**
-    垃圾回收 API
+                               垃圾回收 API
 ******************************************************************************/
 
 /**
@@ -114,6 +114,7 @@ EXPORT_API OUT object gc_alloc(REF NOTNULL context_t context, IN size_t size) {
         return obj;
     }
 
+    // 6. 永远不会分配失败. 失败时结束运行
     heap_t heap = context->heap;
     if (heap_grow_result == IMM_FALSE) {
         fprintf(context->port_stderr, "[ERROR] Out of Memory:");
@@ -126,7 +127,7 @@ EXPORT_API OUT object gc_alloc(REF NOTNULL context_t context, IN size_t size) {
         fprintf(context->port_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_MALLOC_FAILED);
-        //return IMM_NIL;
+        //return IMM_UNIT;
     }
 
 }

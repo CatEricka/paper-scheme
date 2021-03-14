@@ -21,7 +21,7 @@
 
 
 /**
-    静态断言
+                                静态断言
 ******************************************************************************/
 #define ___STATIC_ASSERT(COND, MSG) typedef char ___static_assertion_##MSG[(!!(COND))*2-1]
 #define COMPILE_TIME_ASSERT3(X, L) ___STATIC_ASSERT(X,static_assertion_at_line_##L)
@@ -30,7 +30,7 @@
 #define COMPILE_TIME_ASSERT(X)    COMPILE_TIME_ASSERT2(X,__LINE__)
 
 /**
-    方法标记
+                                方法标记
 ******************************************************************************/
 // 公开的 API
 #define EXPORT_API
@@ -49,7 +49,7 @@
 
 
 /**
-    辅助宏
+                                 辅助宏
 ******************************************************************************/
 #ifdef DEBUG_ONLY
 /**
@@ -81,9 +81,10 @@
 #define ptr_to_uintptr(x) ((uintptr_t)(x))
 #define ptr_to_intptr(x) ((intptr_t)(x))
 
+#define is_null(x) ((x) == NULL)
 
 /**
-    exit() 返回值定义
+                              exit() 返回值定义
 ******************************************************************************/
 // 未知错误
 #define EXIT_FAILURE_UNKNOWN (-2)
