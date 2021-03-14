@@ -41,7 +41,8 @@ UTEST(gc_test, alloc_test) {
 
     // 对象信息
     for (size_t i = 0; i < n; i++) {
-        printf("object %zd: address=%p, value=%"PRId64"\n", i, objs[i], i64_getvalue(objs[i]));
+        ASSERT_EQ(i64_getvalue(objs[i]), 200);
+        //printf("object %zd: address=%p, value=%"PRId64"\n", i, objs[i], i64_getvalue(objs[i]));
     }
 
     // 分配容量计算
@@ -57,7 +58,7 @@ UTEST(gc_test, alloc_test) {
         objs[i]->value.i64 = 3000;
     }
     for (size_t i = 0; i < n; i++) {
-        printf("object %zd: address=%p, value=%"PRId64"\n", i, objs[i], objs[i]->value.i64);
+        //printf("object %zd: address=%p, value=%"PRId64"\n", i, objs[i], objs[i]->value.i64);
         ASSERT_EQ(objs[i]->value.i64, 3000);
     }
 
@@ -90,21 +91,21 @@ UTEST(vm_test, auto_imm_test) {
 
     for (size_t i = 0; i < n; i++) {
         object obj = i64_imm_auto_make(context, tests[i]);
-        printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
+        //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
 
         if (tests[i] >= I64_IMM_MIN && tests[i] <= I64_IMM_MAX) {
             // imm 范围
             ASSERT_TRUE(is_i64(obj));
             ASSERT_TRUE(is_i64_imm(obj));
             ASSERT_TRUE(is_imm(obj));
-            ASSERT_FALSE(is_pointer(obj));
+            ASSERT_FALSE(is_object(obj));
             ASSERT_EQ(tests[i], i64_getvalue(obj));
         } else {
             // 非 imm 范围
             ASSERT_TRUE(is_i64(obj));
             ASSERT_FALSE(is_i64_imm(obj));
             ASSERT_FALSE(is_imm(obj));
-            ASSERT_TRUE(is_pointer(obj));
+            ASSERT_TRUE(is_object(obj));
             ASSERT_EQ(tests[i], i64_getvalue(obj));
         }
     }
@@ -120,25 +121,34 @@ UTEST(vm_test, auto_imm_test) {
 
     for (size_t i = 0; i < n; i++) {
         object obj = i64_imm_auto_make(context, tests[i]);
-        printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
+        //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
 
         if (tests[i] >= I64_IMM_MIN && tests[i] <= I64_IMM_MAX) {
             // imm 范围
             ASSERT_TRUE(is_i64(obj));
             ASSERT_TRUE(is_i64_imm(obj));
             ASSERT_TRUE(is_imm(obj));
-            ASSERT_FALSE(is_pointer(obj));
+            ASSERT_FALSE(is_object(obj));
             ASSERT_EQ(tests[i], i64_getvalue(obj));
         } else {
             // 非 imm 范围
             ASSERT_TRUE(is_i64(obj));
             ASSERT_FALSE(is_i64_imm(obj));
             ASSERT_FALSE(is_imm(obj));
-            ASSERT_TRUE(is_pointer(obj));
+            ASSERT_TRUE(is_object(obj));
             ASSERT_EQ(tests[i], i64_getvalue(obj));
         }
     }
 }
 
+
+UTEST(vm_test, is_a_test) {
+    context_t context = context_make(0x100, 2, 0x10000);
+
+    // TODO 完成测试设计
+    object null_object = NULL;
+    object i64 = i64_make(context, 20);
+    object doublenum = doublenum_make(context, 200.0);
+}
 
 #endif //BASE_SCHEME_VM_TEST_H

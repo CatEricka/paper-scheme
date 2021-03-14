@@ -51,7 +51,7 @@ typedef struct scheme_heap_t {
 
 /**
  * 初始化堆结构
- * @param init_size 初始块大小 (bytes), 必须是 aligned_object_size() 对齐后的大小
+ * @param init_size 初始块大小 (bytes), 必须是 aligned_size() 对齐后的大小
  * @param growth_scale 每次堆增长时, 新的堆是上一次分配堆大小的多少倍
  * @param max_size 最大堆大小, 必须大于 init_size
  * @return malloc 失败时返回 NULL

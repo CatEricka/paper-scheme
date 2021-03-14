@@ -37,33 +37,40 @@ UTEST(object_test, full_size) {
 
 UTEST(object_test, double_size) {
     printf("double object size:\t%zd, header size:\t%zd\n", object_size(doublenum), object_sizeof_header());
+    printf("double aligned size:\t%zd\n", aligned_size(object_size(doublenum)));
     ASSERT_TRUE(1);
-}
-
-UTEST(object_test, double_align) {
-    printf("double aligned size:\t%zd\n", aligned_object_size(object_size(doublenum)));
-    ASSERT_TRUE((aligned_object_size(object_size(doublenum)) & ALIGN_MASK) == 0);
 }
 
 UTEST(object_test, i64_size) {
     printf("i64 object size:\t%zd, header size:\t%zd\n", object_size(i64), object_sizeof_header());
+    printf("i64 aligned size:\t%zd\n", aligned_size(object_size(i64)));
     ASSERT_TRUE(1);
-}
-
-UTEST(object_test, i64_align) {
-    printf("i64 aligned size:\t%zd\n", aligned_object_size(object_size(i64)));
-    ASSERT_TRUE((aligned_object_size(object_size(i64)) & ALIGN_MASK) == 0);
 }
 
 UTEST(object_test, pair_size) {
     printf("pair object size:\t%zd, header size:\t%zd\n", object_size(pair), object_sizeof_header());
+    printf("pair aligned size:\t%zd\n", aligned_size(object_size(pair)));
     ASSERT_TRUE(1);
 }
 
-UTEST(object_test, pair_align) {
-    printf("pair aligned size:\t%zd\n", aligned_object_size(object_size(pair)));
+UTEST(object_test, string_size) {
+    printf("string object size:\t%zd, header size:\t%zd\n", object_size(string), object_sizeof_header());
+    printf("string aligned size:\t%zd\n", aligned_size(object_size(string)));
     ASSERT_TRUE(1);
 }
+
+UTEST(object_test, symbol_size) {
+    printf("symbol object size:\t%zd, header size:\t%zd\n", object_size(symbol), object_sizeof_header());
+    printf("symbol aligned size:\t%zd\n", aligned_size(object_size(symbol)));
+    ASSERT_TRUE(1);
+}
+
+UTEST(object_test, vector_size) {
+    printf("vector object size:\t%zd, header size:\t%zd\n", object_size(vector), object_sizeof_header());
+    printf("vector aligned size:\t%zd\n", aligned_size(object_size(vector)));
+    ASSERT_TRUE(1);
+}
+
 
 UTEST(object_test, union_print) {
     struct object_struct_t s = {
@@ -81,7 +88,7 @@ UTEST(object_test, char_imm_test) {
         object obj = char_imm_make(ch);
         ASSERT_TRUE(is_char_imm(obj));
         ASSERT_TRUE(is_imm(obj));
-        ASSERT_FALSE(is_pointer(obj));
+        ASSERT_FALSE(is_object(obj));
         ASSERT_EQ(ch, char_imm_getvalue(obj));
     }
 }
@@ -102,11 +109,11 @@ UTEST(object_test, i64_imm_test) {
 
     for (size_t i = 0; i < n; i++) {
         object obj = i64_imm_make(tests[i]);
-        printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
+        //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
         ASSERT_TRUE(is_i64(obj));
         ASSERT_TRUE(is_i64_imm(obj));
         ASSERT_TRUE(is_imm(obj));
-        ASSERT_FALSE(is_pointer(obj));
+        ASSERT_FALSE(is_object(obj));
         ASSERT_EQ(tests[i], i64_getvalue(obj));
     }
 
@@ -116,13 +123,14 @@ UTEST(object_test, i64_imm_test) {
 
     for (size_t i = 0; i < n; i++) {
         object obj = i64_imm_make(tests[i]);
-        printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
+        //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
         ASSERT_TRUE(is_i64(obj));
         ASSERT_TRUE(is_i64_imm(obj));
         ASSERT_TRUE(is_imm(obj));
-        ASSERT_FALSE(is_pointer(obj));
+        ASSERT_FALSE(is_object(obj));
         ASSERT_EQ(tests[i], i64_getvalue(obj));
     }
 }
+
 
 #endif // BASE_SCHEME_OBJECT_TEST_H

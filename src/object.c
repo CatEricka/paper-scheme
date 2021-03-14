@@ -6,14 +6,26 @@
 ******************************************************************************/
 /**
  * 计算对齐后对象的大小
- * 用法: aligned_object_size(object_size(value_field))
+ * 用法: aligned_size(object_size(value_field))
  * 给定一个大小, 返回对齐到 1<<ALIGN_BITS 的大小
- * @param un_aligned_object_size
+ * @param unaligned_size
  * @return
  */
-EXPORT_API OUT size_t aligned_object_size(IN size_t un_aligned_object_size) {
-    size_t align = un_aligned_object_size & (size_t) ALIGN_MASK;
-    return un_aligned_object_size + (align == 0 ? 0 : ALIGN_SIZE);
+EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size) {
+    size_t align = unaligned_size & (size_t) ALIGN_MASK;
+    return unaligned_size + (align == 0 ? 0 : ALIGN_SIZE);
+}
+
+/**
+ * 运行时计算对象大小
+ * @param object NOTNULL
+ */
+EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj) {
+    assert(obj != NULL);
+    assert(is_object(obj));
+
+    // TODO 完成实现
+    return 0;
 }
 
 
@@ -29,6 +41,7 @@ EXPORT_API OUT size_t aligned_object_size(IN size_t un_aligned_object_size) {
 EXPORT_API OUT NULLABLE void *raw_alloc(IN size_t size) {
     void *obj = malloc(size);
     notnull_or_return(obj, "raw_alloc() failed", NULL);
+    // 清零内存
     memset(obj, 0, size);
     // 地址对齐到 8bytes
     assert_aligned_ptr_check(obj);
@@ -58,7 +71,7 @@ EXPORT_API void raw_free(IN NOTNULL void *obj) {
 EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64) {
     assert(i64 != NULL);
 
-    if (is_pointer(i64)) {
+    if (is_object(i64)) {
         return i64->value.i64;
     } else {
         return (ptr_to_intptr(i64) >> I64_EXTENDED_BITS); // NOLINT(hicpp-signed-bitwise)
@@ -70,15 +83,8 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64) {
  * @param i64
  * @return !0 -> true, 0 -> false
  */
-EXPORT_API OUT int is_i64(REF NOTNULL object i64) {
-    if (is_i64_imm(i64)) {
-        // i64 立即数
-        return 1;
-    } else if (is_imm(i64)) {
-        // 其它立即数
-        return 0;
-    } else {
-        // 指针
-        return i64->type == OBJ_I64;
-    }
+EXPORT_API OUT int is_i64(REF NULLABLE object i64) {
+    if (is_i64_imm(i64)) return 1;
+    else if (is_object(i64)) return i64->type == OBJ_I64;
+    else return 0;
 }
