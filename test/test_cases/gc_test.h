@@ -146,12 +146,13 @@ UTEST(vm_test, heap_make_free_test) {
 #define MORE_SPACE(...) UTEST_PRINTF("                "__VA_ARGS__)
 #define address() MORE_SPACE("address:    0x%p\n", obj);
 #define obj_size() MORE_SPACE("size:       %zd\n", object_size_runtime(obj))
+#define header_size() MORE_SPACE("header:     %zd\n", object_sizeof_header())
 #define magic() MORE_SPACE("magic:      0x%"PRIX8"\n", obj->magic)
 #define type() MORE_SPACE("type:       0x%"PRIX8"\n", obj->type)
 #define marked() MORE_SPACE("marked:     0x%"PRIX8"\n", obj->marked)
-#define padding_size() MORE_SPACE("pad:        0x%"PRIX8"\n", obj->padding_size)
+#define padding_size() MORE_SPACE("padding:    %"PRId8"\n", obj->padding_size)
 #define forwarding() MORE_SPACE("forward:    0x%p\n", obj->forwarding)
-#define header() address(); obj_size(); magic(); type(); marked(); padding_size(); forwarding()
+#define header() address(); obj_size(); header_size(); padding_size(); magic(); type(); marked(); forwarding()
             if (is_i64(obj)) {
                 P("i64: {\n");
                 header();
@@ -238,6 +239,13 @@ UTEST(vm_test, heap_make_free_test) {
         UTEST_PRINTF("    ]\n]");
     }
     UTEST_PRINTF("\n");
+
+    size_t allocated = 0u;
+    for (heap_node_t node = context->heap->first_node; node != NULL; node = node->next) {
+        allocated += node->free_ptr - node->data;
+    }
+    printf("allocated: %td\n", allocated);
+    printf("heap total size: %zd\n", context->heap->total_size);
 
     context_destroy(context);
 }
