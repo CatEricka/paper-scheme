@@ -2,10 +2,10 @@
 #define BASE_SCHEME_GC_TEST_H
 #pragma once
 
-#include "paper-scheme/object.h"
-#include "paper-scheme/heap.h"
-#include "paper-scheme/context.h"
-#include "paper-scheme/gc.h"
+#include <paper-scheme/object.h>
+#include <paper-scheme/heap.h>
+#include <paper-scheme/context.h>
+#include <paper-scheme/gc.h>
 #include <paper-scheme/vm.h>
 
 
@@ -54,7 +54,7 @@ UTEST(gc_test, alloc_test) {
 
     // ∑÷≈‰≤‚ ‘
     for (size_t i = 0; i < n; i++) {
-        objs[i] = i64_make_real_object(context, 200);
+        objs[i] = i64_make_real_object_op(context, 200);
         ASSERT_TRUE(objs[i]);
     }
 
@@ -95,18 +95,18 @@ UTEST(gc_test, alloc_test) {
     context_destroy(context);
 }
 
-UTEST(vm_test, heap_make_free_test) {
+UTEST(gc_test, heap_make_free_test) {
     context_t context = context_make(16, 2, 0x10000);
-    object i64 = i64_make_real_object(context, 20);
-    object i64max = i64_make(context, INT64_MAX);
-    object i64min = i64_make_real_object(context, INT64_MIN);
-    object doublenum = doublenum_make(context, 200.0);
-    object pair_carImmI64_cdrDouble = pair_make(context, i64, doublenum);
-    object string_obj = string_make_from_cstr(context, "this is a string object");
-    object string_null_object = string_make_from_cstr(context, NULL);
-    object string_empty = string_make_from_cstr(context, "");
-    object symbol_obj = symbol_make_from_cstr(context, "this is a symbol object");
-    object vector10 = vector_make(context, 10);
+    object i64 = i64_make_real_object_op(context, 20);
+    object i64max = i64_make_op(context, INT64_MAX);
+    object i64min = i64_make_real_object_op(context, INT64_MIN);
+    object doublenum = doublenum_make_op(context, 200.0);
+    object pair_carImmI64_cdrDouble = pair_make_op(context, i64, doublenum);
+    object string_obj = string_make_from_cstr_op(context, "this is a string object");
+    object string_null_object = string_make_from_cstr_op(context, NULL);
+    object string_empty = string_make_from_cstr_op(context, "");
+    object symbol_obj = symbol_make_from_cstr_op(context, "this is a symbol object");
+    object vector10 = vector_make_op(context, 10);
     vector_ref(vector10, 1) = doublenum;
     vector_ref(vector10, 9) = IMM_TRUE;
 
@@ -148,7 +148,7 @@ UTEST(vm_test, heap_make_free_test) {
 #define obj_size() MORE_SPACE("size:       %zd\n", object_size_runtime(obj))
 #define header_size() MORE_SPACE("header:     %zd\n", object_sizeof_header())
 #define magic() MORE_SPACE("magic:      0x%"PRIX8"\n", obj->magic)
-#define type() MORE_SPACE("type:       0x%"PRIX8"\n", obj->type)
+#define type() MORE_SPACE("type:       %d\n", obj->type)
 #define marked() MORE_SPACE("marked:     0x%"PRIX8"\n", obj->marked)
 #define padding_size() MORE_SPACE("padding:    %"PRId8"\n", obj->padding_size)
 #define forwarding() MORE_SPACE("forward:    0x%p\n", obj->forwarding)

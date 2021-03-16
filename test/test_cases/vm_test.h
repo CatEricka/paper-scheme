@@ -30,7 +30,7 @@ UTEST(vm_test, auto_imm_test) {
     }
 
     for (size_t i = 0; i < n; i++) {
-        object obj = i64_make(context, tests[i]);
+        object obj = i64_make_op(context, tests[i]);
         //printf("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
 
         if (tests[i] >= I64_IMM_MIN && tests[i] <= I64_IMM_MAX) {
@@ -60,7 +60,7 @@ UTEST(vm_test, auto_imm_test) {
     tests[3] = INT64_MIN + llabs(rand());
 
     for (size_t i = 0; i < n; i++) {
-        object obj = i64_make(context, tests[i]);
+        object obj = i64_make_op(context, tests[i]);
         //UTEST_PRINTF("i64 = %"PRId64", i64_imm = %"PRId64"\n", tests[i], i64_getvalue(obj));
 
         if (tests[i] >= I64_IMM_MIN && tests[i] <= I64_IMM_MAX) {

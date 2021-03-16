@@ -1,4 +1,4 @@
-#include "paper-scheme/vm.h"
+#include <paper-scheme/vm.h>
 
 
 /******************************************************************************
@@ -13,7 +13,7 @@
  * @return
  */
 static OUT NOTNULL object
-raw_object_make(REF NOTNULL context_t context, IN enum object_type_enum type, IN size_t unaligned_object_size) {
+raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_t unaligned_object_size) {
     assert(context != NULL);
 
     // 计算对象大小
@@ -38,12 +38,12 @@ raw_object_make(REF NOTNULL context_t context, IN enum object_type_enum type, IN
 }
 
 /**
- * 构造 i64 类型对象, 不建议直接使用, 因为要考虑到复杂的边界条件, 参见 i64_make()
+ * 构造 i64 类型对象, 不建议直接使用, 因为要考虑到复杂的边界条件, 参见 i64_make_op()
  * @param heap
  * @param v i64 值
  * @return
  */
-EXPORT_API OUT NOTNULL object i64_make_real_object(REF NOTNULL context_t context, IN int64_t v) {
+EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v) {
     assert(context != NULL);
     object ret = raw_object_make(context, OBJ_I64, object_size(i64));
     // 对象赋值
@@ -57,11 +57,11 @@ EXPORT_API OUT NOTNULL object i64_make_real_object(REF NOTNULL context_t context
  * @param v i64 值
  * @return object 或立即数
  */
-EXPORT_API OUT NOTNULL object i64_make(REF NOTNULL context_t context, IN int64_t v) {
+EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int64_t v) {
     if (v >= I64_IMM_MIN && v <= I64_IMM_MAX) {
         return i64_imm_make(v);
     } else {
-        return i64_make_real_object(context, v);
+        return i64_make_real_object_op(context, v);
     }
 }
 
@@ -71,7 +71,7 @@ EXPORT_API OUT NOTNULL object i64_make(REF NOTNULL context_t context, IN int64_t
  * @param v
  * @return
  */
-EXPORT_API OUT NOTNULL object doublenum_make(REF NOTNULL context_t context, double v) {
+EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, double v) {
     assert(context != NULL);
     object ret = raw_object_make(context, OBJ_D64, object_size(doublenum));
     ret->value.doublenum = v;
@@ -85,7 +85,7 @@ EXPORT_API OUT NOTNULL object doublenum_make(REF NOTNULL context_t context, doub
  * @return
  */
 EXPORT_API OUT NOTNULL object
-pair_make(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr) {
+pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr) {
     assert(context != NULL);
     // TODO 实现保护链
     object ret = raw_object_make(context, OBJ_PAIR, object_size(pair));
@@ -102,7 +102,7 @@ pair_make(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE o
  * @return
  */
 EXPORT_API OUT NOTNULL object
-symbol_make_from_cstr(REF NOTNULL context_t context, char *cstr) {
+symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
 
@@ -132,7 +132,7 @@ symbol_make_from_cstr(REF NOTNULL context_t context, char *cstr) {
  * @return
  */
 EXPORT_API OUT NOTNULL object
-string_make_from_cstr(REF NOTNULL context_t context, char *cstr) {
+string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
 
@@ -160,7 +160,7 @@ string_make_from_cstr(REF NOTNULL context_t context, char *cstr) {
  * @return
  */
 EXPORT_API OUT NOTNULL object
-vector_make(REF NOTNULL context_t context, IN size_t vector_len) {
+vector_make_op(REF NOTNULL context_t context, IN size_t vector_len) {
     assert(context != NULL);
 
     object ret = raw_object_make(context, OBJ_VECTOR,

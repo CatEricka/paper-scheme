@@ -10,28 +10,27 @@
  */
 
 
-#include "paper-scheme/util.h"
+#include <paper-scheme/util.h>
 
 
 /**
                                对象类型标记
 ******************************************************************************/
 enum object_type_enum {
-    FOREIGN_OBJECT = 0,
-    OBJ_I64,
+    OBJ_I64 = 0,
     OBJ_D64,
     OBJ_PAIR,
     OBJ_STRING,
     OBJ_SYMBOL,
     OBJ_VECTOR,
-    OBJ_PORT,
-    OBJ_CHAR,
-    OBJ_BOOL,
-    OBJ_UNIT,
-    // 不能超过 UINT8_MAX
-            OBJECT_TYPE_ENUM_MAX,
+//    OBJ_PORT,
+//    OBJ_CHAR,
+//    OBJ_BOOL,
+//    OBJ_UNIT,
+            OBJECT_TYPE_ENUM_MAX, // 标记枚举最大值
 };
-compile_time_assert(OBJECT_TYPE_ENUM_MAX <= UINT8_MAX);
+typedef enum object_type_enum object_type_tag;
+compile_time_assert(((size_t) OBJECT_TYPE_ENUM_MAX) <= SIZE_MAX);
 
 // 对象头魔数, uint8_t, B1010 1010
 #define OBJECT_HEADER_MAGIC (0xAAu)
@@ -72,18 +71,24 @@ compile_time_assert(sizeof(void *) == 8u);
 #define assert_aligned_ptr_check(x) assert(((((uintptr_t) (x)) & ((uintptr_t) ALIGN_MASK)) == 0u))
 #define assert_aligned_size_check(x) assert(((((size_t) (x)) & ((uintptr_t) ALIGN_MASK)) == 0u))
 
+
+/**
+                                基础对象结构声明
+******************************************************************************/
 struct object_struct_t;
 typedef struct object_struct_t *object;
+
+
 struct object_struct_t {
     /*  对象头  */
-    // 对象类型
     // 对象头魔数
     uint8_t magic;
-    uint8_t type;
     // gc状态, 1为存活
     uint8_t marked: 1;
     // 对象尾部对齐填充大小
     uint8_t padding_size;
+    // 对象类型
+    object_type_tag type;
     // 移动对象用转发地址
     object forwarding;
 
@@ -125,11 +130,6 @@ struct object_struct_t {
 
 
 /**
-                                复杂结构声明
-******************************************************************************/
-
-
-/**
                                立即数标记定义
     `*` 标记为已经实现
 
@@ -161,7 +161,7 @@ struct object_struct_t {
             - char:             is_imm_char(obj)
         立即数构造方法:
             - unique:           MAKE_UNIQUE_IMMEDIATE(), 该方法不应当被直接使用
-            - i64:              无, 参见 i64_make_real_object() 和 i64_make()
+            - i64:              无, 参见 i64_make_real_object_op() 和 i64_make_op()
             - char:             char_imm_make()
         立即数取值方法:
             - unique:           无, 直接比较即可
@@ -178,12 +178,12 @@ struct object_struct_t {
             - vector:           is_vector(obj)
             - port: TODO port 判断 还未实现
         构造:
-            - i64:              i64_make()
-            - double number:    doublenum_make()
-            - pair:             pair_make()
-            - string:           string_make_from_cstr()
-            - symbol:           symbol_make_from_cstr()
-            - vector:           vector_make()
+            - i64:              i64_make_op()
+            - double number:    doublenum_make_op()
+            - pair:             pair_make_op()
+            - string:           string_make_from_cstr_op()
+            - symbol:           symbol_make_from_cstr_op()
+            - vector:           vector_make_op()
             - port: TODO port 构造 还未实现
         取值:
             - i64:              i64_getvalue()
@@ -191,7 +191,7 @@ struct object_struct_t {
             - pair:             pair_getcar(), pair_getcdr()
             - string:           string_get_cstr(), string_len(), string_index()
             - symbol:           symbol_make_get_cstr(), symbol_len(), symbol_index()
-            - vector:           vector_make(), vector_len(), vector_ref()
+            - vector:           vector_make_op(), vector_len(), vector_ref()
             - port: TODO port 取值 还未实现
 ******************************************************************************/
 
@@ -308,6 +308,13 @@ struct object_struct_t {
 #define object_size(value_field)\
     (offsetof(struct object_struct_t, value) + sizeof(((object)0)->value.value_field))
 /**
+* 计算对象结构体成员所在偏移量
+* @param value_field object->value->value_field
+* @return 对象大小
+*/
+#define object_offsetof(_value, _value_field) \
+    ((size_t)&(((object)0)->value._value._value_field))
+/**
  * 计算对齐的大小
  * 用法: aligned_size(object_size(value_field))
  * 给定一个大小, 返回对齐到 ALIGN_SIZE 的大小
@@ -322,6 +329,7 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size);
 #define object_sizeof_header() (offsetof(struct object_struct_t, value))
 /**
  * 运行时计算对象大小
+ * TODO 废弃, 详见 context.h struct object_runtime_type_info_t
  * @param object
  */
 EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj);
@@ -525,6 +533,12 @@ EXPORT_API OUT NULLABLE void *raw_alloc(IN size_t size);
  * @param obj raw_alloc() 分配的内存
  */
 EXPORT_API void raw_free(IN NOTNULL void *obj);
+
+/**
+ * realloc() 的封装
+ * @param obj raw_alloc() 分配的内存
+ */
+EXPORT_API void *raw_realloc(IN NOTNULL void *obj, size_t new_size);
 
 
 #endif // _BASE_SCHEME_OBJECT_HEADER_

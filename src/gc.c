@@ -1,4 +1,4 @@
-#include "paper-scheme/gc.h"
+#include <paper-scheme/gc.h>
 
 
 /**
@@ -14,6 +14,7 @@ static object gc_mark(context_t context) {
     assert(context != NULL);
 
     // TODO gc_mark
+    // 注意, 向量类型的成员引用不能从 object_type_info 获得
     return IMM_TRUE;
 }
 

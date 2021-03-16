@@ -1,4 +1,4 @@
-#include "paper-scheme/object.h"
+#include <paper-scheme/object.h>
 
 
 /**
@@ -92,6 +92,21 @@ EXPORT_API void raw_free(IN NOTNULL void *obj) {
     free(obj);
 }
 
+/**
+ * realloc() 的封装
+ * @param obj raw_alloc() 分配的内存
+ */
+EXPORT_API void *raw_realloc(IN NOTNULL void *obj, size_t new_size) {
+    assert(obj != NULL);
+    assert_aligned_ptr_check(obj);
+
+    void *mem = realloc(obj, new_size);
+    notnull_or_return(obj, "raw_realloc() failed", NULL);
+    // 地址对齐到 8bytes
+    assert_aligned_ptr_check(obj);
+
+    return mem;
+}
 
 /**
                                对象值操作

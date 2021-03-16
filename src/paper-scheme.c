@@ -1,4 +1,4 @@
-﻿#include "paper-scheme/paper-scheme.h"
+﻿#include <paper-scheme/paper-scheme.h>
 
 int main() {
 #ifdef IS_64_BIT_ARCH

@@ -10,11 +10,11 @@
  */
 
 
-#include "paper-scheme/util.h"
-#include "paper-scheme/object.h"
-#include "paper-scheme/heap.h"
-#include "paper-scheme/context.h"
-#include "paper-scheme/gc.h"
+#include <paper-scheme/util.h>
+#include <paper-scheme/object.h>
+#include <paper-scheme/heap.h>
+#include <paper-scheme/context.h>
+#include <paper-scheme/gc.h>
 
 
 
@@ -24,12 +24,12 @@
 ******************************************************************************/
 
 /**
- * 构造 i64 类型对象, 不建议直接使用, 因为要考虑到复杂的边界条件, 参见 i64_make()
+ * 构造 i64 类型对象, 不建议直接使用, 因为要考虑到复杂的边界条件, 参见 i64_make_op()
  * @param heap
  * @param v i64 值
  * @return
  */
-EXPORT_API OUT NOTNULL object i64_make_real_object(REF NOTNULL context_t context, IN int64_t v);
+EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v);
 
 /**
  * 构造 i64 类型对象, 如果值范围属于 [- 2^(63-1), 2^(63-1)-1] 则构造立即数
@@ -37,7 +37,7 @@ EXPORT_API OUT NOTNULL object i64_make_real_object(REF NOTNULL context_t context
  * @param v i64 值
  * @return object 或立即数
  */
-EXPORT_API OUT NOTNULL object i64_make(REF NOTNULL context_t context, IN int64_t v);
+EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int64_t v);
 
 /**
  * 构造 doublenum 类型对象
@@ -45,7 +45,7 @@ EXPORT_API OUT NOTNULL object i64_make(REF NOTNULL context_t context, IN int64_t
  * @param v
  * @return
  */
-EXPORT_API OUT NOTNULL object doublenum_make(REF NOTNULL context_t context, double v);
+EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, double v);
 
 /**
  * 构造 pair 类型对象
@@ -54,7 +54,7 @@ EXPORT_API OUT NOTNULL object doublenum_make(REF NOTNULL context_t context, doub
  * @return
  */
 EXPORT_API OUT NOTNULL object
-pair_make(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr);
+pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr);
 
 /**
  * 构造 symbol 类型对象
@@ -64,7 +64,7 @@ pair_make(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE o
  * @return
  */
 EXPORT_API OUT NOTNULL object
-symbol_make_from_cstr(REF NOTNULL context_t context, char *cstr);
+symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr);
 
 /**
  * 构造 string 类型对象
@@ -75,7 +75,7 @@ symbol_make_from_cstr(REF NOTNULL context_t context, char *cstr);
  * @return
  */
 EXPORT_API OUT NOTNULL object
-string_make_from_cstr(REF NOTNULL context_t context, char *cstr);
+string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr);
 
 /**
  * 构造 vector 类型对象, 填充 Unit, 即 '()
@@ -84,7 +84,7 @@ string_make_from_cstr(REF NOTNULL context_t context, char *cstr);
  * @return
  */
 EXPORT_API OUT NOTNULL object
-vector_make(REF NOTNULL context_t context, IN size_t vector_len);
+vector_make_op(REF NOTNULL context_t context, IN size_t vector_len);
 
 
 #endif //BASE_SCHEME_VM_H
