@@ -259,4 +259,8 @@ paket-files/
 # Python Tools for Visual Studio (PTVS)
 __pycache__/
 *.pyc
-/build
+build
+cmake-build-debug-visual-studio-x64/
+cmake-build-debug-visual-studio-x86/
+cmake-build-release-visual-studio-x64/
+cmake-build-release-visual-studio-x86/

@@ -2,7 +2,7 @@
 #define BASE_SCHEME_OBJECT_TEST_H
 #pragma once
 
-#include "base-scheme/object.h"
+#include "paper-scheme/object.h"
 /**
  * 测试 object
  * 主要测试标记指针和内存布局是否工作正常

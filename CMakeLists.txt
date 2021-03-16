@@ -1,7 +1,7 @@
 ﻿# 项目定义
 cmake_minimum_required (VERSION 3.8)
 
-project(scheme-base LANGUAGES C)
+project(paper-scheme LANGUAGES C)
 
 # 需要 C99
 set(CMAKE_C_STANDARD 99)
@@ -12,22 +12,22 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 include_directories(include)
 # 公共库
 aux_source_directory(src SRCS)
-list(REMOVE_ITEM SRCS "src/scheme-base.c")
-add_library(scheme-base-lib STATIC ${SRCS})
+list(REMOVE_ITEM SRCS "src/paper-scheme.c")
+add_library(paper-scheme-lib STATIC ${SRCS})
 # 可执行文件
-add_executable(scheme-base-exec src/scheme-base.c)
-target_link_libraries(scheme-base-exec scheme-base-lib)
+add_executable(paper-scheme-exec src/paper-scheme.c)
+target_link_libraries(paper-scheme-exec paper-scheme-lib)
 
 # 架构探测与宏定义
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
     # IS_64_BIT_ARCH
-    target_compile_definitions(scheme-base-exec PUBLIC "IS_64_BIT_ARCH")
-    target_compile_definitions(scheme-base-lib PUBLIC "IS_64_BIT_ARCH")
+    target_compile_definitions(paper-scheme-exec PUBLIC "IS_64_BIT_ARCH")
+    target_compile_definitions(paper-scheme-lib PUBLIC "IS_64_BIT_ARCH")
     message(STATUS "Target is 64 bits")
 else ()
     # IS_32_BIT_ARCH
-    target_compile_definitions(scheme-base-exec PUBLIC "IS_32_BIT_ARCH")
-    target_compile_definitions(scheme-base-lib PUBLIC "IS_32_BIT_ARCH")
+    target_compile_definitions(paper-scheme-exec PUBLIC "IS_32_BIT_ARCH")
+    target_compile_definitions(paper-scheme-lib PUBLIC "IS_32_BIT_ARCH")
     message(STATUS "Target is 32 bits")
 endif ()
 
@@ -46,27 +46,27 @@ message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 if (ENABLE_UNIT_TESTS)
     # 配置测试
     INCLUDE_DIRECTORIES(test/test_cases)
-    add_executable(scheme-base-test "")
-    target_sources(scheme-base-test
+    add_executable(paper-scheme-test "")
+    target_sources(paper-scheme-test
             PRIVATE
             "test/test_run.c"
             )
-    target_link_libraries(scheme-base-test scheme-base-lib)
+    target_link_libraries(paper-scheme-test paper-scheme-lib)
     if (MSVC)
-        target_compile_definitions(scheme-base-test PUBLIC "IS_USE_MSVC")
+        target_compile_definitions(paper-scheme-test PUBLIC "IS_USE_MSVC")
     endif (MSVC)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         # IS_64_BIT_ARCH
-        target_compile_definitions(scheme-base-test PUBLIC "IS_64_BIT_ARCH")
+        target_compile_definitions(paper-scheme-test PUBLIC "IS_64_BIT_ARCH")
         message(STATUS "Target is 64 bits")
     else ()
         # IS_32_BIT_ARCH
-        target_compile_definitions(scheme-base-test PUBLIC "IS_32_BIT_ARCH")
+        target_compile_definitions(paper-scheme-test PUBLIC "IS_32_BIT_ARCH")
         message(STATUS "Target is 32 bits")
     endif ()
     # 添加测试
     add_test(
-            NAME scheme-base-test
-            COMMAND $<TARGET_FILE:scheme-base-test>
+            NAME paper-scheme-test
+            COMMAND $<TARGET_FILE:paper-scheme-test>
     )
 endif()

@@ -10,7 +10,7 @@
  */
 
 
-#include "base-scheme/util.h"
+#include "paper-scheme/util.h"
 
 
 /**
@@ -489,12 +489,19 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  */
 #define vector_len(obj) ((obj)->value.vector.len)
 /**
- * 使用索引访问 vector 的 cstr 的对应字符, 范围 [0, len)
+ * 使用索引访问 vector 的内容, 范围 [0, len)
  * @param object
  * @param i: 索引值
  * @return object 引用
  */
 #define vector_ref(obj, i) ((obj)->value.vector.data[(i)])
+/**
+ * 使用索引修改 vector 的内容, 范围 [0, len)
+ * @param object
+ * @param i: 索引值
+ * @return 不要使用返回值
+ */
+#define vector_set(obj, i, v) ((obj)->value.vector.data[(i)] = (v))
 
 /**
                            对象值操作: compare

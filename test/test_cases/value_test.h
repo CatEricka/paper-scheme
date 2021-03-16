@@ -2,7 +2,7 @@
 #define BASE_SCHEME_VALUE_TEST_H
 #pragma once
 
-#include "base-scheme/vm.h"
+#include "paper-scheme/vm.h"
 
 /**
  * ÷µ¿‡–Õ≤‚ ‘

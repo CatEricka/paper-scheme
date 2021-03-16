@@ -10,9 +10,9 @@
  */
 
 
-#include "base-scheme/util.h"
-#include "base-scheme/object.h"
-#include "base-scheme/heap.h"
+#include "paper-scheme/util.h"
+#include "paper-scheme/object.h"
+#include "paper-scheme/heap.h"
 
 
 typedef struct scheme_context_t {

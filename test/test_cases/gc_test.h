@@ -2,11 +2,11 @@
 #define BASE_SCHEME_GC_TEST_H
 #pragma once
 
-#include "base-scheme/object.h"
-#include "base-scheme/heap.h"
-#include "base-scheme/context.h"
-#include "base-scheme/gc.h"
-#include <base-scheme/vm.h>
+#include "paper-scheme/object.h"
+#include "paper-scheme/heap.h"
+#include "paper-scheme/context.h"
+#include "paper-scheme/gc.h"
+#include <paper-scheme/vm.h>
 
 
 /**
