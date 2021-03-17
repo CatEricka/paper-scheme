@@ -6,7 +6,7 @@
 ******************************************************************************/
 /**
  * 计算对齐后对象的大小
- * 用法: aligned_size(object_size(value_field))
+ * 用法: aligned_size(object_sizeof_base(value_field))
  * 给定一个大小, 返回对齐到 1<<ALIGN_BITS 的大小
  * @param unaligned_size
  * @return
@@ -24,10 +24,11 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size) {
 
 /**
  * 运行时计算对象大小, 单位 bytes, 提供给 gc 使用
+ * TODO 废弃, 详见 context.h struct object_runtime_type_info_t
  * @param object NOTNULL 不能是立即数或空指针
  * @return 如果参数非法, 返回 0
  */
-EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj) {
+EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
     assert(obj != NULL);
     assert(is_object(obj));
 
@@ -39,7 +40,7 @@ EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj) {
 
 #pragma push_macro("size_helper")
 #define size_helper(value_field, flexible_array_size) \
-    (object_size(value_field) + (flexible_array_size) + (obj)->padding_size)
+    (object_sizeof_base(value_field) + (flexible_array_size) + (obj)->padding_size)
 
     if (is_i64_real(obj)) {
         return size_helper(i64, 0);

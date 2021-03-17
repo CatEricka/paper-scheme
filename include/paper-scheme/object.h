@@ -19,14 +19,14 @@
 enum object_type_enum {
     OBJ_I64 = 0,
     OBJ_D64,
+    OBJ_CHAR,
+    OBJ_BOOLEAN,
+    OBJ_UNIT,
     OBJ_PAIR,
     OBJ_STRING,
     OBJ_SYMBOL,
     OBJ_VECTOR,
 //    OBJ_PORT,
-//    OBJ_CHAR,
-//    OBJ_BOOL,
-//    OBJ_UNIT,
             OBJECT_TYPE_ENUM_MAX, // 标记枚举最大值
 };
 typedef enum object_type_enum object_type_tag;
@@ -305,7 +305,7 @@ struct object_struct_t {
  * @param value_field object->value->value_field
  * @return 对象大小
  */
-#define object_size(value_field)\
+#define object_sizeof_base(value_field)\
     (offsetof(struct object_struct_t, value) + sizeof(((object)0)->value.value_field))
 /**
 * 计算对象结构体成员所在偏移量
@@ -316,7 +316,7 @@ struct object_struct_t {
     ((size_t)&(((object)0)->value._value._value_field))
 /**
  * 计算对齐的大小
- * 用法: aligned_size(object_size(value_field))
+ * 用法: aligned_size(object_sizeof_base(value_field))
  * 给定一个大小, 返回对齐到 ALIGN_SIZE 的大小
  * @param unaligned_size
  * @return
@@ -329,10 +329,12 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size);
 #define object_sizeof_header() (offsetof(struct object_struct_t, value))
 /**
  * 运行时计算对象大小
- * TODO 废弃, 详见 context.h struct object_runtime_type_info_t
+ * <p>TODO 仅供 context_t->global_type_table 建立前使用</p>
+ * <p>详见 context.h: struct object_runtime_type_info_t, macro object_type_info_sizeof()</p>
+ * @param object NOTNULL 不能是立即数或空指针
  * @param object
  */
-EXPORT_API OUT OUT size_t object_size_runtime(REF NOTNULL object obj);
+EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 
 
 /**

@@ -2,6 +2,11 @@
 #define PAPER_SCHEME_CONTEXT_TEST_H
 #pragma once
 
+
+/**
+ * 对 context 结构进行静态断言测试
+ */
+
 UTEST(context_test, object_type_info_cal_test) {
     struct object_runtime_type_info_t info = {
             .size_base = 1,

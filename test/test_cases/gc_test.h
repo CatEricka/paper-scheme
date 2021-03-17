@@ -10,8 +10,7 @@
 
 
 /**
- * 测试 context, heap, gc
- * 对托管堆结构进行测试
+ * 测试内存分配与垃圾回收
  */
 
 // test case here
@@ -126,7 +125,7 @@ UTEST(gc_test, heap_make_free_test) {
         // 第一个块
         UTEST_PRINTF(" [\n    heap node %zd: [\n", count);
         for (char *heap_ptr = node->data;
-             heap_ptr < node->free_ptr; heap_ptr += object_size_runtime((object) heap_ptr)) {
+             heap_ptr < node->free_ptr; heap_ptr += object_bootstrap_sizeof((object) heap_ptr)) {
             object obj = (object) heap_ptr;
             ASSERT_TRUE(is_object(obj));
             int flag = 0;
@@ -145,7 +144,7 @@ UTEST(gc_test, heap_make_free_test) {
 #define P(...) UTEST_PRINTF("            "__VA_ARGS__)
 #define MORE_SPACE(...) UTEST_PRINTF("                "__VA_ARGS__)
 #define address() MORE_SPACE("address:    0x%p\n", obj);
-#define obj_size() MORE_SPACE("size:       %zd\n", object_size_runtime(obj))
+#define obj_size() MORE_SPACE("size:       %zd\n", object_bootstrap_sizeof(obj))
 #define header_size() MORE_SPACE("header:     %zd\n", object_sizeof_header())
 #define magic() MORE_SPACE("magic:      0x%"PRIX8"\n", obj->magic)
 #define type() MORE_SPACE("type:       %d\n", obj->type)

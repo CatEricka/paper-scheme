@@ -6,6 +6,7 @@
 /**
  * 测试 object
  * 主要测试标记指针和内存布局是否工作正常
+ * 对 object 结构进行静态断言
  */
 
 UTEST(object_test, i64_arithmetic_right_shift_test) {
@@ -44,38 +45,39 @@ UTEST(object_test, full_size) {
 }
 
 UTEST(object_test, double_size) {
-    UTEST_PRINTF("double object size:\t%zd, header size:\t%zd\n", object_size(doublenum), object_sizeof_header());
-    UTEST_PRINTF("double aligned size:\t%zd\n", aligned_size(object_size(doublenum)));
+    UTEST_PRINTF("double object size:\t%zd, header size:\t%zd\n", object_sizeof_base(doublenum),
+                 object_sizeof_header());
+    UTEST_PRINTF("double aligned size:\t%zd\n", aligned_size(object_sizeof_base(doublenum)));
     ASSERT_TRUE(1);
 }
 
 UTEST(object_test, i64_size) {
-    UTEST_PRINTF("i64 object size:\t%zd, header size:\t%zd\n", object_size(i64), object_sizeof_header());
-    UTEST_PRINTF("i64 aligned size:\t%zd\n", aligned_size(object_size(i64)));
+    UTEST_PRINTF("i64 object size:\t%zd, header size:\t%zd\n", object_sizeof_base(i64), object_sizeof_header());
+    UTEST_PRINTF("i64 aligned size:\t%zd\n", aligned_size(object_sizeof_base(i64)));
     ASSERT_TRUE(1);
 }
 
 UTEST(object_test, pair_size) {
-    UTEST_PRINTF("pair object size:\t%zd, header size:\t%zd\n", object_size(pair), object_sizeof_header());
-    UTEST_PRINTF("pair aligned size:\t%zd\n", aligned_size(object_size(pair)));
+    UTEST_PRINTF("pair object size:\t%zd, header size:\t%zd\n", object_sizeof_base(pair), object_sizeof_header());
+    UTEST_PRINTF("pair aligned size:\t%zd\n", aligned_size(object_sizeof_base(pair)));
     ASSERT_TRUE(1);
 }
 
 UTEST(object_test, string_size) {
-    UTEST_PRINTF("string object size:\t%zd, header size:\t%zd\n", object_size(string), object_sizeof_header());
-    UTEST_PRINTF("string aligned size:\t%zd\n", aligned_size(object_size(string)));
+    UTEST_PRINTF("string object size:\t%zd, header size:\t%zd\n", object_sizeof_base(string), object_sizeof_header());
+    UTEST_PRINTF("string aligned size:\t%zd\n", aligned_size(object_sizeof_base(string)));
     ASSERT_TRUE(1);
 }
 
 UTEST(object_test, symbol_size) {
-    UTEST_PRINTF("symbol object size:\t%zd, header size:\t%zd\n", object_size(symbol), object_sizeof_header());
-    UTEST_PRINTF("symbol aligned size:\t%zd\n", aligned_size(object_size(symbol)));
+    UTEST_PRINTF("symbol object size:\t%zd, header size:\t%zd\n", object_sizeof_base(symbol), object_sizeof_header());
+    UTEST_PRINTF("symbol aligned size:\t%zd\n", aligned_size(object_sizeof_base(symbol)));
     ASSERT_TRUE(1);
 }
 
 UTEST(object_test, vector_size) {
-    UTEST_PRINTF("vector object size:\t%zd, header size:\t%zd\n", object_size(vector), object_sizeof_header());
-    UTEST_PRINTF("vector aligned size:\t%zd\n", aligned_size(object_size(vector)));
+    UTEST_PRINTF("vector object size:\t%zd, header size:\t%zd\n", object_sizeof_base(vector), object_sizeof_header());
+    UTEST_PRINTF("vector aligned size:\t%zd\n", aligned_size(object_sizeof_base(vector)));
     ASSERT_TRUE(1);
 }
 

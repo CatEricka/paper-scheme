@@ -45,7 +45,7 @@ raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_
  */
 EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v) {
     assert(context != NULL);
-    object ret = raw_object_make(context, OBJ_I64, object_size(i64));
+    object ret = raw_object_make(context, OBJ_I64, object_sizeof_base(i64));
     // 对象赋值
     ret->value.i64 = v;
     return ret;
@@ -73,7 +73,7 @@ EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int6
  */
 EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, double v) {
     assert(context != NULL);
-    object ret = raw_object_make(context, OBJ_D64, object_size(doublenum));
+    object ret = raw_object_make(context, OBJ_D64, object_sizeof_base(doublenum));
     ret->value.doublenum = v;
     return ret;
 }
@@ -88,7 +88,7 @@ EXPORT_API OUT NOTNULL object
 pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr) {
     assert(context != NULL);
     // TODO 实现保护链
-    object ret = raw_object_make(context, OBJ_PAIR, object_size(pair));
+    object ret = raw_object_make(context, OBJ_PAIR, object_sizeof_base(pair));
     ret->value.pair.car = car;
     ret->value.pair.cdr = cdr;
     return ret;
@@ -111,7 +111,7 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
     else { cstr_len = strlen(cstr) + 1; }
 
     object ret = raw_object_make(context, OBJ_SYMBOL,
-                                 object_size(symbol) + sizeof(char) * cstr_len);
+                                 object_sizeof_base(symbol) + sizeof(char) * cstr_len);
     ret->value.symbol.len = cstr_len;
     if (is_null(cstr)) {
         assert(ret->value.symbol.len == 1);
@@ -141,7 +141,7 @@ string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
     else { cstr_len = strlen(cstr) + 1; }
 
     object ret = raw_object_make(context, OBJ_STRING,
-                                 object_size(string) + sizeof(char) * cstr_len);
+                                 object_sizeof_base(string) + sizeof(char) * cstr_len);
     ret->value.string.len = cstr_len;
     if (is_null(cstr)) {
         assert(ret->value.string.len == 1);
@@ -164,7 +164,7 @@ vector_make_op(REF NOTNULL context_t context, IN size_t vector_len) {
     assert(context != NULL);
 
     object ret = raw_object_make(context, OBJ_VECTOR,
-                                 object_size(vector) + sizeof(object) * vector_len);
+                                 object_sizeof_base(vector) + sizeof(object) * vector_len);
     ret->value.vector.len = vector_len;
     for (size_t i = 0; i < vector_len; i++) {
         ret->value.vector.data[i] = IMM_UNIT;
