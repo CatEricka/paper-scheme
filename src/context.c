@@ -292,7 +292,25 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     if (context == NULL) {
         return;
     }
-    // TODO context_destroy 中应当对所有的对象进行 finalize
+
+    // context_destroy 中应当对所有的对象进行 finalize
+    for (heap_node_t node = context->heap->first_node; node != NULL; node = node->next) {
+        for (char *ptr = node->data; ptr < node->free_ptr;) {
+            object obj = (object) ptr;
+            assert(is_object(obj));
+            size_t size = context_object_sizeof(context, obj);
+
+            // 执行对象析构方法
+            proc_1 finalizer = context_get_object_finalize(context, obj);
+            if (finalizer != NULL) {
+                finalizer(context, obj);
+            }
+
+            ptr += size;
+        }
+    }
+
+    // 释放堆结构
     if (context->global_type_table != NULL) {
         raw_free(context->global_type_table);
     }

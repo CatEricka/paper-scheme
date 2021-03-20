@@ -114,15 +114,15 @@ typedef struct scheme_context_t {
                                 运行时类型信息
 ******************************************************************************/
 
-typedef void (*proc_1)(context_t context, object arg1);
+typedef object (*proc_1)(context_t context, object arg1);
 
-typedef void (*proc_2)(context_t context, object arg1, object arg2);
+typedef object (*proc_2)(context_t context, object arg1, object arg2);
 
-typedef void (*proc_3)(context_t context, object arg1, object arg2, object arg3);
+typedef object (*proc_3)(context_t context, object arg1, object arg2, object arg3);
 
-typedef void (*proc_4)(context_t context, object arg1, object arg2, object arg3, object arg4);
+typedef object (*proc_4)(context_t context, object arg1, object arg2, object arg3, object arg4);
 
-typedef void (*proc_n)(context_t context, size_t argument_length, object args[]);
+typedef object (*proc_n)(context_t context, size_t argument_length, object args[]);
 
 /**
  * 运行时类型信息
@@ -172,6 +172,9 @@ struct object_runtime_type_info_t {
 // 柔性数组元素大小
 #define type_info_size_meta_size_scale(_t)      type_info_field((_t), size_meta_size_scale)
 
+// finalize
+#define type_info_finalizer(t)                   type_info_field((t), finalizer)
+
 
 /**
  * 根据对象的 size_t 类型字段偏移量读取 size_t 值
@@ -189,6 +192,9 @@ struct object_runtime_type_info_t {
  */
 #define context_get_object_type(_context, _obj) \
     (&((_context)->global_type_table[(_obj)->type]))
+
+#define context_get_object_finalize(context, obj) \
+    type_info_finalizer(context_get_object_type((context), (obj)))
 
 /**
  * 根据对象的类型信息计算对象的运行时大小, 需要完整的 context_t 结构, 需要正确初始化object->padding_size

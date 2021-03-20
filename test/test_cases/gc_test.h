@@ -13,6 +13,8 @@
  * 测试内存分配与垃圾回收
  */
 
+#define heap_make_free_test_print_on 0
+
 // test case here
 UTEST(gc_test, hello_utest) {
     ASSERT_TRUE(1);
@@ -105,7 +107,6 @@ UTEST(gc_test, alloc_test) {
 #endif
 
 UTEST(gc_test, heap_make_free_test) {
-#define heap_make_free_test_print_on 0
     context_t context = context_make(16, 2, 0x10000);
     gc_collect_disable(context);
     object i64 = i64_make_real_object_op(context, 20);
@@ -415,20 +416,35 @@ UTEST(gc_test, gc_saves_list_test) {
     gc_collect(context);
 
     for (struct gc_illusory_dream *var = context->saves; var != NULL; var = var->next) {
-        UTEST_PRINTF("saves: type = %d, marked = %d\n", (*(var->illusory_object))->type,
+        UTEST_PRINTF("saves: object? = %d, type = %d, marked = %d\n", is_object(*(var->illusory_object)),
+                     (*(var->illusory_object))->type,
                      (*(var->illusory_object))->marked);
     }
-    UTEST_PRINTF("saves: type = %d, marked = %d\n", h->type, h->marked);
+    UTEST_PRINTF("died: type = %d, marked = %d\n", h->type, h->marked);
 
-    ASSERT_TRUE(a->marked);
-    ASSERT_TRUE(b->marked);
-    ASSERT_TRUE(c->marked);
-    ASSERT_TRUE(d->marked);
-    ASSERT_TRUE(e->marked);
-    ASSERT_TRUE(f->marked);
-    ASSERT_TRUE(g->marked);
+    heap_dump(context);
+
+    ASSERT_FALSE(a->marked);
+    ASSERT_FALSE(b->marked);
+    ASSERT_FALSE(c->marked);
+    ASSERT_FALSE(d->marked);
+    ASSERT_FALSE(e->marked);
+    ASSERT_FALSE(f->marked);
+    ASSERT_FALSE(g->marked);
     ASSERT_FALSE(h->marked);
 
+    gc_release_all(context);
+
+    int64_t start = utest_ns();
+    gc_collect(context);
+    int64_t time = utest_ns() - start;
+    UTEST_PRINTF("gc time: %"
+                         PRId64
+                         " ns\n", time);
+
+    // 释放后应当回收暂存对象
+    ASSERT_EQ(context->heap->first_node->data, context->heap->first_node->free_ptr);
+    heap_dump(context);
     context_destroy(context);
 }
 
@@ -455,17 +471,22 @@ UTEST(gc_test, mark_test1) {
     vector_ref(root3, 2) = pair_cadr(root1);
     vector_ref(root3, 3) = pair_cddr(root1);
 
+    int64_t start = utest_ns();
     gc_collect(context);
+    int64_t time = utest_ns() - start;
+    UTEST_PRINTF("gc time: %"
+                         PRId64
+                         " ns\n", time);
 
     ASSERT_EQ(1, i64_getvalue(pair_caar(root1)));
     ASSERT_EQ(2, i64_getvalue(pair_cdar(root1)));
     ASSERT_EQ(3, i64_getvalue(pair_cadr(root1)));
     ASSERT_EQ(4, i64_getvalue(pair_cddr(root1)));
 
-    ASSERT_TRUE(is_marked(pair_caar(root1)));
-    ASSERT_TRUE(is_marked(pair_cdar(root1)));
-    ASSERT_TRUE(is_marked(pair_cadr(root1)));
-    ASSERT_TRUE(is_marked(pair_cddr(root1)));
+    ASSERT_FALSE(is_marked(pair_caar(root1)));
+    ASSERT_FALSE(is_marked(pair_cdar(root1)));
+    ASSERT_FALSE(is_marked(pair_cadr(root1)));
+    ASSERT_FALSE(is_marked(pair_cddr(root1)));
 
     for (int i = 0; i < 4; i++) {
         ASSERT_TRUE(is_i64(vector_ref(root3, i)));
@@ -481,8 +502,33 @@ UTEST(gc_test, mark_test1) {
     context_destroy(context);
 }
 
-UTEST(gc_test, gc_collect_test) {
-    // todo 检查内存移动
+UTEST(gc_test, gc_collect_move_test) {
+    context_t context = context_make(0x100, 2, 0x10000);
+    gc_var7(a, b, c, d, e, f, g);
+    gc_preserve7(context, a, b, c, d, e, f, g);
+
+    a = i64_make_real_object_op(context, 1);
+
+    // died
+    object h = pair_make_op(context, f, g);
+
+    b = i64_make_real_object_op(context, 2);
+    c = i64_make_real_object_op(context, 3);
+    d = i64_make_real_object_op(context, 4);
+    e = pair_make_op(context, a, b);
+    f = pair_make_op(context, c, d);
+    g = pair_make_op(context, e, f);
+
+    int64_t start = utest_ns();
+    gc_collect(context);
+    int64_t time = utest_ns() - start;
+    UTEST_PRINTF("gc time: %"
+                         PRId64
+                         " ns\n", time);
+
+    ASSERT_FALSE(is_pair(h));
+    ASSERT_TRUE(is_i64(h));
+    ASSERT_EQ(2, i64_getvalue(h));
 }
 
 #endif // BASE_SCHEME_GC_TEST_H

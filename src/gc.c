@@ -148,7 +148,8 @@ static object gc_mark(context_t context) {
 }
 
 /**
- * 内部方法 2. 计算紧凑对象后地址并设置 object->forwarding 字段
+ * 内部方法 2. 计算紧凑对象后地址并设置 object->forwarding 字段,
+ * 同时运行对象的 finalize
  * <p>第一次堆遍历</p>
  * @param context
  */
@@ -194,10 +195,16 @@ static void gc_set_forwarding(context_t context) {
 
             size_t size = context_object_sizeof(context, obj);
             if (is_marked(obj)) {
+                //printf("alive: type=%d\n", obj->type);
                 obj->forwarding = (object) to;
                 to += size;
             } else {
-                // TODO finalize this
+                // 执行对象析构方法
+                //printf("died:  type=%d\n", obj->type);
+                proc_1 finalizer = context_get_object_finalize(context, obj);
+                if (finalizer != NULL) {
+                    finalizer(context, obj);
+                }
             }
             from += size;
         }
@@ -289,19 +296,26 @@ static void move_objects(context_t context) {
             assert(is_object(obj));
 
             size_t size = context_object_sizeof(context, obj);
-            if (is_marked(obj) && obj->forwarding != obj) {
+            if (is_marked(obj)) {
                 assert(obj->forwarding != NULL);
+//                printf("alive: type=%d\n", obj->type);
 
                 // 只有当对象被标记, 且转发地址不等于当前地址时才进行移动
                 obj->marked = 0;    // 清除标记
-                memcpy(obj->forwarding, obj, size);
+                if (obj->forwarding != obj) {
+                    memcpy(obj->forwarding, obj, size);
+                }
                 new_free_ptr += size;
+            } else {
+//                printf("dead: type = %d\n", obj->type);
             }
             ptr += size;
         }
 
-        // 更新 free_ptr 指针
         assert(node->free_ptr >= new_free_ptr);
+        // 清理空间
+        memset(new_free_ptr, 0, node->free_ptr - new_free_ptr);
+        // 更新 free_ptr 指针
         node->free_ptr = new_free_ptr;
     }
 }
@@ -321,11 +335,16 @@ EXPORT_API CHECKED object gc_collect(REF NOTNULL context_t context) {
     assert(context != NULL);
     if (!context->gc_collect_on) return IMM_TRUE;
 
-    // TODO 测试 gc 时更新引用和移动对象
+#if USE_DEBUG_GC
+#endif
+
     gc_mark(context);
     gc_set_forwarding(context);
     gc_adjust_ref(context);
     move_objects(context);
+
+#if USE_DEBUG_GC
+#endif
 
     return IMM_TRUE;
 }

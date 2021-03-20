@@ -101,7 +101,6 @@
  */
 int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 
-
 /**
                              exit() 返回值定义
 ******************************************************************************/
@@ -117,6 +116,6 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
                                 gc 特征
 ******************************************************************************/
 #define MAX_MARK_STACK_DEEP 1024u
-
+#define USE_DEBUG_GC 1
 
 #endif // BASE_SCHEME_ASSERT_HELPER_H
