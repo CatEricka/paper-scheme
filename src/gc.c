@@ -4,8 +4,15 @@
 /**
                                垃圾回收 API
 ******************************************************************************/
-
+/**
+ * 第一个和最后一个
+ * @param context
+ * @param start
+ * @param end
+ */
 static void gc_mark_stack_push(context_t context, object *start, object *end) {
+    assert(context != NULL);
+
     if (context->mark_stack_top == NULL) {
         // 初始状态, 栈顶指针为空, 让栈顶指针指向栈底, 再设置上一个节点为空
         context->mark_stack_top = context->mark_stack;
@@ -32,6 +39,8 @@ static void gc_mark_stack_push(context_t context, object *start, object *end) {
 }
 
 static void gc_mark_stack_pop(context_t context) {
+    assert(context != NULL);
+
     // 更新栈指针
     gc_mark_stack_ptr old = context->mark_stack_top;
     context->mark_stack_top = context->mark_stack_top->prev;
@@ -43,7 +52,14 @@ static void gc_mark_stack_pop(context_t context) {
     }
 }
 
+/**
+ * 标记一个对象, 引用压入 mark stack
+ * @param context
+ * @param obj
+ */
 static void gc_mark_one(context_t context, object obj) {
+    assert(context != NULL);
+
     object *field_start_ptr;
     object *field_end_ptr;
     size_t field_len = 0;
@@ -84,7 +100,14 @@ static void gc_mark_one(context_t context, object obj) {
     } while (1);
 }
 
+/**
+ * 从一个根开始遍历
+ * @param context
+ * @param obj
+ */
 static void gc_mark_one_start(context_t context, object obj) {
+    assert(context != NULL);
+
     gc_mark_one(context, obj);
     while (context->mark_stack_top != NULL) {
         object *start = context->mark_stack_top->start;
@@ -97,7 +120,8 @@ static void gc_mark_one_start(context_t context, object obj) {
 }
 
 /**
- * 内部方法 标记存活对象
+ * 内部方法 1. 标记存活对象
+ * <p>第二次图遍历</p>
  * @param context
  * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
@@ -108,10 +132,10 @@ static object gc_mark(context_t context) {
 
     // 全局符号表
     for (size_t i = 0; i < context->global_type_table_len; i++) {
-        gc_mark_one_start(context, context->global_type_table[0].name);
-        gc_mark_one_start(context, context->global_type_table[0].getter);
-        gc_mark_one_start(context, context->global_type_table[0].setter);
-        gc_mark_one_start(context, context->global_type_table[0].to_string);
+        gc_mark_one_start(context, context->global_type_table[i].name);
+        gc_mark_one_start(context, context->global_type_table[i].getter);
+        gc_mark_one_start(context, context->global_type_table[i].setter);
+        gc_mark_one_start(context, context->global_type_table[i].to_string);
     }
 
     // env & dump stack ?
@@ -124,7 +148,172 @@ static object gc_mark(context_t context) {
 }
 
 /**
+ * 内部方法 2. 计算紧凑对象后地址并设置 object->forwarding 字段
+ * <p>第一次堆遍历</p>
+ * @param context
+ */
+static void gc_set_forwarding(context_t context) {
+    /*
+     * 图例:
+     *      =====: 已分配 内存区域
+     *      ----: 空闲 内存区域
+     *      ****: 压缩后存活的对象
+     * 初始:
+     *            _____________________________________
+     * node->data |======================|               | node->free_ptr
+     *            -------------------------------------
+     *            |
+     *         to from
+     * 遇到存活对象:
+     *            _____________________________________
+     * node->data |*****|================|               | node->free_ptr
+     *            -------------------------------------
+     *                  |
+     *               to & from
+     * 遇到死亡对象:
+     *            _____________________________________
+     * node->data |*****|------|========|               | node->free_ptr
+     *            -------------------------------------
+     *                  |     |
+     *                 to    from
+     * 扫描结束:
+     *            _____________________________________
+     * node->data |*******|-------------|              | node->free_ptr
+     *            -------------------------------------
+     *                   |            |
+     *                  to           from
+     */
+    heap_t heap = context->heap;
+    for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
+        char *to = node->data;
+        char *from = node->data;
+
+        while (from < node->free_ptr) {
+            object obj = (object) from;
+            assert(is_object(obj));
+
+            size_t size = context_object_sizeof(context, obj);
+            if (is_marked(obj)) {
+                obj->forwarding = (object) to;
+                to += size;
+            } else {
+                // TODO finalize this
+            }
+            from += size;
+        }
+
+        assert(from == node->free_ptr);
+    }
+}
+
+/**
+ * 内部方法 3. 根据 object->forwarding 字段更新对象引用
+ * <p>注意! 这会破坏旧的引用关系</p>
+ * <p>第二次堆遍历</p>
+ * @param context
+ */
+static void gc_adjust_ref(context_t context) {
+    assert(context != NULL);
+
+    // todo context 修改后, 修改 gc_adjust_ref, 更新根引用
+
+    // 先更新根引用
+    // 全局符号表
+    for (size_t i = 0; i < context->global_type_table_len; i++) {
+        object_type_info_ptr t = &context->global_type_table[i];
+        if (is_object(t->name))
+            t->name = t->name->forwarding;
+        if (is_object(t->getter))
+            t->getter = t->getter->forwarding;
+        if (is_object(t->setter))
+            t->setter = t->setter->forwarding;
+        if (is_object(t->to_string))
+            t->to_string = t->to_string->forwarding;
+    }
+
+    // env & dump stack ?
+
+    // 临时变量保护表
+    for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
+        if (is_object(*save->illusory_object)) {
+            *save->illusory_object = (*save->illusory_object)->forwarding;
+        }
+    }
+
+    // 最后遍历堆更新所有引用
+    heap_t heap = context->heap;
+    for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
+        char *ptr = node->data;
+
+        while (ptr < node->free_ptr) {
+            object obj = (object) ptr;
+            assert(is_object(obj));
+            size_t size = context_object_sizeof(context, obj);
+
+            if (is_marked(obj)) {
+                // 对于存活的对象, 检查所有成员引用
+                object_type_info_ptr t = context_get_object_type(context, obj);
+                size_t field_len = object_type_info_member_slots_of(t, obj);
+                if (field_len > 0) {
+                    object *field_start_ptr = type_info_get_object_ptr_of_first_member(t, obj);
+                    object *field_end_ptr = field_start_ptr + (field_len - 1);
+
+                    for (object *obj_ptr = field_start_ptr; obj_ptr <= field_end_ptr; obj_ptr++) {
+                        if (is_object(*obj_ptr)) {
+                            *obj_ptr = (*obj_ptr)->forwarding;
+                        }
+                    }
+                }
+            }
+
+            ptr += size;
+        }
+
+        assert(ptr == node->free_ptr);
+    }
+}
+
+/**
+ * 内部方法 4. 移动对象
+ * @param context
+ */
+static void move_objects(context_t context) {
+    heap_t heap = context->heap;
+    for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
+        char *new_free_ptr = node->data;
+        char *ptr = node->data;
+
+        // 移动对象
+        while (ptr < node->free_ptr) {
+            object obj = (object) ptr;
+            assert(is_object(obj));
+
+            size_t size = context_object_sizeof(context, obj);
+            if (is_marked(obj) && obj->forwarding != obj) {
+                assert(obj->forwarding != NULL);
+
+                // 只有当对象被标记, 且转发地址不等于当前地址时才进行移动
+                obj->marked = 0;    // 清除标记
+                memcpy(obj->forwarding, obj, size);
+                new_free_ptr += size;
+            }
+            ptr += size;
+        }
+
+        // 更新 free_ptr 指针
+        assert(node->free_ptr >= new_free_ptr);
+        node->free_ptr = new_free_ptr;
+    }
+}
+
+/**
  * 启动回收垃圾回收
+ * <p>todo 注意! 所有被分配的对象都必须保存到保护链, 否则会因为对象移动破坏引用</p>
+ * <p>详见 context.h: macro gc_var()</p>
+ * <p>幸运的是, 保护链的生命周期与 c 函数栈生命周期相关</p>
+ * <p>只要正确使用 gc_var 和 gc_preserve
+ * 就能保证引用的正确更新</p>
+ * <p>注意有些测试需要关闭 gc 才能保证测试正常进行, 参见 macro gc_collect_disable()</p>
  * @param context
  * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
@@ -132,8 +321,12 @@ EXPORT_API CHECKED object gc_collect(REF NOTNULL context_t context) {
     assert(context != NULL);
     if (!context->gc_collect_on) return IMM_TRUE;
 
-    // TODO 实现 gc_collect
+    // TODO 测试 gc 时更新引用和移动对象
     gc_mark(context);
+    gc_set_forwarding(context);
+    gc_adjust_ref(context);
+    move_objects(context);
+
     return IMM_TRUE;
 }
 

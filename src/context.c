@@ -292,6 +292,7 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     if (context == NULL) {
         return;
     }
+    // TODO context_destroy 中应当对所有的对象进行 finalize
     if (context->global_type_table != NULL) {
         raw_free(context->global_type_table);
     }
