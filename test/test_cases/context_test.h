@@ -25,7 +25,7 @@ UTEST(context_test, object_type_info_cal_test) {
     object_type_info_sizeof(&info, &obj);
     object_type_info_member_slots_of(&info, &obj);
     object_type_info_member_eq_slots_of(&info, &obj);
-    type_info_get_object_of_first_member(&info, &obj);
+    type_info_get_object_ptr_of_first_member(&info, &obj);
 }
 
 #endif //PAPER_SCHEME_CONTEXT_TEST_H

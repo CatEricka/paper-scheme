@@ -87,7 +87,6 @@ EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, d
 EXPORT_API OUT NOTNULL object
 pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr) {
     assert(context != NULL);
-    // TODO 实现保护链
     object ret = raw_object_make(context, OBJ_PAIR, object_sizeof_base(pair));
     ret->value.pair.car = car;
     ret->value.pair.cdr = cdr;

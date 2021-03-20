@@ -10,7 +10,7 @@
  */
 
 
-#include <paper-scheme/util.h>
+#include <paper-scheme/feature.h>
 #include <paper-scheme/object.h>
 #include <paper-scheme/heap.h>
 
@@ -18,11 +18,66 @@
 /**
                                 上下文结构定义
 ******************************************************************************/
+
+/**
+ * 用来在 gc 前保存临时变量
+ *
+ */
+typedef struct gc_illusory_dream {
+    object *illusory_object;
+    struct gc_illusory_dream *next;
+} *gc_saves_list_t;
+
+/**
+ * 生成临时变量
+ * @param var_name 临时变量名
+ * @param illusory_dream_name
+ */
+#define gc_var(var_name, illusory_dream_name) \
+    object var_name = IMM_UNIT; \
+    struct gc_illusory_dream illusory_dream_name = { NULL, NULL }
+
+#define gc_preserve(ctx, var_name, illusory_dream_name) \
+    do { \
+        (illusory_dream_name).illusory_object = &(var_name); \
+        (illusory_dream_name).next = (ctx)->saves; \
+        (ctx)->saves = &(illusory_dream_name); \
+    } while(0)
+
+#define gc_release(ctx, this_root_illusory_dream_name)   ((ctx)->saves = (this_root_illusory_dream_name).next)
+
+#define gc_var1(a) gc_var(a, gc_dream1)
+#define gc_var2(a, b) gc_var1(a); gc_var(b, gc_dream2)
+#define gc_var3(a, b, c) gc_var2(a, b); gc_var(c, gc_dream3)
+#define gc_var4(a, b, c, d) gc_var3(a, b, c); gc_var(d, gc_dream4)
+#define gc_var5(a, b, c, d, e) gc_var4(a, b, c, d); gc_var(e, gc_dream5)
+#define gc_var6(a, b, c, d, e, f) gc_var5(a, b, c, d, e); gc_var(f, gc_dream6)
+#define gc_var7(a, b, c, d, e, f, g) gc_var6(a, b, c, d, e, f); gc_var(g, gc_dream7)
+
+#define gc_preserve1(ctx, a) gc_preserve(ctx, a, gc_dream1)
+#define gc_preserve2(ctx, a, b) gc_preserve1(ctx, a); gc_preserve(ctx, b, gc_dream2)
+#define gc_preserve3(ctx, a, b, c) gc_preserve2(ctx, a, b); gc_preserve(ctx, c, gc_dream3)
+#define gc_preserve4(ctx, a, b, c, d) gc_preserve3(ctx, a, b, c); gc_preserve(ctx, d, gc_dream4)
+#define gc_preserve5(ctx, a, b, c, d, e)  gc_preserve4(ctx, a, b, c, d); gc_preserve(ctx, e, gc_dream5)
+#define gc_preserve6(ctx, a, b, c, d, e, f) gc_preserve5(ctx, a, b, c, d, e); gc_preserve(ctx, f, gc_dream6)
+#define gc_preserve7(ctx, a, b, c, d, e, f, g) gc_preserve6(ctx, a, b, c, d, e, f); gc_preserve(ctx, g, gc_dream7)
+
+#define gc_release_all(ctx) gc_release((ctx), gc_dream1)
+
+/**
+ * gc 时遍历图结构用的标记栈
+ */
+typedef struct gc_mark_stack_node_t {
+    object *start, *end;
+    struct gc_mark_stack_node_t *prev;
+} *gc_mark_stack_ptr;
+
 /**
  * 类型信息
  */
 struct object_runtime_type_info_t;
-typedef struct object_runtime_type_info_t *object_type_info;
+typedef struct object_runtime_type_info_t *object_type_info_ptr;
+
 /**
  * vm 上下文
  */
@@ -31,15 +86,25 @@ typedef struct scheme_context_t {
     // 堆
     heap_t heap;
 
-    FILE *port_stdin;
-    FILE *port_stdout;
-    FILE *port_stderr;
+    // 抑制 gc 时 gc_collect() 函数功能, 仅用于测试
+    int gc_collect_on;
+    // GC! gc 时的临时变量保护链
+    GC gc_saves_list_t saves;
+    // gc 标记栈
+    struct gc_mark_stack_node_t mark_stack[MAX_MARK_STACK_DEEP];
+    // 标记栈顶
+    gc_mark_stack_ptr mark_stack_top;
 
-    // 全局类型信息表
-    // TODO 完成全局表构造
-    size_t type_info_len;
+    FILE *context_stdin;
+    FILE *context_stdout;
+    FILE *context_stderr;
+
+    // 全局类型信息表最大长度
     size_t type_info_table_size;
-    struct object_runtime_type_info_t *global_type_table;
+    // GC! 全局类型信息表
+    GC struct object_runtime_type_info_t *global_type_table;
+    // 全局类型信息表当前长度
+    size_t global_type_table_len;
 
     // 基础类型信息索引表, 仅用于构造期, 其中 object 类型均不可用; .name 字段为字符串指针
     struct object_runtime_type_info_t const *scheme_type_specs;
@@ -64,7 +129,6 @@ typedef void (*proc_n)(context_t context, size_t argument_length, object args[])
  * 运行时类型信息
  */
 struct object_runtime_type_info_t {
-    // TODO 编写测试
     object name, getter, setter, to_string;
     object_type_tag tag;
 
@@ -87,8 +151,7 @@ struct object_runtime_type_info_t {
 /**
                            运行时类型信息计算辅助宏
 ******************************************************************************/
-// TODO 运行时类型信息计算辅助宏 编写测试
-// object_type_info 结构体字段访问宏
+// object_type_info_ptr 结构体字段访问宏
 #define type_info_field(_t, _f) ((_t)->_f)
 
 // 对象成员起始偏移量
@@ -123,14 +186,14 @@ struct object_runtime_type_info_t {
  * 从上下文中获取对象的类型信息
  * @param _context context_t
  * @param _obj object
- * @return object_type_info
+ * @return object_type_info_ptr
  */
 #define context_get_object_type(_context, _obj) \
     (&((_context)->global_type_table[(_obj)->type]))
 
 /**
  * 根据对象的类型信息计算对象的运行时大小, 需要完整的 context_t 结构, 需要正确初始化object->padding_size
- * @param _type object_type_info
+ * @param _type object_type_info_ptr
  * @param _obj object
  */
 #define object_type_info_sizeof(_type, _obj) \
@@ -150,16 +213,16 @@ struct object_runtime_type_info_t {
 /**
  * 根据对象的类型信息取得对象的第一个成员字段引用, 用于 gc 图遍历入栈
  * <p>注意, 返回值是 object *, 而不是 object</p>
- * @param _type object_type_info
+ * @param _type object_type_info_ptr
  * @param _obj object
  * @param object *
  */
-#define type_info_get_object_of_first_member(_type, _obj) \
+#define type_info_get_object_ptr_of_first_member(_type, _obj) \
     ((object *)((char*)(_obj) + type_info_member_base((_type))))
 
 /**
  * 根据对象的类型信息取得 全部 对象成员字段个数
- * @param _type object_type_info
+ * @param _type object_type_info_ptr
  * @param _obj object
  * @return size_t 成员字段个数
 */
@@ -170,7 +233,7 @@ struct object_runtime_type_info_t {
 
 /**
  * 根据对象的类型信息取得 compare 时需要比较的对象成员字段个数, 一般 <= object_type_info_member_slots_of
- * @param _type object_type_info
+ * @param _type object_type_info_ptr
  * @param _obj object
  * @return size_t 成员字段个数
 */
@@ -191,7 +254,7 @@ EXPORT_API OUT NULLABLE context_t
 context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t heap_max_size);
 
 /**
- * 在上下文注册类型信息 TODO context_register_type 暂时无法使用和定义
+ * 在上下文注册类型信息 TODO context_register_type 需要测试
  * @param context 上下文
  * @param type_tag enum object_type_enum, 与 object 结构体相匹配, 最大 255
  * @param type_info 类型信息, 需要手动分配内存
@@ -200,7 +263,7 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
 EXPORT_API int
 context_register_type(REF NOTNULL context_t context,
                       IN object_type_tag type_tag,
-                      IN NOTNULL object_type_info type_info);
+                      IN NOTNULL object_type_info_ptr type_info);
 
 /**
  * 释放上下文结构

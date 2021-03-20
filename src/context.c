@@ -159,18 +159,17 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
  * @param context
  */
 static int context_init_globals_type_specs(REF context_t context) {
-    // TODO 需要测试 注册类型信息, 初始大小设置为 OBJECT_TYPE_ENUM_MAX
-    context->global_type_table = (object_type_info) raw_alloc(
+    context->global_type_table = (object_type_info_ptr) raw_alloc(
             sizeof(struct object_runtime_type_info_t) * OBJECT_TYPE_ENUM_MAX);
-    context->type_info_len = 0;
+    context->global_type_table_len = 0;
     context->type_info_table_size = OBJECT_TYPE_ENUM_MAX;
     notnull_or_return(context->global_type_table, "context->global_type_table make failed.", 0);
 
     assert(OBJECT_TYPE_ENUM_MAX >= sizeof(scheme_type_specs) / sizeof(struct object_runtime_type_info_t));
     for (size_t i = 0; i < sizeof(scheme_type_specs) / sizeof(struct object_runtime_type_info_t); i++) {
-        object_type_info type = &scheme_type_specs[i];
+        object_type_info_ptr type = &scheme_type_specs[i];
 
-        assert(context->type_info_table_size >= type->tag);
+        assert(context->type_info_table_size >= (size_t) type->tag);
 
         context->global_type_table[type->tag].name = IMM_FALSE;
         context->global_type_table[type->tag].getter = type->getter;
@@ -190,6 +189,8 @@ static int context_init_globals_type_specs(REF context_t context) {
         context->global_type_table[type->tag].size_meta_size_scale = type->size_meta_size_scale;
 
         context->global_type_table[type->tag].finalizer = type->finalizer;
+
+        context->global_type_table_len++;
     }
     return 1;
 }
@@ -205,14 +206,22 @@ static int context_init_globals_type_specs(REF context_t context) {
 EXPORT_API int
 context_register_type(REF NOTNULL context_t context,
                       IN object_type_tag type_tag,
-                      IN NOTNULL object_type_info type_info) {
+                      IN NOTNULL object_type_info_ptr type_info) {
     assert(!is_null(context));
     assert(!is_null(type_info));
     assert(type_tag >= 0);
 
     if (((size_t) type_tag) + 1 > context->type_info_table_size) {
-        context->global_type_table = raw_realloc(context->global_type_table, ((size_t) type_tag) + 1);
+        size_t new_size = (((size_t) type_tag) + 1);
+        context->global_type_table = raw_realloc(context->global_type_table,
+                                                 new_size * sizeof(struct object_runtime_type_info_t));
         if (context->global_type_table == NULL) return 0;
+        size_t old_size = context->type_info_table_size;
+        context->type_info_table_size = new_size;
+
+        size_t empty_type_info_size = new_size - old_size;
+        memset(&context->global_type_table[old_size], 0,
+               empty_type_info_size * sizeof(struct object_runtime_type_info_t));
     }
 
     context->global_type_table[type_tag].name = NULL;
@@ -233,6 +242,11 @@ context_register_type(REF NOTNULL context_t context,
     context->global_type_table[type_tag].size_meta_size_scale = type_info->size_meta_size_scale;
 
     context->global_type_table[type_tag].finalizer = type_info->finalizer;
+
+    // 修正全局表长度
+    if (context->global_type_table_len < (((size_t) type_tag) + 1)) {
+        context->global_type_table_len = (((size_t) type_tag) + 1);
+    }
     return 1;
 }
 
@@ -254,10 +268,14 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
     //return;
     notnull_or_return(context->heap, "context->heap make failed.", NULL);
 
-    context->port_stdin = stdin;
-    context->port_stdout = stdout;
-    context->port_stderr = stderr;
+    // 初始化 gc 相关
+    context->gc_collect_on = 1;
+    context->mark_stack_top = NULL;
+    context->saves = NULL;
 
+    context->context_stdin = stdin;
+    context->context_stdout = stdout;
+    context->context_stderr = stderr;
 
     // 初始化类型信息, 此时需要堆结构正常工作, 但类型信息还不完整
     context->scheme_type_specs = scheme_type_specs;
@@ -270,9 +288,15 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
  * @param context
  */
 EXPORT_API void context_destroy(IN NOTNULL context_t context) {
-    // TODO context_destroy 补全
+    // todo context 修改后, context_destroy 补全
     if (context == NULL) {
         return;
+    }
+    if (context->global_type_table != NULL) {
+        raw_free(context->global_type_table);
+    }
+    if (context->scheme_type_specs != NULL) {
+        context->scheme_type_specs = NULL;
     }
     heap_destroy(context->heap);
     raw_free(context);

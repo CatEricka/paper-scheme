@@ -4,7 +4,7 @@
 
 
 /**
- * util.h
+ * feature.h
  * 常用工具与系统头文件定义
  */
 
@@ -48,6 +48,9 @@
 #define NOTNULL
 // 参数标记, 可能为空
 #define NULLABLE
+
+// 需要 gc 的字段
+#define GC
 
 
 /**
@@ -108,5 +111,12 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 #define EXIT_FAILURE_OUT_OF_MEMORY (-3)
 // malloc() 函数失败
 #define EXIT_FAILURE_MALLOC_FAILED (-4)
+
+
+/**
+                                gc 特征
+******************************************************************************/
+#define MAX_MARK_STACK_DEEP 1024u
+
 
 #endif // BASE_SCHEME_ASSERT_HELPER_H

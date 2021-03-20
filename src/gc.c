@@ -5,6 +5,97 @@
                                垃圾回收 API
 ******************************************************************************/
 
+static void gc_mark_stack_push(context_t context, object *start, object *end) {
+    if (context->mark_stack_top == NULL) {
+        // 初始状态, 栈顶指针为空, 让栈顶指针指向栈底, 再设置上一个节点为空
+        context->mark_stack_top = context->mark_stack;
+        context->mark_stack_top->prev = NULL;
+    } else if (context->mark_stack_top >= context->mark_stack &&
+               context->mark_stack_top + 1 < context->mark_stack + MAX_MARK_STACK_DEEP) {
+        // 如果默认栈深度够大, 直接增加栈指针即可
+        gc_mark_stack_ptr old = context->mark_stack_top;
+        context->mark_stack_top++;
+        context->mark_stack_top->prev = old;
+    } else {
+        // 默认栈深度不足, 额外分配内存, 分配失败则停机
+        gc_mark_stack_ptr new_mark_stack_node = (gc_mark_stack_ptr) raw_alloc(sizeof(struct gc_mark_stack_node_t));
+        if (new_mark_stack_node == NULL) {
+            fprintf(context->context_stderr, "gc stack too deep.\n");
+            exit(EXIT_FAILURE_MALLOC_FAILED);
+        }
+        new_mark_stack_node->prev = context->mark_stack_top;
+        context->mark_stack_top = new_mark_stack_node;
+    }
+
+    context->mark_stack_top->start = start;
+    context->mark_stack_top->end = end;
+}
+
+static void gc_mark_stack_pop(context_t context) {
+    // 更新栈指针
+    gc_mark_stack_ptr old = context->mark_stack_top;
+    context->mark_stack_top = context->mark_stack_top->prev;
+
+    // 旧的栈顶指针如果指向默认栈以外的空间, 则说明需要释放
+    if (old < context->mark_stack || old >= context->mark_stack + MAX_MARK_STACK_DEEP) {
+        printf("old %p, stack %p, top %p\n", old, context->mark_stack, context->mark_stack_top);
+        raw_free(old);
+    }
+}
+
+static void gc_mark_one(context_t context, object obj) {
+    object *field_start_ptr;
+    object *field_end_ptr;
+    size_t field_len = 0;
+
+    do {
+        if (!is_object(obj) || is_marked(obj)) return;
+
+        obj->marked = 1;
+        object_type_info_ptr t = context_get_object_type(context, obj);
+
+        field_len = object_type_info_member_slots_of(t, obj);
+        if (field_len > 0) {
+            field_start_ptr = type_info_get_object_ptr_of_first_member(t, obj);
+            field_end_ptr = field_start_ptr + (field_len - 1);
+
+            while (field_start_ptr < field_end_ptr && (is_object(*field_end_ptr) ? is_marked(*field_end_ptr) : 1))
+                field_end_ptr--;    // 跳过非对象和标记过的对象
+
+            while (field_start_ptr < field_end_ptr && *field_end_ptr == field_end_ptr[-1])
+                field_end_ptr--;    // 跳过重复对象
+
+            // 此时要么  (field_end_ptr - field_start_ptr) > 0      =>    剩余多个字段
+            // 要么      (field_end_ptr - field_start_ptr) == 0     =>    剩余一个 字段
+            // 对于后者, obj = *field_end_ptr,
+            //      考虑到此时可能为单链表结构 (对于 scheme 来说并不少见), 继续循环, 减少 mark stack 的占用
+            // 对于前者,
+            //      gc_mark_stack_push(), break;
+            if (field_start_ptr < field_end_ptr) {
+                gc_mark_stack_push(context, field_start_ptr, field_end_ptr);
+                return;
+            } else {
+                obj = *field_end_ptr;
+            }
+        } else {
+            // field_len <= 0, 不需要继续检查
+            return;
+        }
+    } while (1);
+}
+
+static void gc_mark_one_start(context_t context, object obj) {
+    gc_mark_one(context, obj);
+    while (context->mark_stack_top != NULL) {
+        object *start = context->mark_stack_top->start;
+        object *end = context->mark_stack_top->end;
+        gc_mark_stack_pop(context);
+        for (; start <= end; start++) {
+            gc_mark_one(context, *start);
+        }
+    }
+}
+
 /**
  * 内部方法 标记存活对象
  * @param context
@@ -13,8 +104,22 @@
 static object gc_mark(context_t context) {
     assert(context != NULL);
 
-    // TODO gc_mark
-    // 注意, 向量类型的成员引用不能从 object_type_info 获得
+    // todo context 修改后, 修改gc_mark
+
+    // 全局符号表
+    for (size_t i = 0; i < context->global_type_table_len; i++) {
+        gc_mark_one_start(context, context->global_type_table[0].name);
+        gc_mark_one_start(context, context->global_type_table[0].getter);
+        gc_mark_one_start(context, context->global_type_table[0].setter);
+        gc_mark_one_start(context, context->global_type_table[0].to_string);
+    }
+
+    // env & dump stack ?
+
+    // 临时变量保护表
+    for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
+        gc_mark_one_start(context, *save->illusory_object);
+    }
     return IMM_TRUE;
 }
 
@@ -25,6 +130,7 @@ static object gc_mark(context_t context) {
  */
 EXPORT_API CHECKED object gc_collect(REF NOTNULL context_t context) {
     assert(context != NULL);
+    if (!context->gc_collect_on) return IMM_TRUE;
 
     // TODO 实现 gc_collect
     gc_mark(context);
@@ -118,14 +224,14 @@ EXPORT_API OUT object gc_alloc(REF NOTNULL context_t context, IN size_t size) {
     // 6. 永远不会分配失败. 失败时结束运行
     heap_t heap = context->heap;
     if (heap_grow_result == IMM_FALSE) {
-        fprintf(context->port_stderr, "[ERROR] Out of Memory:");
-        fprintf(context->port_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+        fprintf(context->context_stderr, "[ERROR] Out of Memory:");
+        fprintf(context->context_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_OUT_OF_MEMORY);
         //return IMM_FALSE;
     } else {
-        fprintf(context->port_stderr, "[ERROR] malloc() failed:");
-        fprintf(context->port_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+        fprintf(context->context_stderr, "[ERROR] malloc() failed:");
+        fprintf(context->context_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_MALLOC_FAILED);
         //return IMM_UNIT;

@@ -10,7 +10,7 @@
  */
 
 
-#include <paper-scheme/util.h>
+#include <paper-scheme/feature.h>
 #include <paper-scheme/object.h>
 #include <paper-scheme/heap.h>
 #include <paper-scheme/context.h>
@@ -19,6 +19,9 @@
 /**
                                垃圾回收 API
 ******************************************************************************/
+
+#define gc_collect_disable(context) ((context)->gc_collect_on = 0)
+#define gc_collect_enable(context) ((context)->gc_collect_on = 1)
 
 /**
  * 启动回收垃圾回收

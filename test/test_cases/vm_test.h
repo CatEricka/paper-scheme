@@ -20,6 +20,7 @@ UTEST(vm_test, auto_imm_test) {
     srand(0);
     int64_t *tests = malloc(n * sizeof(int64_t));
     context_t context = context_make(0x100, 2, 0x10000);
+    gc_collect_disable(context);
 
     // 测试用例
     tests[0] = I64_IMM_MIN;
@@ -84,72 +85,194 @@ UTEST(vm_test, auto_imm_test) {
 
 UTEST(vm_test, context_runtime_type_test) {
     context_t context = context_make(16, 2, 0x10000);
+    gc_collect_disable(context);
+    object_type_info_ptr t;
     size_t size1, size2;
+    object obj;
 
-    // 完成测试
+    // todo 增加初始类型后, 修改此测试测试
     object i64 = i64_make_real_object_op(context, 20);
-    size1 = object_bootstrap_sizeof(i64);
-    size2 = context_object_sizeof(context, i64);
-    ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, i64);
+    obj = i64;
+    ASSERT_EQ(object_bootstrap_sizeof(i64), context_object_sizeof(context, i64));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(i64));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), 0);
+    ASSERT_EQ(type_info_size_meta_size_scale(t), 0);
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object i64max = i64_make_op(context, INT64_MAX);
-    size1 = object_bootstrap_sizeof(i64max);
-    size2 = context_object_sizeof(context, i64max);
-    ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, i64max);
+    obj = i64max;
+    ASSERT_EQ(object_bootstrap_sizeof(i64), context_object_sizeof(context, i64));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(i64));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), 0);
+    ASSERT_EQ(type_info_size_meta_size_scale(t), 0);
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object i64min = i64_make_real_object_op(context, INT64_MIN);
-    size1 = object_bootstrap_sizeof(i64min);
-    size2 = context_object_sizeof(context, i64min);
-    ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, i64min);
+    obj = i64min;
+    ASSERT_EQ(object_bootstrap_sizeof(i64), context_object_sizeof(context, i64));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(i64));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), 0);
+    ASSERT_EQ(type_info_size_meta_size_scale(t), 0);
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object doublenum = doublenum_make_op(context, 200.0);
-    size1 = object_bootstrap_sizeof(doublenum);
-    size2 = context_object_sizeof(context, doublenum);
-    ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, doublenum);
+    obj = doublenum;
+    ASSERT_EQ(object_bootstrap_sizeof(doublenum), context_object_sizeof(context, i64));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(doublenum));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), 0);
+    ASSERT_EQ(type_info_size_meta_size_scale(t), 0);
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
-    object pair_carImmI64_cdrDouble = pair_make_op(context, i64, doublenum);
-    size1 = object_bootstrap_sizeof(pair_carImmI64_cdrDouble);
-    size2 = context_object_sizeof(context, pair_carImmI64_cdrDouble);
+    object pair_carI64_cdrDouble = pair_make_op(context, i64, doublenum);
+    size1 = object_bootstrap_sizeof(pair_carI64_cdrDouble);
+    size2 = context_object_sizeof(context, pair_carI64_cdrDouble);
     ASSERT_EQ(size1, size2);
-    size_t off = object_offsetof(pair, car);
-    object car = *type_info_get_object_of_first_member(context_get_object_type(context, pair_carImmI64_cdrDouble),
-                                                       pair_carImmI64_cdrDouble);
-    object cdr = *(type_info_get_object_of_first_member(context_get_object_type(context, pair_carImmI64_cdrDouble),
-                                                        pair_carImmI64_cdrDouble) + 1);
+    object car = *type_info_get_object_ptr_of_first_member(context_get_object_type(context, pair_carI64_cdrDouble),
+                                                           pair_carI64_cdrDouble);
+    object cdr = *(type_info_get_object_ptr_of_first_member(context_get_object_type(context, pair_carI64_cdrDouble),
+                                                            pair_carI64_cdrDouble) + 1);
     ASSERT_EQ(car, i64);
     ASSERT_EQ(cdr, doublenum);
+    t = context_get_object_type(context, pair_carI64_cdrDouble);
+    obj = pair_carI64_cdrDouble;
+    ASSERT_EQ(object_bootstrap_sizeof(pair_carI64_cdrDouble), context_object_sizeof(context, pair_carI64_cdrDouble));
+    ASSERT_EQ(type_info_member_base(t), object_offsetof(pair, car));
+    ASSERT_EQ(type_info_member_eq_len_base(t), 2);
+    ASSERT_EQ(type_info_member_len_base(t), 2);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(pair));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), 0);
+    ASSERT_EQ(type_info_size_meta_size_scale(t), 0);
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 2);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 2);
 
     object string_obj = string_make_from_cstr_op(context, "this is a string object");
     size1 = object_bootstrap_sizeof(string_obj);
     size2 = context_object_sizeof(context, string_obj);
     ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, string_obj);
+    obj = string_obj;
+    ASSERT_EQ(object_bootstrap_sizeof(string_obj), context_object_sizeof(context, string_obj));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(string));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), object_offsetof(string, len));
+    ASSERT_EQ(type_info_size_meta_size_scale(t), sizeof(char));
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object string_null_object = string_make_from_cstr_op(context, NULL);
     size1 = object_bootstrap_sizeof(string_null_object);
     size2 = context_object_sizeof(context, string_null_object);
     ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, string_null_object);
+    obj = string_null_object;
+    ASSERT_EQ(object_bootstrap_sizeof(string_null_object), context_object_sizeof(context, string_null_object));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(string));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), object_offsetof(string, len));
+    ASSERT_EQ(type_info_size_meta_size_scale(t), sizeof(char));
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object string_empty = string_make_from_cstr_op(context, "");
     size1 = object_bootstrap_sizeof(string_empty);
     size2 = context_object_sizeof(context, string_empty);
     ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, string_empty);
+    obj = string_empty;
+    ASSERT_EQ(object_bootstrap_sizeof(string_empty), context_object_sizeof(context, string_empty));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(string));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), object_offsetof(string, len));
+    ASSERT_EQ(type_info_size_meta_size_scale(t), sizeof(char));
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object symbol_obj = symbol_make_from_cstr_op(context, "this is a symbol object");
     size1 = object_bootstrap_sizeof(symbol_obj);
     size2 = context_object_sizeof(context, symbol_obj);
     ASSERT_EQ(size1, size2);
+    t = context_get_object_type(context, symbol_obj);
+    obj = symbol_obj;
+    ASSERT_EQ(object_bootstrap_sizeof(symbol_obj), context_object_sizeof(context, symbol_obj));
+    ASSERT_EQ(type_info_member_base(t), 0);
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 0);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(symbol));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), object_offsetof(symbol, len));
+    ASSERT_EQ(type_info_size_meta_size_scale(t), sizeof(char));
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
     object vector10 = vector_make_op(context, 10);
     size1 = object_bootstrap_sizeof(vector10);
     size2 = context_object_sizeof(context, vector10);
     ASSERT_EQ(size1, size2);
-    object_type_info type = context_get_object_type(context, vector10);
+    object_type_info_ptr type = context_get_object_type(context, vector10);
     ASSERT_EQ(object_type_info_member_slots_of(type, vector10), vector10->value.vector.len);
     ASSERT_EQ(object_type_info_member_eq_slots_of(type, vector10), vector10->value.vector.len);
-    object *fp = type_info_get_object_of_first_member(type, vector10);
+    object *fp = type_info_get_object_ptr_of_first_member(type, vector10);
     for (size_t i = 0; i < object_type_info_member_slots_of(type, vector10); i++) {
         ASSERT_EQ(vector_ref(vector10, i), *fp);
     }
+    t = context_get_object_type(context, vector10);
+    obj = vector10;
+    ASSERT_EQ(object_bootstrap_sizeof(vector10), context_object_sizeof(context, vector10));
+    ASSERT_EQ(type_info_member_base(t), object_offsetof(vector, data));
+    ASSERT_EQ(type_info_member_eq_len_base(t), 0);
+    ASSERT_EQ(type_info_member_len_base(t), 0);
+    ASSERT_EQ(type_info_member_meta_len_offset(t), object_offsetof(vector, len));
+    ASSERT_EQ(type_info_member_meta_len_scale(t), 1);
+    ASSERT_EQ(type_info_size_base(t), object_sizeof_base(vector));
+    ASSERT_EQ(type_info_size_meta_size_offset(t), object_offsetof(vector, len));
+    ASSERT_EQ(type_info_size_meta_size_scale(t), sizeof(object));
+    ASSERT_EQ(object_type_info_member_slots_of(t, obj), vector_len(obj));
+    ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), vector_len(obj));
+
+    context_destroy(context);
 }
 
 #endif //BASE_SCHEME_VM_TEST_H

@@ -2,7 +2,7 @@
 #define BASE_SCHEME_MAIN_H
 #pragma once
 
-#include <paper-scheme/util.h>
+#include <paper-scheme/feature.h>
 #include <paper-scheme/object.h>
 #include <paper-scheme/heap.h>
 #include <paper-scheme/context.h>

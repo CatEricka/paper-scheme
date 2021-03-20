@@ -24,7 +24,8 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size) {
 
 /**
  * 运行时计算对象大小, 单位 bytes, 提供给 gc 使用
- * TODO 废弃, 详见 context.h struct object_runtime_type_info_t
+ * <p>todo 仅供 context_t->global_type_table 建立前使用</p>
+ * <p>详见 context.h: struct object_runtime_type_info_t, macro object_type_info_sizeof()</p>
  * @param object NOTNULL 不能是立即数或空指针
  * @return 如果参数非法, 返回 0
  */
@@ -55,7 +56,7 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
     } else if (is_vector(obj)) {
         return size_helper(vector, sizeof(object) * obj->value.vector.len);
     }
-    // TODO 新实现的类型记得修改这里
+    // todo 新实现的类型记得修改这里
 
     // 未知的类型
     assert(("UNKNOWN_OBJECT_TYPE", 0));

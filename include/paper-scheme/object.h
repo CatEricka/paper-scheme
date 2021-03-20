@@ -10,7 +10,7 @@
  */
 
 
-#include <paper-scheme/util.h>
+#include <paper-scheme/feature.h>
 
 
 /**
@@ -329,7 +329,7 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size);
 #define object_sizeof_header() (offsetof(struct object_struct_t, value))
 /**
  * 运行时计算对象大小
- * <p>TODO 仅供 context_t->global_type_table 建立前使用</p>
+ * <p>todo 仅供 context_t->global_type_table 建立前使用</p>
  * <p>详见 context.h: struct object_runtime_type_info_t, macro object_type_info_sizeof()</p>
  * @param object NOTNULL 不能是立即数或空指针
  * @param object
@@ -359,6 +359,10 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 #define is_object(obj) ((!is_null(obj)) \
     && ((ptr_to_uintptr(obj) & POINTER_MASK) == POINTER_TAG) \
     && (((object) (obj))->magic == OBJECT_HEADER_MAGIC))
+/**
+ * 检查是否被垃圾回收标记存活
+ */
+#define is_marked(obj) ((obj)->marked)
 /**
  * 检查是否为 char 立即数, 参数必须为 object
  * @param object
@@ -423,7 +427,6 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 /**
                            对象值操作: get value
 ******************************************************************************/
-
 /**
  * char 立即数取值, 参数必须为 object, 返回值为 char
  * @param object
@@ -454,6 +457,20 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  * @return
  */
 #define pair_cdr(obj) ((obj)->value.pair.cdr)
+
+#define pair_caar(x)      (pair_car(pair_car(x)))
+#define pair_cadr(x)      (pair_car(pair_cdr(x)))
+#define pair_cdar(x)      (pair_cdr(pair_car(x)))
+#define pair_cddr(x)      (pair_cdr(pair_cdr(x)))
+#define pair_caaar(x)     (pair_car(pair_caar(x)))
+#define pair_caadr(x)     (pair_car(pair_cadr(x)))
+#define pair_cadar(x)     (pair_car(pair_cdar(x)))
+#define pair_caddr(x)     (pair_car(pair_cddr(x)))
+#define pair_cdaar(x)     (pair_cdr(pair_caar(x)))
+#define pair_cdadr(x)     (pair_cdr(pair_cadr(x)))
+#define pair_cddar(x)     (pair_cdr(pair_cdar(x)))
+#define pair_cdddr(x)     (pair_cdr(pair_cddr(x)))
+#define pair_cadddr(x)    (pair_cadr(pair_cddr(x)))
 /**
  * 获取 string 对象的 cstr
  * @param object

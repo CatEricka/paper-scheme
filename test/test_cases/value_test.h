@@ -7,11 +7,11 @@
 /**
  * 值类型测试
  * 测试基础类型是否工作正常
- * TODO 实现 gc_mark 后需要对变量进行静态保护
  */
 
 UTEST(value_test, all_type_function_test) {
     context_t context = context_make(0x100, 2, 0x100000);
+    gc_collect_disable(context);
     object obj = NULL;
 
     object null_object = NULL;

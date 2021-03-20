@@ -24,8 +24,10 @@ UTEST(gc_test, make_context_test) {
     heap_grow(context->heap);
     ASSERT_EQ(context->heap->total_size, context->heap->init_size + context->heap->init_size * 2);
     printf("heap total size: %zd\n", context->heap->total_size);
+    ASSERT_EQ(context->global_type_table_len, (size_t) OBJECT_TYPE_ENUM_MAX);
     context_destroy(context);
 }
+
 
 UTEST(gc_test, alloc_test) {
     size_t init_size = 16u;
@@ -33,6 +35,7 @@ UTEST(gc_test, alloc_test) {
     size_t max_size = 500u;
     size_t n = 8;
     context_t context = context_make(init_size, scale, max_size);
+    gc_collect_disable(context);
     heap_t heap = context->heap;
     printf("heap init total size: %zd\n", context->heap->total_size);
 
@@ -94,8 +97,17 @@ UTEST(gc_test, alloc_test) {
     context_destroy(context);
 }
 
+
+#if heap_make_free_test_print_on
+#define HEAP_DUMP_PRINTF(...) UTEST_PRINTF(__VA_ARGS__)
+#else
+#define HEAP_DUMP_PRINTF(...) ((void)0)
+#endif
+
 UTEST(gc_test, heap_make_free_test) {
+#define heap_make_free_test_print_on 0
     context_t context = context_make(16, 2, 0x10000);
+    gc_collect_disable(context);
     object i64 = i64_make_real_object_op(context, 20);
     object i64max = i64_make_op(context, INT64_MAX);
     object i64min = i64_make_real_object_op(context, INT64_MIN);
@@ -118,12 +130,12 @@ UTEST(gc_test, heap_make_free_test) {
     heap_t heap = context->heap;
 
     // 遍历所有块
-    UTEST_PRINTF("heap dump:");
+    HEAP_DUMP_PRINTF("heap dump:");
     size_t count = 1;
     size_t objc = 1;
     for (heap_node_t node = heap->first_node; node != NULL; node = node->next, count++) {
         // 第一个块
-        UTEST_PRINTF(" [\n    heap node %zd: [\n", count);
+        HEAP_DUMP_PRINTF(" [\n    heap node %zd: [\n", count);
         for (char *heap_ptr = node->data;
              heap_ptr < node->free_ptr; heap_ptr += object_bootstrap_sizeof((object) heap_ptr)) {
             object obj = (object) heap_ptr;
@@ -138,11 +150,139 @@ UTEST(gc_test, heap_make_free_test) {
             //所有分配过的对象应当都能在堆里找到
             ASSERT_TRUE(("objects address check" && flag));
             // 输出对象信息
-            UTEST_PRINTF("        object %zd: {\n", objc);
+            HEAP_DUMP_PRINTF("        object %zd: {\n", objc);
             objc++;
 
-#define P(...) UTEST_PRINTF("            "__VA_ARGS__)
-#define MORE_SPACE(...) UTEST_PRINTF("                "__VA_ARGS__)
+#define P(...) HEAP_DUMP_PRINTF("            "__VA_ARGS__)
+#define MORE_SPACE(...) HEAP_DUMP_PRINTF("                "__VA_ARGS__)
+#define address() MORE_SPACE("address:    0x%p\n", obj);
+#define obj_size() MORE_SPACE("size:       %zd\n", object_bootstrap_sizeof(obj))
+#define header_size() MORE_SPACE("header:     %zd\n", object_sizeof_header())
+#define magic() MORE_SPACE("magic:      0x%"PRIX8"\n", obj->magic)
+#define type() MORE_SPACE("type:       %d\n", obj->type)
+#define marked() MORE_SPACE("marked:     0x%"PRIX8"\n", obj->marked)
+#define padding_size() MORE_SPACE("padding:    %"PRId8"\n", obj->padding_size)
+#define forwarding() MORE_SPACE("forward:    0x%p\n", obj->forwarding)
+
+#define header() address(); obj_size(); header_size(); padding_size(); magic(); type(); marked(); forwarding()
+            if (is_i64(obj)) {
+                P("i64: {\n");
+                header();
+                MORE_SPACE("value: %"
+                                   PRId64
+                                   "\n", obj->value.i64);
+                P("}\n");
+            } else if (is_doublenum(obj)) {
+                P("double: {\n");
+                header();
+                MORE_SPACE("value: %f\n", obj->value.doublenum);
+                P("}\n");
+            } else if (is_pair(obj)) {
+                P("pair: {\n");
+                header();
+                MORE_SPACE("value: {\n");
+                MORE_SPACE("    car addr: %p\n", obj->value.pair.car);
+                MORE_SPACE("    cdr addr: %p\n", obj->value.pair.cdr);
+                MORE_SPACE("}\n");
+                P("}\n");
+            } else if (is_string(obj)) {
+                P("string: {\n");
+                header();
+                MORE_SPACE("value: {\n");
+                MORE_SPACE("    len:      %zd\n", obj->value.string.len);
+                MORE_SPACE("    cstr:     %s\n", obj->value.string.data);
+                MORE_SPACE("}\n");
+                P("}\n");
+            } else if (is_symbol(obj)) {
+                P("symbol: {\n");
+                header();
+                MORE_SPACE("value: {\n");
+                MORE_SPACE("    len:      %zd\n", obj->value.symbol.len);
+                MORE_SPACE("    cstr:     %s\n", obj->value.symbol.data);
+                MORE_SPACE("}\n");
+                P("}\n");
+            } else if (is_vector(obj)) {
+                P("vector: [\n");
+                header();
+                MORE_SPACE("value: {\n");
+                MORE_SPACE("    len:     %zd\n", obj->value.vector.len);
+                MORE_SPACE("    data: {\n");
+                for (size_t index = 0; index < obj->value.vector.len; index++) {
+                    object v = obj->value.vector.data[index];
+                    if (is_i64(v)) {
+                        MORE_SPACE("        i64:        value=%"
+                                           PRId64
+                                           "\n", i64_getvalue(v));
+                    } else if (is_imm_char(v)) {
+                        MORE_SPACE("        char:       value=%c\n", char_imm_getvalue(v));
+                    } else if (is_imm_unit(v)) {
+                        MORE_SPACE("        '()\n");
+                    } else if (is_imm_true(v)) {
+                        MORE_SPACE("        true\n");
+                    } else if (is_imm_false(v)) {
+                        MORE_SPACE("        false\n");
+                    } else if (is_string(v)) {
+                        MORE_SPACE("        string:     value=%s\n", string_get_cstr(v));
+                    } else if (is_symbol(v)) {
+                        MORE_SPACE("        symbol:     value=%s\n", symbol_get_cstr(v));
+                    } else if (is_vector(v)) {
+                        MORE_SPACE("        vector:     addr=0x%p\n", v);
+                    } else if (is_doublenum(v)) {
+                        MORE_SPACE("        doublenum:  value=%f\n", doublenum_getvalue(v));
+                    } else if (is_pair(v)) {
+                        MORE_SPACE("        pair:       addr=0x%p\n", v);
+                    } else {
+                        MORE_SPACE("        unknown:    addr=0x%p\n", v);
+                    }
+                }
+                MORE_SPACE("    }\n");
+                MORE_SPACE("}\n");
+                P("]\n");
+            } else {
+                P("unknown object: {}");
+            }
+
+            HEAP_DUMP_PRINTF("        }\n");
+
+        }
+        if (node->data == node->free_ptr) {
+            HEAP_DUMP_PRINTF("        empty_heap_node;\n");
+        }
+        HEAP_DUMP_PRINTF("    ]\n]");
+    }
+    HEAP_DUMP_PRINTF("\n");
+
+    size_t allocated = 0u;
+    for (heap_node_t node = context->heap->first_node; node != NULL; node = node->next) {
+        allocated += node->free_ptr - node->data;
+    }
+    printf("allocated: %td\n", allocated);
+    printf("heap total size: %zd\n", context->heap->total_size);
+
+    context_destroy(context);
+}
+
+static void heap_dump(context_t context) {
+    // 开始拆解 heap_t 结构
+    heap_t heap = context->heap;
+
+    // 遍历所有块
+    HEAP_DUMP_PRINTF("heap dump:");
+    size_t count = 1;
+    size_t objc = 1;
+    for (heap_node_t node = heap->first_node; node != NULL; node = node->next, count++) {
+        // 第一个块
+        HEAP_DUMP_PRINTF(" [\n    heap node %zd: [\n", count);
+        for (char *heap_ptr = node->data;
+             heap_ptr < node->free_ptr; heap_ptr += object_bootstrap_sizeof((object) heap_ptr)) {
+            object obj = (object) heap_ptr;
+            assert(is_object(obj));
+            // 输出对象信息
+            HEAP_DUMP_PRINTF("        object %zd: {\n", objc);
+            objc++;
+
+#define P(...) HEAP_DUMP_PRINTF("            "__VA_ARGS__)
+#define MORE_SPACE(...) HEAP_DUMP_PRINTF("                "__VA_ARGS__)
 #define address() MORE_SPACE("address:    0x%p\n", obj);
 #define obj_size() MORE_SPACE("size:       %zd\n", object_bootstrap_sizeof(obj))
 #define header_size() MORE_SPACE("header:     %zd\n", object_sizeof_header())
@@ -229,24 +369,120 @@ UTEST(gc_test, heap_make_free_test) {
                 P("unknown object: {}");
             }
 
-            UTEST_PRINTF("        }\n");
+            HEAP_DUMP_PRINTF("        }\n");
 
         }
         if (node->data == node->free_ptr) {
-            UTEST_PRINTF("        empty_heap_node;\n");
+            HEAP_DUMP_PRINTF("        empty_heap_node;\n");
         }
-        UTEST_PRINTF("    ]\n]");
+        HEAP_DUMP_PRINTF("    ]\n]");
     }
-    UTEST_PRINTF("\n");
+    HEAP_DUMP_PRINTF("\n");
+}
 
-    size_t allocated = 0u;
-    for (heap_node_t node = context->heap->first_node; node != NULL; node = node->next) {
-        allocated += node->free_ptr - node->data;
+
+UTEST(gc_test, gc_saves_list_test) {
+    context_t context = context_make(0x100, 2, 0x10000);
+    gc_var7(a, b, c, d, e, f, g);
+    gc_preserve7(context, a, b, c, d, e, f, g);
+
+    gc_saves_list_t p = context->saves;
+    ASSERT_EQ(p->illusory_object, &g);
+    p = p->next;
+    ASSERT_EQ(p->illusory_object, &f);
+    p = p->next;
+    ASSERT_EQ(p->illusory_object, &e);
+    p = p->next;
+    ASSERT_EQ(p->illusory_object, &d);
+    p = p->next;
+    ASSERT_EQ(p->illusory_object, &c);
+    p = p->next;
+    ASSERT_EQ(p->illusory_object, &b);
+    p = p->next;
+    ASSERT_EQ(p->illusory_object, &a);
+    p = p->next;
+    ASSERT_EQ(p, NULL);
+
+    a = i64_make_real_object_op(context, 1);
+    b = i64_make_real_object_op(context, 2);
+    c = i64_make_real_object_op(context, 3);
+    d = i64_make_real_object_op(context, 4);
+    e = pair_make_op(context, a, b);
+    f = pair_make_op(context, c, d);
+    g = pair_make_op(context, e, f);
+    object h = pair_make_op(context, f, g);
+
+    gc_collect(context);
+
+    for (struct gc_illusory_dream *var = context->saves; var != NULL; var = var->next) {
+        UTEST_PRINTF("saves: type = %d, marked = %d\n", (*(var->illusory_object))->type,
+                     (*(var->illusory_object))->marked);
     }
-    printf("allocated: %td\n", allocated);
-    printf("heap total size: %zd\n", context->heap->total_size);
+    UTEST_PRINTF("saves: type = %d, marked = %d\n", h->type, h->marked);
+
+    ASSERT_TRUE(a->marked);
+    ASSERT_TRUE(b->marked);
+    ASSERT_TRUE(c->marked);
+    ASSERT_TRUE(d->marked);
+    ASSERT_TRUE(e->marked);
+    ASSERT_TRUE(f->marked);
+    ASSERT_TRUE(g->marked);
+    ASSERT_FALSE(h->marked);
 
     context_destroy(context);
+}
+
+UTEST(gc_test, mark_test1) {
+    context_t context = context_make(0x100, 2, 0x10000);
+
+    gc_var3(root1, root2, root3);
+    gc_preserve3(context, root1, root2, root3);
+
+    // root1: ((1 . 2) 3 . 4)
+    root1 = pair_make_op(context, IMM_UNIT, IMM_UNIT);
+    root2 = pair_make_op(context, IMM_UNIT, IMM_UNIT);
+    root1 = pair_make_op(context, root1, root2);
+
+    root3 = vector_make_op(context, 4);
+
+    pair_caar(root1) = i64_make_real_object_op(context, 1);
+    pair_cdar(root1) = i64_make_real_object_op(context, 2);
+    pair_cadr(root1) = i64_make_real_object_op(context, 3);
+    pair_cddr(root1) = i64_make_real_object_op(context, 4);
+
+    vector_ref(root3, 0) = pair_caar(root1);
+    vector_ref(root3, 1) = pair_cdar(root1);
+    vector_ref(root3, 2) = pair_cadr(root1);
+    vector_ref(root3, 3) = pair_cddr(root1);
+
+    gc_collect(context);
+
+    ASSERT_EQ(1, i64_getvalue(pair_caar(root1)));
+    ASSERT_EQ(2, i64_getvalue(pair_cdar(root1)));
+    ASSERT_EQ(3, i64_getvalue(pair_cadr(root1)));
+    ASSERT_EQ(4, i64_getvalue(pair_cddr(root1)));
+
+    ASSERT_TRUE(is_marked(pair_caar(root1)));
+    ASSERT_TRUE(is_marked(pair_cdar(root1)));
+    ASSERT_TRUE(is_marked(pair_cadr(root1)));
+    ASSERT_TRUE(is_marked(pair_cddr(root1)));
+
+    for (int i = 0; i < 4; i++) {
+        ASSERT_TRUE(is_i64(vector_ref(root3, i)));
+        UTEST_PRINTF("%"
+                             PRId64
+                             ": marked = %"
+                             PRId8
+                             "\n", i64_getvalue(vector_ref(root3, i)), is_marked(vector_ref(root3, i)));
+    }
+
+    gc_release_all(context);
+    ASSERT_TRUE(context->saves == NULL);
+    context_destroy(context);
+}
+
+UTEST(gc_test, gc_collect_test) {
+    // todo 检查内存移动
 }
 
 #endif // BASE_SCHEME_GC_TEST_H
