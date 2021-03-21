@@ -81,21 +81,12 @@ static void gc_mark_one(context_t context, object obj) {
             while (field_start_ptr < field_end_ptr && *field_end_ptr == field_end_ptr[-1])
                 field_end_ptr--;    // 跳过重复对象
 
-            // 此时要么  (field_end_ptr - field_start_ptr) > 0      =>    剩余多个字段
-            // 要么      (field_end_ptr - field_start_ptr) == 0     =>    剩余一个 字段
-            // 对于后者, obj = *field_end_ptr,
-            //      考虑到此时可能为单链表结构 (对于 scheme 来说并不少见), 继续循环, 减少 mark stack 的占用
-            // 对于前者,
-            //      gc_mark_stack_push(), break;
             if (field_start_ptr < field_end_ptr) {
                 gc_mark_stack_push(context, field_start_ptr, field_end_ptr);
-                return;
-            } else {
-                obj = *field_end_ptr;
             }
-        } else {
-            // field_len <= 0, 不需要继续检查
-            return;
+            // 考虑到此时可能为 pair 结构 (对于 scheme 来说并不少见), 继续循环, 减少 mark stack 的占用
+            // 深度优先搜索
+            obj = *field_end_ptr;
         }
     } while (1);
 }
