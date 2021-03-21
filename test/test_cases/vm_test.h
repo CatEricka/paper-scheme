@@ -272,6 +272,14 @@ UTEST(vm_test, context_runtime_type_test) {
     ASSERT_EQ(object_type_info_member_slots_of(t, obj), vector_len(obj));
     ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), vector_len(obj));
 
+    gc_collect_enable(context);
+    int64_t start = utest_ns();
+    gc_collect(context);
+    int64_t time = utest_ns() - start;
+    UTEST_PRINTF("gc time: %"
+                         PRId64
+                         " ns\n", time);
+    ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
     context_destroy(context);
 }
 

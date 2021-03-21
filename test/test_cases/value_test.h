@@ -401,6 +401,16 @@ UTEST(value_test, all_type_function_test) {
     ASSERT_FALSE(is_string(obj));
     ASSERT_FALSE(is_symbol(obj));
     ASSERT_TRUE(is_vector(obj));
+
+    gc_collect_enable(context);
+    int64_t start = utest_ns();
+    gc_collect(context);
+    int64_t time = utest_ns() - start;
+    UTEST_PRINTF("gc time: %"
+                         PRId64
+                         " ns\n", time);
+    ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
+    context_destroy(context);
 }
 
 #endif //BASE_SCHEME_VALUE_TEST_H
