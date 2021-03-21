@@ -147,9 +147,9 @@ static object gc_mark(context_t context) {
 static void gc_set_forwarding(context_t context) {
     /*
      * 图例:
-     *      =====: 已分配 内存区域
-     *      ----: 空闲 内存区域
-     *      ****: 压缩后存活的对象
+     *      =====: 已分配内存区域
+     *           : 空闲内存区域
+     *      *****: 压缩后存活的对象
      * 初始:
      *            _____________________________________
      * node->data |======================|               | node->free_ptr
