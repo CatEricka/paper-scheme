@@ -384,7 +384,8 @@ static void heap_dump(context_t context) {
 
 UTEST(gc_test, gc_saves_list_test) {
     context_t context = context_make(16, 2, 0x10000);
-    object a = IMM_UNIT, b = IMM_UNIT, c = IMM_UNIT, d = IMM_UNIT, e = IMM_UNIT, f = IMM_UNIT, g = IMM_UNIT;
+    object param = IMM_TRUE;
+    gc_param1(context, param);
     gc_var7(context, a, b, c, d, e, f, g);
 
     gc_saves_list_t p = context->saves;
@@ -402,6 +403,8 @@ UTEST(gc_test, gc_saves_list_test) {
     p = p->next;
     ASSERT_EQ(p->illusory_object, &a);
     p = p->next;
+    ASSERT_EQ(p->illusory_object, &param);
+    p = p->next;
     ASSERT_EQ(p, NULL);
 
     a = i64_make_real_object_op(context, 1);
@@ -416,6 +419,7 @@ UTEST(gc_test, gc_saves_list_test) {
     gc_collect(context);
 
     for (struct gc_illusory_dream *var = context->saves; var != NULL; var = var->next) {
+        if (!is_object(*(var->illusory_object))) continue;
         UTEST_PRINTF("saves: object? = %d, type = %d, marked = %d\n", is_object(*(var->illusory_object)),
                      (*(var->illusory_object))->type,
                      (*(var->illusory_object))->marked);
@@ -433,7 +437,9 @@ UTEST(gc_test, gc_saves_list_test) {
     ASSERT_FALSE(g->marked);
     ASSERT_FALSE(h->marked);
 
-    gc_release_all(context);
+    gc_release_var_param(context);
+
+    ASSERT_EQ(context->saves, NULL);
 
     int64_t start = utest_ns();
     gc_collect(context);
@@ -450,7 +456,6 @@ UTEST(gc_test, gc_saves_list_test) {
 
 UTEST(gc_test, mark_test1) {
     context_t context = context_make(0x100, 2, 0x10000);
-    object root1 = IMM_UNIT, root2 = IMM_UNIT, root3 = IMM_UNIT;
     gc_var3(context, root1, root2, root3);
 
     // root1: ((1 . 2) 3 . 4)
@@ -496,14 +501,13 @@ UTEST(gc_test, mark_test1) {
                              "\n", i64_getvalue(vector_ref(root3, i)), is_marked(vector_ref(root3, i)));
     }
 
-    gc_release_all(context);
+    gc_release_var(context);
     ASSERT_TRUE(context->saves == NULL);
     context_destroy(context);
 }
 
 UTEST(gc_test, mark_test2) {
     context_t context = context_make(16, 2, 0x10000);
-    object root1 = IMM_UNIT, root2 = IMM_UNIT;
     gc_var2(context, root1, root2);
 
     root1 = pair_make_op(context, IMM_TRUE, IMM_UNIT);
@@ -533,14 +537,13 @@ UTEST(gc_test, mark_test2) {
                          PRId64
                          " ns\n", time);
 
-    gc_release_all(context);
+    gc_release_var(context);
     ASSERT_TRUE(context->saves == NULL);
     context_destroy(context);
 }
 
 UTEST(gc_test, gc_collect_move_test) {
     context_t context = context_make(16, 2, 0x10000);
-    object a = IMM_UNIT, b = IMM_UNIT, c = IMM_UNIT, d = IMM_UNIT, e = IMM_UNIT, f = IMM_UNIT, g = IMM_UNIT, h = NULL, i = NULL;
     gc_var9(context, a, b, c, d, e, f, g, h, i);
 
     a = i64_make_real_object_op(context, 1);
@@ -565,6 +568,9 @@ UTEST(gc_test, gc_collect_move_test) {
     ASSERT_FALSE(is_pair(j));
     ASSERT_TRUE(is_i64(j));
     ASSERT_EQ(2, i64_getvalue(j));
+
+    gc_release_var(context);
+    context_destroy(context);
 }
 
 #endif // BASE_SCHEME_GC_TEST_H
