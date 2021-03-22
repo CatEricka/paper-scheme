@@ -75,11 +75,18 @@ static void gc_mark_one(context_t context, object obj) {
             field_start_ptr = type_info_get_object_ptr_of_first_member(t, obj);
             field_end_ptr = field_start_ptr + (field_len - 1);
 
-            while (field_start_ptr < field_end_ptr && (is_object(*field_end_ptr) ? is_marked(*field_end_ptr) : 1))
-                field_end_ptr--;    // 跳过非对象和标记过的对象
+            // 跳过非对象和标记过的对象
+            while (field_start_ptr < field_end_ptr && (is_object(field_end_ptr[0]) ? is_marked(field_end_ptr[0]) : 1))
+                field_end_ptr--;
+            while (field_start_ptr < field_end_ptr &&
+                   (is_object(field_start_ptr[0]) ? is_marked(field_start_ptr[0]) : 1))
+                field_start_ptr++;
 
-            while (field_start_ptr < field_end_ptr && *field_end_ptr == field_end_ptr[-1])
-                field_end_ptr--;    // 跳过重复对象
+            // 跳过重复对象
+            while (field_start_ptr < field_end_ptr && field_end_ptr[0] == field_end_ptr[-1])
+                field_end_ptr--;
+            while (field_start_ptr < field_end_ptr && field_start_ptr[0] == field_start_ptr[1])
+                field_start_ptr++;
 
             if (field_start_ptr < field_end_ptr) {
                 gc_mark_stack_push(context, field_start_ptr, field_end_ptr);
@@ -133,6 +140,7 @@ static object gc_mark(context_t context) {
 
     // C 调用栈上变量保护表
     for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
+        // 使用 macro gc_var_n() 时, 必须保证第一次调用会触发 GC 的函数前必须初始化变量值
         if (save->illusory_object != NULL && is_object(*save->illusory_object)) {
             gc_mark_one_start(context, *save->illusory_object);
         }

@@ -74,21 +74,29 @@ EXPORT_API OUT GC object gc_alloc(REF NOTNULL context_t context, IN size_t size)
         (__ctx)->saves = &(__illusory_dream_name); \
     } while(0)
 
-
 #define gc_release(__ctx, this_root_illusory_dream_name)   ((__ctx)->saves = (this_root_illusory_dream_name).next)
 
 // 变量加入保护链, 变量必须加入保护链否则会导致 gc 异常工作
+// 变量必须初始化
 #define gc_var1(ctx, a)                         gc_var(ctx, a, __gc_dream1__)
+// 变量必须初始化
 #define gc_var2(ctx, a, b)                      gc_var1(ctx, a);                        gc_var(ctx, b, __gc_dream2__)
+// 变量必须初始化
 #define gc_var3(ctx, a, b, c)                   gc_var2(ctx, a, b);                     gc_var(ctx, c, __gc_dream3__)
+// 变量必须初始化
 #define gc_var4(ctx, a, b, c, d)                gc_var3(ctx, a, b, c);                  gc_var(ctx, d, __gc_dream4__)
+// 变量必须初始化
 #define gc_var5(ctx, a, b, c, d, e)             gc_var4(ctx, a, b, c, d);               gc_var(ctx, e, __gc_dream5__)
+// 变量必须初始化
 #define gc_var6(ctx, a, b, c, d, e, f)          gc_var5(ctx, a, b, c, d, e);            gc_var(ctx, f, __gc_dream6__)
+// 变量必须初始化
 #define gc_var7(ctx, a, b, c, d, e, f, g)       gc_var6(ctx, a, b, c, d, e, f);         gc_var(ctx, g, __gc_dream7__)
+// 变量必须初始化
 #define gc_var8(ctx, a, b, c, d, e, f, g, h)    gc_var7(ctx, a, b, c, d, e, f, g);      gc_var(ctx, h, __gc_dream8__)
+// 变量必须初始化
 #define gc_var9(ctx, a, b, c, d, e, f, g, h, i) gc_var8(ctx, a, b, c, d, e, f, g, h);   gc_var(ctx, i, __gc_dream9__)
 
-
+// 释放当前栈的保护链
 #define gc_release_all(ctx) gc_release((ctx), __gc_dream1__)
 
 

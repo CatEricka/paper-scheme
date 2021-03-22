@@ -383,8 +383,8 @@ static void heap_dump(context_t context) {
 
 
 UTEST(gc_test, gc_saves_list_test) {
-    context_t context = context_make(0x100, 2, 0x10000);
-    object a, b, c, d, e, f, g;
+    context_t context = context_make(16, 2, 0x10000);
+    object a = IMM_UNIT, b = IMM_UNIT, c = IMM_UNIT, d = IMM_UNIT, e = IMM_UNIT, f = IMM_UNIT, g = IMM_UNIT;
     gc_var7(context, a, b, c, d, e, f, g);
 
     gc_saves_list_t p = context->saves;
@@ -450,7 +450,7 @@ UTEST(gc_test, gc_saves_list_test) {
 
 UTEST(gc_test, mark_test1) {
     context_t context = context_make(0x100, 2, 0x10000);
-    object root1, root2, root3;
+    object root1 = IMM_UNIT, root2 = IMM_UNIT, root3 = IMM_UNIT;
     gc_var3(context, root1, root2, root3);
 
     // root1: ((1 . 2) 3 . 4)
@@ -501,9 +501,46 @@ UTEST(gc_test, mark_test1) {
     context_destroy(context);
 }
 
+UTEST(gc_test, mark_test2) {
+    context_t context = context_make(16, 2, 0x10000);
+    object root1 = IMM_UNIT, root2 = IMM_UNIT;
+    gc_var2(context, root1, root2);
+
+    root1 = pair_make_op(context, IMM_TRUE, IMM_UNIT);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+    root1 = pair_make_op(context, IMM_TRUE, root1);
+
+    root2 = pair_make_op(context, IMM_TRUE, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+    root2 = pair_make_op(context, root2, IMM_UNIT);
+
+    int64_t start = utest_ns();
+    gc_collect(context);
+    int64_t time = utest_ns() - start;
+    UTEST_PRINTF("gc time: %"
+                         PRId64
+                         " ns\n", time);
+
+    gc_release_all(context);
+    ASSERT_TRUE(context->saves == NULL);
+    context_destroy(context);
+}
+
 UTEST(gc_test, gc_collect_move_test) {
-    context_t context = context_make(0x100, 2, 0x10000);
-    object a, b, c, d, e, f, g, h = NULL, i = NULL;
+    context_t context = context_make(16, 2, 0x10000);
+    object a = IMM_UNIT, b = IMM_UNIT, c = IMM_UNIT, d = IMM_UNIT, e = IMM_UNIT, f = IMM_UNIT, g = IMM_UNIT, h = NULL, i = NULL;
     gc_var9(context, a, b, c, d, e, f, g, h, i);
 
     a = i64_make_real_object_op(context, 1);
