@@ -384,8 +384,7 @@ static void heap_dump(context_t context) {
 
 UTEST(gc_test, gc_saves_list_test) {
     context_t context = context_make(0x100, 2, 0x10000);
-    gc_var7(a, b, c, d, e, f, g);
-    gc_preserve7(context, a, b, c, d, e, f, g);
+    gc_var7(context, a, b, c, d, e, f, g);
 
     gc_saves_list_t p = context->saves;
     ASSERT_EQ(p->illusory_object, &g);
@@ -451,8 +450,7 @@ UTEST(gc_test, gc_saves_list_test) {
 UTEST(gc_test, mark_test1) {
     context_t context = context_make(0x100, 2, 0x10000);
 
-    gc_var3(root1, root2, root3);
-    gc_preserve3(context, root1, root2, root3);
+    gc_var3(context, root1, root2, root3);
 
     // root1: ((1 . 2) 3 . 4)
     root1 = pair_make_op(context, IMM_UNIT, IMM_UNIT);
@@ -504,8 +502,7 @@ UTEST(gc_test, mark_test1) {
 
 UTEST(gc_test, gc_collect_move_test) {
     context_t context = context_make(0x100, 2, 0x10000);
-    gc_var7(a, b, c, d, e, f, g);
-    gc_preserve7(context, a, b, c, d, e, f, g);
+    gc_var7(context, a, b, c, d, e, f, g);
 
     a = i64_make_real_object_op(context, 1);
 

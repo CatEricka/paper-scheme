@@ -29,7 +29,7 @@
  * @param v i64 值
  * @return
  */
-EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v);
+EXPORT_API OUT NOTNULL GC object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v);
 
 /**
  * 构造 i64 类型对象, 如果值范围属于 [- 2^(63-1), 2^(63-1)-1] 则构造立即数
@@ -37,7 +37,7 @@ EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t cont
  * @param v i64 值
  * @return object 或立即数
  */
-EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int64_t v);
+EXPORT_API OUT NOTNULL GC object i64_make_op(REF NOTNULL context_t context, IN int64_t v);
 
 /**
  * 构造 doublenum 类型对象
@@ -45,7 +45,7 @@ EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int6
  * @param v
  * @return
  */
-EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, double v);
+EXPORT_API OUT NOTNULL GC object doublenum_make_op(REF NOTNULL context_t context, double v);
 
 /**
  * 构造 pair 类型对象
@@ -53,7 +53,7 @@ EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, d
  * @param v
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr);
 
 /**
@@ -63,7 +63,7 @@ pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABL
  * @param cstr C字符串, '\0'结尾
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr);
 
 /**
@@ -74,7 +74,7 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr);
  * @param cstr C字符串, '\0'结尾
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr);
 
 /**
@@ -83,7 +83,7 @@ string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr);
  * @param vector_len vector 大小
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 vector_make_op(REF NOTNULL context_t context, IN size_t vector_len);
 
 

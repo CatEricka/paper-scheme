@@ -12,7 +12,7 @@
  * @param unaligned_object_size
  * @return
  */
-static OUT NOTNULL object
+static OUT NOTNULL GC object
 raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_t unaligned_object_size) {
     assert(context != NULL);
 
@@ -43,7 +43,7 @@ raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_
  * @param v i64 值
  * @return
  */
-EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v) {
+EXPORT_API OUT NOTNULL GC object i64_make_real_object_op(REF NOTNULL context_t context, IN int64_t v) {
     assert(context != NULL);
     object ret = raw_object_make(context, OBJ_I64, object_sizeof_base(i64));
     // 对象赋值
@@ -57,7 +57,7 @@ EXPORT_API OUT NOTNULL object i64_make_real_object_op(REF NOTNULL context_t cont
  * @param v i64 值
  * @return object 或立即数
  */
-EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int64_t v) {
+EXPORT_API OUT NOTNULL GC object i64_make_op(REF NOTNULL context_t context, IN int64_t v) {
     if (v >= I64_IMM_MIN && v <= I64_IMM_MAX) {
         return i64_imm_make(v);
     } else {
@@ -71,7 +71,7 @@ EXPORT_API OUT NOTNULL object i64_make_op(REF NOTNULL context_t context, IN int6
  * @param v
  * @return
  */
-EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, double v) {
+EXPORT_API OUT NOTNULL GC object doublenum_make_op(REF NOTNULL context_t context, double v) {
     assert(context != NULL);
     object ret = raw_object_make(context, OBJ_D64, object_sizeof_base(doublenum));
     ret->value.doublenum = v;
@@ -84,12 +84,19 @@ EXPORT_API OUT NOTNULL object doublenum_make_op(REF NOTNULL context_t context, d
  * @param v
  * @return
  */
-EXPORT_API OUT NOTNULL object
-pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABLE object cdr) {
+EXPORT_API OUT NOTNULL GC object
+pair_make_op(REF NOTNULL context_t context, REF NULLABLE object param_car, REF NULLABLE object param_cdr) {
     assert(context != NULL);
+
+    gc_var2(context, car, cdr);
+    car = param_car;
+    cdr = param_cdr;
+
     object ret = raw_object_make(context, OBJ_PAIR, object_sizeof_base(pair));
     ret->value.pair.car = car;
     ret->value.pair.cdr = cdr;
+
+    gc_release_all(context);
     return ret;
 }
 
@@ -100,7 +107,7 @@ pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABL
  * @param cstr C字符串, '\0'结尾
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
@@ -130,7 +137,7 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
  * @param cstr C字符串, '\0'结尾
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
@@ -158,7 +165,7 @@ string_make_from_cstr_op(REF NOTNULL context_t context, char *cstr) {
  * @param vector_len vector 容量
  * @return
  */
-EXPORT_API OUT NOTNULL object
+EXPORT_API OUT NOTNULL GC object
 vector_make_op(REF NOTNULL context_t context, IN size_t vector_len) {
     assert(context != NULL);
 
