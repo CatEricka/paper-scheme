@@ -133,8 +133,10 @@ static object gc_mark(context_t context) {
 
     // 临时变量保护表
     for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
-        if (is_object(*save->illusory_object)) {
-            gc_mark_one_start(context, *save->illusory_object);
+        if (save->illusory_object != NULL) {
+            if (is_object(*save->illusory_object)) {
+                gc_mark_one_start(context, *save->illusory_object);
+            }
         }
     }
     return IMM_TRUE;

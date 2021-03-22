@@ -384,6 +384,7 @@ static void heap_dump(context_t context) {
 
 UTEST(gc_test, gc_saves_list_test) {
     context_t context = context_make(0x100, 2, 0x10000);
+    object a, b, c, d, e, f, g;
     gc_var7(context, a, b, c, d, e, f, g);
 
     gc_saves_list_t p = context->saves;
@@ -449,7 +450,7 @@ UTEST(gc_test, gc_saves_list_test) {
 
 UTEST(gc_test, mark_test1) {
     context_t context = context_make(0x100, 2, 0x10000);
-
+    object root1, root2, root3;
     gc_var3(context, root1, root2, root3);
 
     // root1: ((1 . 2) 3 . 4)
@@ -502,12 +503,13 @@ UTEST(gc_test, mark_test1) {
 
 UTEST(gc_test, gc_collect_move_test) {
     context_t context = context_make(0x100, 2, 0x10000);
-    gc_var7(context, a, b, c, d, e, f, g);
+    object a, b, c, d, e, f, g, h = NULL, i = NULL;
+    gc_var9(context, a, b, c, d, e, f, g, h, i);
 
     a = i64_make_real_object_op(context, 1);
 
     // died
-    object h = pair_make_op(context, f, g);
+    object j = pair_make_op(context, f, g);
 
     b = i64_make_real_object_op(context, 2);
     c = i64_make_real_object_op(context, 3);
@@ -523,9 +525,9 @@ UTEST(gc_test, gc_collect_move_test) {
                          PRId64
                          " ns\n", time);
 
-    ASSERT_FALSE(is_pair(h));
-    ASSERT_TRUE(is_i64(h));
-    ASSERT_EQ(2, i64_getvalue(h));
+    ASSERT_FALSE(is_pair(j));
+    ASSERT_TRUE(is_i64(j));
+    ASSERT_EQ(2, i64_getvalue(j));
 }
 
 #endif // BASE_SCHEME_GC_TEST_H

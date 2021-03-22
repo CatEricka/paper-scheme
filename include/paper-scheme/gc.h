@@ -59,4 +59,37 @@ EXPORT_API OUT CHECKED GC object gc_try_alloc(REF NOTNULL context_t context, IN 
 EXPORT_API OUT GC object gc_alloc(REF NOTNULL context_t context, IN size_t size);
 
 
+/**
+                               栈上 object 保护
+******************************************************************************/
+
+/**
+ * 生成临时变量
+ * @param var 临时变量
+ * @param illusory_dream_name
+ */
+#define gc_var(__ctx, __var, __illusory_dream_name) \
+    struct gc_illusory_dream __illusory_dream_name = { &(__var), (__ctx)->saves }; \
+    do { \
+        (__ctx)->saves = &(__illusory_dream_name); \
+    } while(0)
+
+
+#define gc_release(__ctx, this_root_illusory_dream_name)   ((__ctx)->saves = (this_root_illusory_dream_name).next)
+
+// 变量加入保护链, 变量必须加入保护链否则会导致 gc 异常工作
+#define gc_var1(ctx, a)                         gc_var(ctx, a, __gc_dream1__)
+#define gc_var2(ctx, a, b)                      gc_var1(ctx, a);                        gc_var(ctx, b, __gc_dream2__)
+#define gc_var3(ctx, a, b, c)                   gc_var2(ctx, a, b);                     gc_var(ctx, c, __gc_dream3__)
+#define gc_var4(ctx, a, b, c, d)                gc_var3(ctx, a, b, c);                  gc_var(ctx, d, __gc_dream4__)
+#define gc_var5(ctx, a, b, c, d, e)             gc_var4(ctx, a, b, c, d);               gc_var(ctx, e, __gc_dream5__)
+#define gc_var6(ctx, a, b, c, d, e, f)          gc_var5(ctx, a, b, c, d, e);            gc_var(ctx, f, __gc_dream6__)
+#define gc_var7(ctx, a, b, c, d, e, f, g)       gc_var6(ctx, a, b, c, d, e, f);         gc_var(ctx, g, __gc_dream7__)
+#define gc_var8(ctx, a, b, c, d, e, f, g, h)    gc_var7(ctx, a, b, c, d, e, f, g);      gc_var(ctx, h, __gc_dream8__)
+#define gc_var9(ctx, a, b, c, d, e, f, g, h, i) gc_var8(ctx, a, b, c, d, e, f, g, h);   gc_var(ctx, i, __gc_dream9__)
+
+
+#define gc_release_all(ctx) gc_release((ctx), __gc_dream1__)
+
+
 #endif // BASE_SCHEME_GC_H

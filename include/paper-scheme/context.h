@@ -28,42 +28,6 @@ typedef struct gc_illusory_dream {
 } *gc_saves_list_t;
 
 /**
- * 生成临时变量
- * @param var_name 临时变量名
- * @param illusory_dream_name
- */
-#define gc_var(var_name, illusory_dream_name) \
-    object var_name = IMM_UNIT; \
-    struct gc_illusory_dream illusory_dream_name = { NULL, NULL }
-
-#define gc_preserve(ctx, var_name, illusory_dream_name) \
-    do { \
-        (illusory_dream_name).illusory_object = &(var_name); \
-        (illusory_dream_name).next = (ctx)->saves; \
-        (ctx)->saves = &(illusory_dream_name); \
-    } while(0)
-
-#define gc_release(ctx, this_root_illusory_dream_name)   ((ctx)->saves = (this_root_illusory_dream_name).next)
-
-//#define gc_preserve1(ctx, a) gc_preserve(ctx, a, gc_dream1)
-//#define gc_preserve2(ctx, a, b) gc_preserve1(ctx, a); gc_preserve(ctx, b, gc_dream2)
-//#define gc_preserve3(ctx, a, b, c) gc_preserve2(ctx, a, b); gc_preserve(ctx, c, gc_dream3)
-//#define gc_preserve4(ctx, a, b, c, d) gc_preserve3(ctx, a, b, c); gc_preserve(ctx, d, gc_dream4)
-//#define gc_preserve5(ctx, a, b, c, d, e)  gc_preserve4(ctx, a, b, c, d); gc_preserve(ctx, e, gc_dream5)
-//#define gc_preserve6(ctx, a, b, c, d, e, f) gc_preserve5(ctx, a, b, c, d, e); gc_preserve(ctx, f, gc_dream6)
-//#define gc_preserve7(ctx, a, b, c, d, e, f, g) gc_preserve6(ctx, a, b, c, d, e, f); gc_preserve(ctx, g, gc_dream7)
-
-#define gc_var1(ctx, a)                     gc_var(a, gc_dream1);                                   gc_preserve(ctx, a, gc_dream1)
-#define gc_var2(ctx, a, b)                  gc_var1(ctx, a);                 gc_var(b, gc_dream2);  gc_preserve(ctx, b, gc_dream2)
-#define gc_var3(ctx, a, b, c)               gc_var2(ctx, a, b);              gc_var(c, gc_dream3);  gc_preserve(ctx, c, gc_dream3)
-#define gc_var4(ctx, a, b, c, d)            gc_var3(ctx, a, b, c);           gc_var(d, gc_dream4);  gc_preserve(ctx, d, gc_dream4)
-#define gc_var5(ctx, a, b, c, d, e)         gc_var4(ctx, a, b, c, d);        gc_var(e, gc_dream5);  gc_preserve(ctx, e, gc_dream5)
-#define gc_var6(ctx, a, b, c, d, e, f)      gc_var5(ctx, a, b, c, d, e);     gc_var(f, gc_dream6);  gc_preserve(ctx, f, gc_dream6)
-#define gc_var7(ctx, a, b, c, d, e, f, g)   gc_var6(ctx, a, b, c, d, e, f);  gc_var(g, gc_dream7);  gc_preserve(ctx, g, gc_dream7)
-
-#define gc_release_all(ctx) gc_release((ctx), gc_dream1)
-
-/**
  * gc 时遍历图结构用的标记栈
  */
 typedef struct gc_mark_stack_node_t {

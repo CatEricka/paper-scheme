@@ -88,13 +88,11 @@ EXPORT_API OUT NOTNULL GC object
 pair_make_op(REF NOTNULL context_t context, REF NULLABLE object param_car, REF NULLABLE object param_cdr) {
     assert(context != NULL);
 
-    gc_var2(context, car, cdr);
-    car = param_car;
-    cdr = param_cdr;
+    gc_var2(context, param_car, param_cdr);
 
     object ret = raw_object_make(context, OBJ_PAIR, object_sizeof_base(pair));
-    ret->value.pair.car = car;
-    ret->value.pair.cdr = cdr;
+    ret->value.pair.car = param_car;
+    ret->value.pair.cdr = param_cdr;
 
     gc_release_all(context);
     return ret;
