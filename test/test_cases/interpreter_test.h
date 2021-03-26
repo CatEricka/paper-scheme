@@ -2,20 +2,21 @@
 #define BASE_SCHEME_VM_TEST_H
 #pragma once
 
-#include "paper-scheme/vm.h"
+
+#include "paper-scheme/interpreter.h"
 
 
 /**
- * 测试 vm
- * 对上下文结构相关和虚拟机相关 API, 以及值类型在托管堆上的分配进行测试
+ * 测试 解释器
+ * 对上下文结构相关和解释器相关 API, 以及值类型在托管堆上的分配进行测试
  * 测试运行时类型系统和上下文全局信息表
  */
 
-UTEST(vm_test, hello) {
+UTEST(interpreter_test, hello) {
     ASSERT_TRUE(1);
 }
 
-UTEST(vm_test, auto_imm_test) {
+UTEST(interpreter_test, auto_imm_test) {
     size_t n = 20;
     srand(0);
     int64_t *tests = malloc(n * sizeof(int64_t));
@@ -83,7 +84,7 @@ UTEST(vm_test, auto_imm_test) {
     }
 }
 
-UTEST(vm_test, context_runtime_type_test) {
+UTEST(interpreter_test, context_runtime_type_test) {
     context_t context = context_make(16, 2, 0x10000);
     gc_collect_disable(context);
     object_type_info_ptr t;

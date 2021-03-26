@@ -7,7 +7,7 @@ UTEST_STATE();
 #include "test_cases/object_test.h"
 #include "test_cases/gc_test.h"
 #include "test_cases/context_test.h"
-#include "test_cases/vm_test.h"
+#include "interpreter_test.h"
 #include "test_cases/value_test.h"
 
 int main(int argc, const char *const argv[]) {

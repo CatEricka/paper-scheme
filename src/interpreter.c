@@ -1,4 +1,24 @@
-#include <paper-scheme/vm.h>
+#include <paper-scheme/interpreter.h>
+
+
+/******************************************************************************
+                            解释器初始化与解释器 API
+******************************************************************************/
+static int interpreter_default_env_init(context_t context) {
+    context->debug = 0;
+    context->repl_mode = 0;
+
+    return 1;
+}
+
+EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growth_scale, size_t heap_max_size) {
+    context_t context = context_make(heap_init_size, heap_growth_scale, heap_max_size);
+    notnull_or_return(context, "interpreter_create failed", NULL);
+
+    interpreter_default_env_init(context);
+    return context;
+}
+
 
 
 /******************************************************************************

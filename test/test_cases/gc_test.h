@@ -2,11 +2,8 @@
 #define BASE_SCHEME_GC_TEST_H
 #pragma once
 
-#include <paper-scheme/object.h>
-#include <paper-scheme/heap.h>
-#include <paper-scheme/context.h>
-#include <paper-scheme/gc.h>
-#include <paper-scheme/vm.h>
+
+#include <paper-scheme/interpreter.h>
 
 
 /**
@@ -437,7 +434,7 @@ UTEST(gc_test, gc_saves_list_test) {
     ASSERT_FALSE(g->marked);
     ASSERT_FALSE(h->marked);
 
-    gc_release_var_param(context);
+    gc_release_param(context);
 
     ASSERT_EQ(context->saves, NULL);
 

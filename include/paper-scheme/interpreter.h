@@ -1,21 +1,28 @@
-#ifndef BASE_SCHEME_VM_H
-#define BASE_SCHEME_VM_H
+#ifndef BASE_SCHEME_EVAL_H
+#define BASE_SCHEME_EVAL_H
 #pragma once
 
 
 /**
- * vm.h vm.c
- * 包含虚拟机上下文结构定义和虚拟机运行相关的操作, 以及各种值类型构造函数
- * 测试内容见 test/test_cases/vm_test.h test/test_cases/value_test.h
+ * interpreter.h interpreter.c
+ * 包含解释器上下文结构定义和虚拟机运行相关的操作, 以及各种值类型构造函数
+ *
+ * 测试内容见 test/test_cases/repl_test.h test/test_cases/value_test.h
+ *
+ * 该解释器实际为 AST Walker, 通过 opcodes dispatch 循环对 sexp(pair) 结构进行 EVAL-APPLY 循环
+ *
+ * 性能上存在优化的余地, 但是最优先的不是性能而是代码的可读性与实验特性添加的便利性
  */
 
 
-#include <paper-scheme/feature.h>
-#include <paper-scheme/object.h>
-#include <paper-scheme/heap.h>
-#include <paper-scheme/context.h>
 #include <paper-scheme/gc.h>
+#include <paper-scheme/opcodes.h>
 
+
+/******************************************************************************
+                            解释器初始化与解释器 API
+******************************************************************************/
+EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growth_scale, size_t heap_max_size);
 
 
 
@@ -87,4 +94,4 @@ EXPORT_API OUT NOTNULL GC object
 vector_make_op(REF NOTNULL context_t context, IN size_t vector_len);
 
 
-#endif //BASE_SCHEME_VM_H
+#endif //BASE_SCHEME_EVAL_H

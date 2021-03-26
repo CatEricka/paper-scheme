@@ -3,6 +3,9 @@
 #pragma once
 
 
+#include <paper-scheme/context.h>
+
+
 /**
  * 对 context 结构进行静态断言测试
  */

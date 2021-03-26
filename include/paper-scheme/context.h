@@ -10,8 +10,6 @@
  */
 
 
-#include <paper-scheme/feature.h>
-#include <paper-scheme/object.h>
 #include <paper-scheme/heap.h>
 
 
@@ -46,6 +44,12 @@ typedef struct object_runtime_type_info_t *object_type_info_ptr;
  */
 struct scheme_context_t;
 typedef struct scheme_context_t {
+    // debug 开关
+    int debug;
+
+    // 是否处于 repl 模式
+    int repl_mode;
+
     // 堆
     heap_t heap;
 

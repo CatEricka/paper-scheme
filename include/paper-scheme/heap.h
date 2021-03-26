@@ -10,7 +10,6 @@
  */
 
 
-#include <paper-scheme/feature.h>
 #include <paper-scheme/object.h>
 
 

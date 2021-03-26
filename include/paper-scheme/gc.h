@@ -10,9 +10,6 @@
  */
 
 
-#include <paper-scheme/feature.h>
-#include <paper-scheme/object.h>
-#include <paper-scheme/heap.h>
 #include <paper-scheme/context.h>
 
 

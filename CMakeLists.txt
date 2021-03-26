@@ -33,9 +33,10 @@ endif ()
 
 # DEBUG 构建宏
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
-    add_definitions(
-            -DDEBUG_ONLY
-    )
+    target_compile_definitions(paper-scheme-lib PUBLIC "DEBUG_ONLY")
+    target_compile_definitions(paper-scheme-exec PUBLIC "DEBUG_ONLY")
+    message(STATUS "paper-scheme-lib Debug build")
+    message(STATUS "paper-scheme-exec Debug build")
 endif ()
 
 # 测试
@@ -63,6 +64,10 @@ if (ENABLE_UNIT_TESTS)
         # IS_32_BIT_ARCH
         target_compile_definitions(paper-scheme-test PUBLIC "IS_32_BIT_ARCH")
         message(STATUS "Target is 32 bits")
+    endif ()
+    if (CMAKE_BUILD_TYPE STREQUAL Debug)
+        target_compile_definitions(paper-scheme-test PUBLIC "DEBUG_ONLY")
+        message(STATUS "paper-scheme-test Debug build")
     endif ()
     # 添加测试
     add_test(
