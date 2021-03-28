@@ -40,14 +40,18 @@
 #define IN
 // 生命周期标记, 传出所有权 (gc 分配的对象也属于 context->heap)
 #define OUT
-// 生命周期标记, IN & OUT
+// 生命周期标记, 函数会引用这个对象
 #define REF
+// 生命周期标记, 函数会执行拷贝操作
+#define COPY
 // 返回值标记, 需要检查函数执行结果
 #define CHECKED
 // 参数标记, 非空
 #define NOTNULL
 // 参数标记, 可能为空
 #define NULLABLE
+// 返回的参数一定为立即数
+#define IMM
 
 // 该函数可能触发 GC 导致对象移动, 调用该函数的函数需要将参数存入保护链
 // 具有传染性
@@ -118,5 +122,16 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 ******************************************************************************/
 #define MAX_MARK_STACK_DEEP 1024u
 #define USE_DEBUG_GC 1
+
+/**
+                                其它定义
+******************************************************************************/
+// string_buffer 默认初始大小
+#define STRING_BUFFER_DEFAULT_INIT_SIZE 16
+// string_buffer 默认增长大小
+#define STRING_BUFFER_DEFAULT_GROWTH_SIZE 16
+
+// stack push 自动增长 默认增长大小
+#define STACK_DEFAULT_GROWTH_SIZE 16
 
 #endif // BASE_SCHEME_ASSERT_HELPER_H

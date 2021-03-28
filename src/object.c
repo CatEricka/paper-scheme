@@ -2,8 +2,66 @@
 
 
 /**
+                                对象值操作
+******************************************************************************/
+/**
+ * 返回栈顶元素
+ * @param stack
+ * @return object 如果栈为空, 返回 NULL
+ */
+NULLABLE CHECKED REF object stack_peek(object stack) {
+    assert(is_object(stack));
+    assert(is_stack(stack));
+
+    if (stack_empty(stack)) return NULL;
+    else {
+        size_t top = stack->value.stack.length - 1;
+        return stack->value.stack.data[top];
+    }
+}
+/**
+ * 入栈
+ * @param stack
+ * @param obj
+ * @return 如果栈满, 返回 0, 否则返回 1
+ */
+NULLABLE OUT int stack_push(REF object stack, REF object obj) {
+    assert(is_object(stack));
+    assert(is_stack(stack));
+
+    if (!stack_full(stack)) {
+        size_t length = stack->value.stack.length;
+        stack->value.stack.data[length] = obj;
+        stack->value.stack.length++;
+        return 1;
+    } else {
+        // 栈满
+        return 0;
+    }
+}
+/**
+ * 出栈
+ * @param stack
+ * @return 如果栈空, 返回 0; 否则返回 1
+ */
+CHECKED OUT int stack_pop(REF object stack) {
+    assert(is_object(stack));
+    assert(is_stack(stack));
+
+    if (!stack_empty(stack)) {
+        stack->value.stack.length--;
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+
+/**
                                对象操作 API
 ******************************************************************************/
+
+
 /**
  * 计算对齐后对象的大小
  * 用法: aligned_size(object_sizeof_base(value_field))
@@ -24,8 +82,6 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size) {
 
 /**
  * 运行时计算对象大小, 单位 bytes, 提供给 gc 使用
- * <p>todo 仅供 context_t->global_type_table 建立前使用</p>
- * <p>详见 context.h: struct object_runtime_type_info_t, macro object_type_info_sizeof()</p>
  * @param object NOTNULL 不能是立即数或空指针
  * @return 如果参数非法, 返回 0
  */
@@ -55,6 +111,12 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
         return size_helper(string, sizeof(char) * obj->value.string.len);
     } else if (is_vector(obj)) {
         return size_helper(vector, sizeof(object) * obj->value.vector.len);
+    } else if (is_stack(obj)) {
+        return size_helper(stack, sizeof(object) * obj->value.stack.size);
+    } else if (is_string_port(obj)) {
+        return size_helper(string_port, 0);
+    } else if (is_stdio_port(obj)) {
+        return size_helper(stdio_port, 0);
     }
     // todo 新实现的类型记得修改这里
 

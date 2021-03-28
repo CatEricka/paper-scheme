@@ -73,6 +73,9 @@ typedef struct scheme_context_t {
     // 全局类型信息表当前长度
     size_t global_type_table_len;
 
+    // TODO 全局符号表, 此处应为弱引用, gc 处理时应当特殊处理
+    // 因为除此之外没有用到弱引用的地方, 因此不额外实现弱引用功能
+
     // 基础类型信息索引表, 仅用于构造期, 其中 object 类型均不可用; .name 字段为字符串指针
     struct object_runtime_type_info_t const *scheme_type_specs;
 } *context_t;
@@ -101,8 +104,8 @@ struct object_runtime_type_info_t {
 
     /** 用于标记对象引用的子对象, 类型必须是object, 且排列在一起 */
     size_t member_base;                  // 对象成员起始偏移量
-    size_t member_eq_len_base;           // 比较对象时需要比较的 成员基本大小
-    size_t member_len_base;              // 成员基本大小
+    size_t member_eq_len_base;           // 比较对象时需要比较的 成员基本数量
+    size_t member_len_base;              // 成员基本数量
     // 可变长度数据结构会用到这个属性, 如 vector, stack
     size_t member_meta_len_offset;       // 成员如果是可变长度, 则 描述成员数量的数量 在结构体的偏移量, 否则填 0
     size_t member_meta_len_scale;        // 成员数量的缩放系数, 一般为 1 或 0, 取决于成员数量是否可变
@@ -113,6 +116,18 @@ struct object_runtime_type_info_t {
 
     proc_1 finalizer;                   // finalizer
 };
+
+
+/**
+                              对象析构函数
+******************************************************************************/
+/**
+ * stdio_port finalizer
+ * @param context
+ * @param port
+ * @return
+ */
+object stdio_finalizer(context_t context, object port);
 
 
 /**
@@ -227,7 +242,7 @@ EXPORT_API OUT NULLABLE context_t
 context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t heap_max_size);
 
 /**
- * 在上下文注册类型信息 TODO context_register_type 需要测试
+ * 在上下文注册类型信息, 用于后续拓展
  * @param context 上下文
  * @param type_tag enum object_type_enum, 与 object 结构体相匹配, 最大 255
  * @param type_info 类型信息, 需要手动分配内存

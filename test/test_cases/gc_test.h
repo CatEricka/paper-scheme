@@ -219,6 +219,8 @@ UTEST(gc_test, heap_make_free_test) {
                         MORE_SPACE("        true\n");
                     } else if (is_imm_false(v)) {
                         MORE_SPACE("        false\n");
+                    } else if (is_imm_eof(v)) {
+                        MORE_SPACE("        eof\n");
                     } else if (is_string(v)) {
                         MORE_SPACE("        string:     value=%s\n", string_get_cstr(v));
                     } else if (is_symbol(v)) {
@@ -346,6 +348,8 @@ static void heap_dump(context_t context) {
                         MORE_SPACE("        true\n");
                     } else if (is_imm_false(v)) {
                         MORE_SPACE("        false\n");
+                    } else if (is_imm_eof(v)) {
+                        MORE_SPACE("        eof\n");
                     } else if (is_string(v)) {
                         MORE_SPACE("        string:     value=%s\n", string_get_cstr(v));
                     } else if (is_symbol(v)) {

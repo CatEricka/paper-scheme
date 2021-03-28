@@ -23,11 +23,16 @@ enum object_type_enum {
     OBJ_BOOLEAN,
     OBJ_UNIT,
     OBJ_PAIR,
+    OBJ_BYTES,
     OBJ_STRING,
+    OBJ_STRING_BUFFER,
     OBJ_SYMBOL,
     OBJ_VECTOR,
-//    OBJ_PORT,
-            OBJECT_TYPE_ENUM_MAX, // 标记枚举最大值
+    OBJ_STACK,
+    OBJ_STRING_PORT,
+    OBJ_STDIO_PORT,
+
+    OBJECT_TYPE_ENUM_MAX, // 标记枚举最大值
 };
 typedef enum object_type_enum object_type_tag;
 compile_time_assert(((size_t) OBJECT_TYPE_ENUM_MAX) <= SIZE_MAX);
@@ -75,6 +80,18 @@ compile_time_assert(sizeof(void *) == 8u);
 /**
                                 基础对象结构声明
 ******************************************************************************/
+// port 类型
+enum port_kind {
+    // 具有内部缓冲 https://srfi.schemers.org/srfi-6/srfi-6.html
+            PORT_SRFI6 = 1,
+    // 输入 port
+            PORT_INPUT = 2,
+    // 输出 port
+            PORT_OUTPUT = 4,
+    // port 到达结尾
+            PORT_EOF = 8,
+};
+
 struct object_struct_t;
 typedef struct object_struct_t *object;
 
@@ -85,6 +102,8 @@ struct object_struct_t {
     uint8_t magic;
     // gc状态, 1为存活
     uint8_t marked: 1;
+    // 是否为不可变对象
+    uint8_t immutable: 1;
     // 对象尾部对齐填充大小
     uint8_t padding_size;
     // 对象类型
@@ -96,31 +115,79 @@ struct object_struct_t {
         /*  基本对象  */
         //定点64位有符号整数
         int64_t i64;
+
         //浮点数
         double doublenum;
+
         //pair
         struct value_pair_t {
             object car;
             object cdr;
         } pair;
+
+        // bytes
+        struct value_bytes_t {
+            size_t capacity;
+            char data[0];
+        } bytes;
+
         //字符串
         struct value_string_t {
             // char data[] 大小, 注意是指 char 个数
             size_t len;
             char data[0];
         } string;
+
+        // 字符串缓冲
+        struct value_string_buffer_t {
+            // 缓冲总长度
+            size_t buffer_size;
+            // 当前长度, 包括 '\0'
+            size_t buffer_length;
+            object bytes_buffer;
+        } string_buffer;
+
         //symbol
         struct value_symbol_t {
             // char data[] 大小, 注意是指 char 个数
             size_t len;
             char data[0];
         } symbol;
+
         //向量
         struct value_vector_t {
             // object data[0] 大小, 注意是指 object 个数, 不是字节长度!
             size_t len;
             object data[0];
         } vector;
+
+        //栈
+        struct value_stack_t {
+            // 栈大小
+            size_t size;
+            // 栈内 object 数量, 空栈为 0
+            size_t length;
+            object data[0];
+        } stack;
+
+        // 字符串类型输入输出
+        struct value_string_port_t {
+            enum port_kind kind;
+            object string_buffer_data;
+            size_t length;
+            size_t current;
+        } string_port;
+
+        // stdio 类型输入输出
+        struct value_stdio_port_t {
+            enum port_kind kind;
+            FILE *file;
+            object filename;
+            // 是否已经释放
+            int is_released;
+            // 是否需要关闭, stdin, stdout, stderr 不需要关闭
+            int need_close;
+        } stdio_port;
 
         /*  运行时结构  */
     } value;
@@ -156,11 +223,12 @@ struct object_struct_t {
             - IMM_UNIT:         is_imm_unit(obj)
             - IMM_TRUE:         is_imm_true(obj)
             - IMM_FALSE:        is_imm_false(obj)
+            - IMM_EOF:          is_imm_eof(obj)
             - all unit:         is_imm(obj)
             - i64:              is_imm_i64(obj), 不推荐直接使用
             - char:             is_imm_char(obj)
         立即数构造方法:
-            - unique:           MAKE_UNIQUE_IMMEDIATE(), 该方法不应当被直接使用
+            - unique:           make_unique_immediate(), 该方法不应当被直接使用
             - i64:              无, 参见 i64_make_real_object_op() 和 i64_make_op()
             - char:             char_imm_make()
         立即数取值方法:
@@ -173,26 +241,61 @@ struct object_struct_t {
             - i64:              is_i64(obj)
             - double number:    is_doublenum(obj
             - pair:             is_pair(obj)
+            - bytes:            TODO is_bytes(obj)
             - string:           is_string(obj)
+            - string_buffer:    TODO is_string_buffer(obj)
             - symbol:           is_symbol(obj)
             - vector:           is_vector(obj)
-            - port: TODO port 判断 还未实现
+            - stack:            TODO is_stack(obj)
+            - string_port:      TODO is_string_port(obj), is_string_port_input(), is_string_port_output(),
+                                TODO is_string_port_in_out_put(obj), is_string_port_eof(obj)
+            - stdio_port:       TODO is_stdio_port(obj), is_stdio_port_input(obj), is_stdio_port_output(obj),
+                                TODO is_stdio_port_in_out_put(obj), is_stdio_port_eof(obj)
+            - string_port & stdio_port:
+                                TODO is_port_input(obj), is_port_output(obj), is_port_in_out_put(obj), is_port_eof(obj)
+            - srfi6 string_port:
+                                TODO is_srfi6_port(obj)
         构造:
             - i64:              i64_make_op()
             - double number:    doublenum_make_op()
             - pair:             pair_make_op()
+            - bytes:            TODO bytes_make_op()
             - string:           string_make_from_cstr_op()
+            - string_buffer:    TODO string_buffer_make_op(), string_buffer_make_from_string_op()
             - symbol:           symbol_make_from_cstr_op()
             - vector:           vector_make_op()
-            - port: TODO port 构造 还未实现
+            - stack:            TODO stack_make_op()
+            - string_port:      TODO string_port_input_from_string(), string_port_output_use_buffer(),
+                                TODO string_port_in_out_put_from_string_use_buffer()
+            - stdio_port:       TODO stdio_port_from_filename(), stdio_port_from_file()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
             - pair:             pair_getcar(), pair_getcdr()
+            - bytes:            TODO bytes_capacity(), bytes_index(), bytes_data()
             - string:           string_get_cstr(), string_len(), string_index()
+            - string_buffer:    TODO string_buffer_empty(), string_buffer_full(),
+                                TODO string_buffer_length(), string_buffer_index(), string_buffer_bytes_data(),
+                                TODO string_buffer_buffer_size(),string_buffer_buffer_capacity(), string_buffer_bytes_obj
             - symbol:           symbol_make_get_cstr(), symbol_len(), symbol_index()
-            - vector:           vector_make_op(), vector_len(), vector_ref()
-            - port: TODO port 取值 还未实现
+            - vector:           vector_len(), vector_ref()
+            - stack:            TODO stack_empty(), stack_clean(), stack_capacity(), stack_len(), stack_peek(),
+                                TODO stack_push, stack_pop()
+            - string_port:      TODO string_port_kind(obj)
+            - stdio_port:       TODO stdio_port_kind(obj)
+        操作:
+            - string:           TODO string_append_op()
+            - string_buffer:    TODO string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
+                                TODO string_buffer_append_char_op()
+        扩容:
+            - bytes:            TODO bytes_capacity_increase()
+            - string_buffer:    TODO string_buffer_capacity_increase()
+            - vector:           TODO vector_capacity_increase()
+            - stack:            TODO stack_capacity_increase(),  stack_push_auto_increase()
+        类型转换:
+            - char (立即数):     TODO imm_char_to_string()
+            - char (C 原始类型): TODO char_to_string()
+            - string_buffer:    TODO string_buffer_to_string()
 ******************************************************************************/
 
 
@@ -255,7 +358,7 @@ struct object_struct_t {
 /**
  * 常量立即数生成
  */
-#define MAKE_UNIQUE_IMMEDIATE(n) \
+#define make_unique_immediate(n) \
     ((object) (((n)<<UNIQUE_IMMEDIATE_EXTENDED_BITS) | UNIQUE_IMMEDIATE_TAG))
 
 
@@ -265,19 +368,20 @@ struct object_struct_t {
 /**
  * 基本类型 false
  */
-#define IMM_FALSE MAKE_UNIQUE_IMMEDIATE(0u)
+#define IMM_FALSE make_unique_immediate(0u)
 /**
  * 基本类型 true
  */
-#define IMM_TRUE MAKE_UNIQUE_IMMEDIATE(1u)
+#define IMM_TRUE make_unique_immediate(1u)
 /**
  * 基本类型 Unit, 等价于 '()
  * <p>对于内部结构, 应当统一使用 NULL; 但 List 应当以 Unit 结束而不是 NULL; 空 vector 应当以 Unit 填充</p>
  */
-#define IMM_UNIT MAKE_UNIQUE_IMMEDIATE(2u)
-
-// 虚拟机内部类型
-// TODO 定义虚拟机内部类型
+#define IMM_UNIT make_unique_immediate(2u)
+/**
+ * EOF 符号
+ */
+#define IMM_EOF make_unique_immediate(3u)
 
 /**
                                立即数构造
@@ -350,7 +454,7 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
  * 检查是否为 i64 立即数
  * @param object
  */
-#define is_imm_i64(x) ((ptr_to_uintptr(x) & I64_IMM_MASK) == I64_IMM_TAG)
+#define is_imm_i64(x)                   ((ptr_to_uintptr(x) & I64_IMM_MASK) == I64_IMM_TAG)
 /**
  * 检查是否为对象指针
  * <p>这意味着如果表达式成立, 则它是个有效的 object 指针</p>
@@ -362,24 +466,26 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 /**
  * 检查是否被垃圾回收标记存活
  */
-#define is_marked(obj) ((obj)->marked)
+#define is_marked(obj)                  ((obj)->marked)
 /**
  * 检查是否为 char 立即数, 参数必须为 object
  * @param object
  */
-#define is_imm_char(x) ((ptr_to_uintptr(x) & CHAR_IMM_MASK) == CHAR_IMM_TAG)
+#define is_imm_char(x)                  ((ptr_to_uintptr(x) & CHAR_IMM_MASK) == CHAR_IMM_TAG)
 /**
  * 检查是否为立即数
  * @param object
  */
-#define is_imm(x) (!is_null(x) && ((ptr_to_uintptr(x) & POINTER_MASK) != POINTER_TAG))
+#define is_imm(x)                       (!is_null(x) && ((ptr_to_uintptr(x) & POINTER_MASK) != POINTER_TAG))
 
 // 是否为 IMM_UNIT
-#define is_imm_unit(obj) ((obj) == IMM_UNIT)
+#define is_imm_unit(obj)                ((obj) == IMM_UNIT)
 // 是否为 IMM_TRUE
-#define is_imm_true(obj) ((obj) == IMM_TRUE)
+#define is_imm_true(obj)                ((obj) == IMM_TRUE)
 // 是否为 IMM_FALSE
-#define is_imm_false(obj) ((obj) == IMM_FALSE)
+#define is_imm_false(obj)               ((obj) == IMM_FALSE)
+// 是否为 IMM_EOF
+#define is_imm_eof(obj)                 ((obj) == IMM_EOF)
 /**
  * 判断 object 是否为 i64, 可能是立即数, 参见 is_i64_real()
  * @param i64 NULLABLE
@@ -391,41 +497,74 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
  * @param i64
  * @return !0 -> true, 0 -> false
  */
-#define is_i64_real(object) (is_object(object) && ((object)->type == OBJ_I64))
+#define is_i64_real(object)             (is_object(object) && ((object)->type == OBJ_I64))
 /**
  * 判断 object 是否为 doublenum
  * @param object NULLABLE
  * @return !0 -> true, 0 -> false
  */
-#define is_doublenum(object) (is_object(object) && ((object)->type == OBJ_D64))
+#define is_doublenum(object)            (is_object(object) && ((object)->type == OBJ_D64))
 /**
  * 判断 object 是否为 pair
  * @param object NULLABLE
  * @return !0 -> true, 0 -> false
  */
-#define is_pair(object) (is_object(object) && ((object)->type == OBJ_PAIR))
+#define is_pair(object)                 (is_object(object) && ((object)->type == OBJ_PAIR))
+// bytes
+#define is_bytes(obj)                   (is_object(obj) && ((obj)->type == OBJ_BYTES))
 /**
  * 判断 object 是否为 string
  * @param object NULLABLE
  * @return !0 -> true, 0 -> false
  */
-#define is_string(object) (is_object(object) && ((object)->type == OBJ_STRING))
+#define is_string(object)               (is_object(object) && ((object)->type == OBJ_STRING))
+// string buffer
+#define is_string_buffer(obj)           (is_object(obj) && ((obj)->type == OBJ_STRING_BUFFER))
 /**
  * 判断 object 是否为 symbol
  * @param object NULLABLE
  * @return !0 -> true, 0 -> false
  */
-#define is_symbol(object) (is_object(object) && ((object)->type == OBJ_SYMBOL))
+#define is_symbol(object)               (is_object(object) && ((object)->type == OBJ_SYMBOL))
 /**
  * 判断 object 是否为 vector
  * @param object NULLABLE
  * @return !0 -> true, 0 -> false
  */
-#define is_vector(object) (is_object(object) && ((object)->type == OBJ_VECTOR))
+#define is_vector(object)               (is_object(object) && ((object)->type == OBJ_VECTOR))
+// stack
+#define is_stack(object)                (is_object(object) && ((object)->type == OBJ_STACK))
 
+//port
+#define is_port(obj)                    (is_object(obj) && (((obj)->type == OBJ_STRING_PORT) || ((obj)->type == OBJ_STDIO_PORT)))
 
+// string_port
+#define string_port_kind(obj)           ((obj)->value.string_port.kind)
+#define is_string_port(obj)             (is_port(obj) && ((obj)->type == OBJ_STRING_PORT))
+#define is_string_port_input(obj)       (is_port(obj) && (string_port_kind(obj) & PORT_INPUT))
+#define is_string_port_output(obj)      (is_port(obj) && (string_port_kind(obj) & PORT_OUTPUT))
+#define is_string_port_in_out_put(obj)  (is_port(obj) && (string_port_kind(obj) & (PORT_INPUT | PORT_OUTPUT)))
+#define is_string_port_eof(obj)         (is_port(obj) && (string_port_kind(obj) & PORT_AT_EOF))
+
+// stdio_port
+#define stdio_port_kind(obj)            ((obj)->value.stdio_port.kind)
+#define is_stdio_port(obj)              (is_port(obj) && ((obj)->type == OBJ_STDIO_PORT))
+#define is_stdio_port_input(obj)        (is_port(obj) && (stdio_port_kind(obj) & PORT_INPUT))
+#define is_stdio_port_output(obj)       (is_port(obj) && (stdio_port_kind(obj) & PORT_OUTPUT))
+#define is_stdio_port_in_out_put(obj)   (is_port(obj) && (stdio_port_kind(obj) & (PORT_INPUT | PORT_OUTPUT)))
+#define is_stdio_port_eof(obj)          (is_port(obj) && (stdio_port_kind(obj) & PORT_AT_EOF))
+
+// srfi6
+#define is_srfi6_port(obj)              ((is_string_port(obj)) && (string_port_kind(obj) & PORT_SRFI6))
+
+// port
+#define is_port_input(obj)              (is_port(obj) && (is_string_port(obj) ? is_string_port_input(obj) : is_stdio_port_input(obj)))
+#define is_port_output(obj)             (is_port(obj) && (is_string_port(obj) ? is_string_port_output(obj) : is_stdio_port_output(obj)))
+#define is_port_in_out_put(obj)         (is_port(obj) && (is_string_port(obj) ? is_string_port_in_out_put(obj) : is_stdio_port_in_out_put(obj)))
+
+#define is_port_eof(obj)                (is_port(obj) && (is_string_port(obj) ? is_string_port_eof(obj) : is_stdio_port_eof(obj)))
 /**
-                           对象值操作: get value
+                                对象值操作
 ******************************************************************************/
 /**
  * char 立即数取值, 参数必须为 object, 返回值为 char
@@ -433,24 +572,28 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
  */
 #define char_imm_getvalue(x) \
     ((char) ((ptr_to_uintptr(x) >> CHAR_EXTENDED_BITS) & CHAR_VALUE_MASK))
+
 /**
  * 获取 i64 对象的值
  * @param i64: object
  * @return
  */
 EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
+
 /**
  * 获取 doublenum 对象的值
  * @param object
  * @return
  */
 #define doublenum_getvalue(obj) ((obj)->value.doublenum)
+
 /**
  * 获取 pair 对象的 car
  * @param object
  * @return
  */
 #define pair_car(obj) ((obj)->value.pair.car)
+
 /**
  * 获取 pair 对象的 cdr
  * @param object
@@ -458,31 +601,50 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  */
 #define pair_cdr(obj) ((obj)->value.pair.cdr)
 
-#define pair_caar(x)      (pair_car(pair_car(x)))
-#define pair_cadr(x)      (pair_car(pair_cdr(x)))
-#define pair_cdar(x)      (pair_cdr(pair_car(x)))
-#define pair_cddr(x)      (pair_cdr(pair_cdr(x)))
-#define pair_caaar(x)     (pair_car(pair_caar(x)))
-#define pair_caadr(x)     (pair_car(pair_cadr(x)))
-#define pair_cadar(x)     (pair_car(pair_cdar(x)))
-#define pair_caddr(x)     (pair_car(pair_cddr(x)))
-#define pair_cdaar(x)     (pair_cdr(pair_caar(x)))
-#define pair_cdadr(x)     (pair_cdr(pair_cadr(x)))
-#define pair_cddar(x)     (pair_cdr(pair_cdar(x)))
-#define pair_cdddr(x)     (pair_cdr(pair_cddr(x)))
-#define pair_cadddr(x)    (pair_cadr(pair_cddr(x)))
+#define pair_caar(x)        (pair_car(pair_car(x)))
+#define pair_cadr(x)        (pair_car(pair_cdr(x)))
+#define pair_cdar(x)        (pair_cdr(pair_car(x)))
+#define pair_cddr(x)        (pair_cdr(pair_cdr(x)))
+#define pair_caaar(x)       (pair_car(pair_caar(x)))
+#define pair_caadr(x)       (pair_car(pair_cadr(x)))
+#define pair_cadar(x)       (pair_car(pair_cdar(x)))
+#define pair_caddr(x)       (pair_car(pair_cddr(x)))
+#define pair_cdaar(x)       (pair_cdr(pair_caar(x)))
+#define pair_cdadr(x)       (pair_cdr(pair_cadr(x)))
+#define pair_cddar(x)       (pair_cdr(pair_cdar(x)))
+#define pair_cdddr(x)       (pair_cdr(pair_cddr(x)))
+#define pair_cadddr(x)      (pair_cadr(pair_cddr(x)))
+
+/**
+ * bytes 计算总大小
+ */
+#define bytes_capacity(obj)     ((obj)->value.bytes.capacity)
+
+/**
+ * bytes 索引
+ */
+#define bytes_index(obj, i)     ((obj)->value.bytes.data[(i)])
+
+/**
+ * get bytes' data
+ * @return
+ */
+#define bytes_data(obj)         ((obj)->value.bytes.data)
+
 /**
  * 获取 string 对象的 cstr
  * @param object
  * @return
  */
 #define string_get_cstr(obj) ((obj)->value.string.data)
+
 /**
  * 获取 string 对象的 char 个数, 注意不包括 '\0'
  * @param object
  * @return
  */
-#define string_len(obj) ((obj)->value.string.len - 1u)
+#define string_len(obj)     ((obj)->value.string.len - 1u)
+
 /**
  * 使用索引访问 string 的 cstr 的对应字符, 范围 [ 0, symbol_len(obj) )
  * @param object
@@ -490,18 +652,64 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  * @return char 引用
  */
 #define string_index(obj, i) ((obj)->value.string.data[(i)])
+
+/**
+ * 检查 string buffer 是否为空
+ */
+#define string_buffer_empty(obj)    ((obj)->value.string_buffer.buffer_length == 0)
+
+/**
+ * string buffer 总大小, 包括 '\0'
+ */
+#define string_buffer_buffer_size(obj)     ((obj)->value.string_buffer.buffer_size)
+
+/**
+ * string buffer 字符容量, 不包括 '\0'
+ */
+#define string_buffer_buffer_capacity(obj)     ((obj)->value.string_buffer.buffer_size - 1)
+
+/**
+ * string buffer 当前长度, 不包括 '\0'
+ */
+#define string_buffer_length(obj)   ((obj)->value.string_buffer.buffer_length - 1u)
+
+/**
+ * string buffer 是否已满
+ */
+#define string_buffer_full(obj)     (string_buffer_size(obj) == string_buffer_length(obj))
+
+/**
+ * string buffer 访问内容
+ */
+#define string_buffer_index(obj, i)    (bytes_index((obj)->value.string_buffer.bytes_buffer, (i)))
+
+/**
+ * 获取 string_buffer 内部字节数组
+ * @return
+ */
+#define string_buffer_bytes_data(obj)    (bytes_data((obj)->value.string_buffer.bytes_buffer))
+
+/**
+ * 获取 string_buffer 内部 bytes 对象
+ * @return
+ */
+#define string_buffer_bytes_obj(obj)    ((obj)->value.string_buffer.bytes_buffer)
+
+
 /**
  * 获取 symbol 对象的 cstr
  * @param object
  * @return
  */
 #define symbol_get_cstr(obj) ((obj)->value.symbol.data)
+
 /**
  * 获取 symbol 对象的 char 个数, 注意不包括 '\0'
  * @param object
  * @return
  */
 #define symbol_len(obj) ((obj)->value.symbol.len - 1u)
+
 /**
  * 使用索引访问 symbol 的 cstr 的对应字符, 范围 [0, len)
  * @param object
@@ -509,12 +717,14 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  * @return 引用
  */
 #define symbol_index(obj, i) ((obj)->value.symbol.data[(i)])
+
 /**
  * 获取 vector 对象的容量
  * @param object
  * @return
  */
 #define vector_len(obj) ((obj)->value.vector.len)
+
 /**
  * 使用索引访问 vector 的内容, 范围 [0, len)
  * @param object
@@ -522,6 +732,7 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  * @return object 引用
  */
 #define vector_ref(obj, i) ((obj)->value.vector.data[(i)])
+
 /**
  * 使用索引修改 vector 的内容, 范围 [0, len)
  * @param object
@@ -529,6 +740,67 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
  * @return 不要使用返回值
  */
 #define vector_set(obj, i, v) ((obj)->value.vector.data[(i)] = (v))
+
+/**
+ * 检查栈是否为空
+ * @param obj object
+ * @return int 0 => 空; !0 => 非空
+ */
+#define stack_empty(obj) (((obj)->value.stack.length) == 0)
+
+/**
+ * 检查栈是否为满
+ * @param obj object
+ * @return int 0 => 满; !0 => 非满
+ */
+#define stack_full(obj) (((obj)->value.stack.length) == ((obj)->value.stack.size))
+
+/**
+ * 清空栈
+ */
+#define stack_clean(obj) ((obj)->value.stack.length = 0)
+
+/**
+ * 栈容量
+ */
+#define stack_capacity(obj) ((obj)->value.stack.size)
+
+/**
+ * 返回栈长度, 等于栈中元素数量
+ */
+#define stack_len(obj) ((obj)->value.stack.length)
+
+/**
+ * 返回栈顶元素
+ * @param stack
+ * @return object 如果栈为空, 返回 NULL
+ */
+NULLABLE CHECKED REF object stack_peek(object stack);
+
+/**
+ * 入栈
+ * @param stack
+ * @param obj
+ * @return 如果栈满, 返回 0, 否则返回 1
+ */
+NULLABLE OUT int stack_push(REF object stack, REF object obj);
+
+/**
+ * 出栈
+ * @param stack
+ * @return 如果栈空, 返回 0; 否则返回 1
+ */
+CHECKED OUT int stack_pop(REF object stack);
+
+/**
+ * port 是否需要关闭 (stdin stdout stderr 不需要关闭)
+ */
+#define stdio_port_need_close(obj) ((obj)->value.stdio_port.need_close)
+
+/**
+ * port 是否已经释放
+ */
+#define stdio_port_is_released(obj) ((obj)->value.stdio_port.is_released)
 
 /**
                            对象值操作: compare

@@ -23,7 +23,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = object_sizeof_base(i64),
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
-                .finalizer = NULL
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Doublenum", .tag = OBJ_D64,
@@ -38,7 +38,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = object_sizeof_base(doublenum),
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
-                .finalizer = NULL
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Char", .tag = OBJ_CHAR,
@@ -53,7 +53,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = 0,
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
-                .finalizer = NULL
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Boolean", .tag = OBJ_BOOLEAN,
@@ -68,7 +68,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = 0,
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
-                .finalizer = NULL
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Unit", .tag = OBJ_UNIT,
@@ -83,7 +83,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = 0,
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
-                .finalizer = NULL
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Pair", .tag = OBJ_PAIR,
@@ -98,7 +98,22 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = object_sizeof_base(pair),
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
-                .finalizer = NULL
+                .finalizer = NULL,
+        },
+        {
+                .name = (object) "Bytes", .tag = OBJ_BYTES,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = 0,
+                .member_eq_len_base = 0,
+                .member_len_base = 0,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(bytes),
+                .size_meta_size_offset = object_offsetof(bytes, capacity),
+                .size_meta_size_scale = sizeof(char),
+                .finalizer = NULL,
         },
         {
                 .name = (object) "String", .tag = OBJ_STRING,
@@ -113,7 +128,22 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = object_sizeof_base(string),
                 .size_meta_size_offset = object_offsetof(string, len),
                 .size_meta_size_scale = sizeof(char),
-                .finalizer = NULL
+                .finalizer = NULL,
+        },
+        {
+                .name = (object) "String-Buffer", .tag = OBJ_STRING_BUFFER,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(string_buffer, bytes_buffer),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(string_buffer),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Symbol", .tag = OBJ_SYMBOL,
@@ -128,7 +158,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = object_sizeof_base(symbol),
                 .size_meta_size_offset = object_offsetof(symbol, len),
                 .size_meta_size_scale = sizeof(char),
-                .finalizer = NULL
+                .finalizer = NULL,
         },
         {
                 .name = (object) "Vector", .tag = OBJ_VECTOR,
@@ -143,7 +173,52 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_base = object_sizeof_base(vector),
                 .size_meta_size_offset = object_offsetof(vector, len),
                 .size_meta_size_scale = sizeof(object),
-                .finalizer = NULL
+                .finalizer = NULL,
+        },
+        {
+                .name = (object) "Stack", .tag = OBJ_STACK,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(stack, data),
+                .member_eq_len_base = 0,
+                .member_len_base = 0,
+                .member_meta_len_offset = object_offsetof(stack, length),
+                .member_meta_len_scale = 1,
+
+                .size_base = object_sizeof_base(stack),
+                .size_meta_size_offset = object_offsetof(stack, size),
+                .size_meta_size_scale = sizeof(object),
+                .finalizer = NULL,
+        },
+        {
+                .name = (object) "String-Port", .tag = OBJ_STRING_PORT,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(string_port, string_buffer_data),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(string_port),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+        },
+        {
+                .name = (object) "Stdio-Port", .tag = OBJ_STDIO_PORT,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(stdio_port, filename),
+                .member_eq_len_base = 0,
+                .member_len_base = 0,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(stdio_port),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = stdio_finalizer,
         },
 };
 
@@ -196,7 +271,7 @@ static int context_init_globals_type_specs(REF context_t context) {
 }
 
 /**
- * 在上下文注册类型信息
+ * 在上下文注册类型信息, 用于后续拓展
  * @param context 上下文
  * @param name 类型名
  * @param type_tag enum object_type_enum, 与 object 结构体相匹配, 最大 255
@@ -277,8 +352,10 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
     context->context_stdout = stdout;
     context->context_stderr = stderr;
 
-    // 初始化类型信息, 此时需要堆结构正常工作, 但类型信息还不完整
+
     context->scheme_type_specs = scheme_type_specs;
+    // 初始化类型信息结束, 此时堆结构已经正常工作, 但类型信息还不完整
+    // 初始化解释器结构时应当完整初始化
     if (context_init_globals_type_specs(context)) return context;
     else return NULL;
 }
@@ -319,4 +396,28 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     }
     heap_destroy(context->heap);
     raw_free(context);
+}
+
+/**
+                              对象析构函数
+******************************************************************************/
+/**
+ * stdio_port finalizer
+ * @param context
+ * @param port
+ * @return
+ */
+object stdio_finalizer(context_t context, object port) {
+    assert(is_object(port));
+    assert(is_stdio_port(port));
+
+    if (stdio_port_need_close(port) && !stdio_port_is_released(port)) {
+        if (port->value.stdio_port.file != NULL) {
+            fclose(port->value.stdio_port.file);
+        }
+        stdio_port_is_released(port) = 1;
+        return IMM_TRUE;
+    } else {
+        return IMM_FALSE;
+    }
 }

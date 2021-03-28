@@ -323,12 +323,6 @@ static void move_objects(context_t context) {
 
 /**
  * 启动回收垃圾回收
- * <p>todo 注意! 所有 c 函数栈 上使用的被分配的对象都必须保存到保护链, 否则会因为对象移动破坏引用</p>
- * <p>详见 context.h: macro gc_var()</p>
- * <p>幸运的是, 保护链的生命周期与 c 函数栈生命周期相关</p>
- * <p>只要正确使用 gc_var 和 gc_preserve 就能保证引用的正确更新</p>
- * <p>注意所有会触发 gc 的函数 (带有 GC 标记的函数) 内的 object 参数都应该加入保护链</p>
- * <p>注意有些测试需要关闭 gc 才能保证测试正常进行, 参见 macro gc_collect_disable()</p>
  * @param context
  * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
  */
