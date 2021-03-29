@@ -1,5 +1,5 @@
-#ifndef BASE_SCHEME_ASSERT_HELPER_H
-#define BASE_SCHEME_ASSERT_HELPER_H
+#ifndef BASE_SCHEME_FEATURE_H
+#define BASE_SCHEME_FEATURE_H
 #pragma once
 
 
@@ -81,7 +81,7 @@
  */
 # define notnull_or_return(ptr, message, ret) \
     do { \
-        if (ptr == NULL) { \
+        if ((ptr) == NULL) { \
             return ret; \
         } \
     } while(0)
@@ -134,4 +134,4 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 // stack push 自动增长 默认增长大小
 #define STACK_DEFAULT_GROWTH_SIZE 16
 
-#endif // BASE_SCHEME_ASSERT_HELPER_H
+#endif // BASE_SCHEME_FEATURE_H

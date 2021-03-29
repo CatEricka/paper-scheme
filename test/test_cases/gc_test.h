@@ -3,7 +3,7 @@
 #pragma once
 
 
-#include <paper-scheme/interpreter.h>
+#include <paper-scheme/runtime.h>
 
 
 /**

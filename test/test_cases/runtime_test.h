@@ -1,9 +1,9 @@
-#ifndef BASE_SCHEME_VM_TEST_H
-#define BASE_SCHEME_VM_TEST_H
+#ifndef BASE_SCHEME_RUNTIME_TEST_H
+#define BASE_SCHEME_RUNTIME_TEST_H
 #pragma once
 
 
-#include "paper-scheme/interpreter.h"
+#include "paper-scheme/runtime.h"
 
 
 /**
@@ -12,11 +12,11 @@
  * 测试运行时类型系统和上下文全局信息表
  */
 
-UTEST(interpreter_test, hello) {
+UTEST(runtime_test, hello) {
     ASSERT_TRUE(1);
 }
 
-UTEST(interpreter_test, auto_imm_test) {
+UTEST(runtime_test, auto_imm_test) {
     size_t n = 20;
     srand(0);
     int64_t *tests = malloc(n * sizeof(int64_t));
@@ -84,7 +84,7 @@ UTEST(interpreter_test, auto_imm_test) {
     }
 }
 
-UTEST(interpreter_test, context_runtime_type_test) {
+UTEST(runtime_test, context_runtime_type_test) {
     context_t context = context_make(16, 2, 0x10000);
     gc_collect_disable(context);
     object_type_info_ptr t;
@@ -284,4 +284,4 @@ UTEST(interpreter_test, context_runtime_type_test) {
     context_destroy(context);
 }
 
-#endif //BASE_SCHEME_VM_TEST_H
+#endif //BASE_SCHEME_RUNTIME_TEST_H
