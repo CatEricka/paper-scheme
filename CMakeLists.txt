@@ -31,6 +31,12 @@ else ()
     message(STATUS "Target is 32 bits")
 endif ()
 
+if (MSVC)
+    # fopen()
+    target_compile_definitions(paper-scheme-exec PUBLIC "_CRT_SECURE_NO_WARNINGS")
+    target_compile_definitions(paper-scheme-lib PUBLIC "_CRT_SECURE_NO_WARNINGS")
+endif (MSVC)
+
 # DEBUG 构建宏
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(paper-scheme-lib PUBLIC "DEBUG_ONLY")
@@ -55,6 +61,7 @@ if (ENABLE_UNIT_TESTS)
     target_link_libraries(paper-scheme-test paper-scheme-lib)
     if (MSVC)
         target_compile_definitions(paper-scheme-test PUBLIC "IS_USE_MSVC")
+        target_compile_definitions(paper-scheme-test PUBLIC "_CRT_SECURE_NO_WARNINGS")
     endif (MSVC)
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         # IS_64_BIT_ARCH

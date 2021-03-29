@@ -381,10 +381,32 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
     assert(is_string(filename));
 
     gc_param1(context, filename);
-    // TODO 实现 stdio_port_from_filename
+    gc_var1(context, port);
+
+    char *mode = NULL;
+    if (kind == ((unsigned) PORT_INPUT | (unsigned) PORT_OUTPUT)) {
+        mode = "a+";
+    } else if (kind == PORT_OUTPUT) {
+        mode = "w";
+    } else {
+        mode = "r";
+    }
+
+    FILE *file = fopen(string_get_cstr(filename), mode);
+    if (file == NULL) {
+        return IMM_UNIT;
+    }
+    port = raw_object_make(context, OBJ_STDIO_PORT, object_sizeof_base(stdio_port));
+
+    port->value.stdio_port.kind = kind;
+    port->value.stdio_port.file = file;
+    port->value.stdio_port.filename = filename;
+    port->value.stdio_port.is_released = 0;
+    // 打开的文件需要关闭
+    port->value.stdio_port.need_close = 1;
 
     gc_release_param(context);
-    return NULL;
+    return port;
 }
 
 /**
@@ -392,13 +414,24 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
  * @param context
  * @param file
  * @param kind PORT_INPUT / PORT_OUTPUT / PORT_INPUT & PORT_OUTPUT
- * @return 打开失败返回 IMM_UNIT
+ * @return
  */
 EXPORT_API OUT NOTNULL GC object
 stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind) {
     assert(context != NULL);
 
-    // TODO 实现 stdio_port_from_filename
+    gc_var1(context, port);
+
+    port = raw_object_make(context, OBJ_STDIO_PORT, object_sizeof_base(stdio_port));
+
+    port->value.stdio_port.kind = kind;
+    port->value.stdio_port.file = file;
+    port->value.stdio_port.filename = IMM_UNIT;
+    port->value.stdio_port.is_released = 0;
+    // 外部打开的文件外部负责关闭
+    port->value.stdio_port.need_close = 0;
+
+    gc_release_var(context);
     return NULL;
 }
 

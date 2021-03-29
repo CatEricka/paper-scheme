@@ -11,7 +11,7 @@ UTEST_STATE();
 #include "test_cases/value_test.h"
 
 int main(int argc, const char *const argv[]) {
-#if 1
+#if 0
     // for clion terminal bug
     setvbuf(stdout, NULL, _IONBF, 0);
 #endif
