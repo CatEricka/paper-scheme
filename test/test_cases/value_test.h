@@ -22,6 +22,7 @@ UTEST(value_test, all_type_function_test) {
     ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
     int gc_print = 0;
 
+    // null imm
     obj = NULL;
     ASSERT_TRUE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
@@ -64,7 +65,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
-
+    // true imm
     obj = IMM_TRUE;
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_null(obj));
@@ -108,6 +109,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // false imm
     obj = IMM_FALSE;
     ASSERT_FALSE(is_null(obj));
     ASSERT_TRUE(is_imm(obj));
@@ -150,6 +152,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // unit imm
     obj = IMM_UNIT;
     ASSERT_FALSE(is_null(obj));
     ASSERT_TRUE(is_imm(obj));
@@ -192,6 +195,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // char imm
     object imm_char = char_imm_make('x');
     obj = imm_char;
     ASSERT_EQ('x', char_imm_getvalue(obj));
@@ -280,6 +284,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // i64 imm
     object imm_i64 = i64_imm_make(123);
     obj = imm_i64;
     ASSERT_EQ(123, i64_getvalue(obj));
@@ -324,6 +329,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // i64
     obj = i64_make_real_object_op(context, 20);
     ASSERT_EQ(20, i64_getvalue(obj));
     ASSERT_FALSE(is_null(obj));
@@ -452,6 +458,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // double number
     obj = doublenum_make_op(context, 200.0);
     ASSERT_EQ(doublenum_getvalue(obj), 200.0);
     ASSERT_FALSE(is_null(obj));
@@ -495,6 +502,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // pair
     tmp1 = obj; // doublenum
     object pair_carImmI64_cdrDouble = pair_make_op(context, imm_i64, tmp1);
     obj = pair_carImmI64_cdrDouble;
@@ -543,6 +551,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // string
     char str[] = "this is a string object";
     obj = string_make_from_cstr_op(context, str);
     ASSERT_EQ(strlen(str), string_len(obj));
@@ -682,6 +691,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // symbol
     char symbol_str[] = "this is a symbol object";
     obj = symbol_make_from_cstr_op(context, symbol_str);
     ASSERT_EQ(strlen(str), symbol_len(obj));
@@ -821,6 +831,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // vector
     obj = vector_make_op(context, 10);
     for (size_t i = 0; i < vector_len(obj); i++) {
         ASSERT_EQ(IMM_UNIT, vector_ref(obj, i));
@@ -915,6 +926,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // vector
     obj = vector_make_op(context, 0);
     for (size_t i = 0; i < vector_len(obj); i++) {
         ASSERT_EQ(IMM_UNIT, vector_ref(obj, i));
@@ -961,6 +973,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // bytes
     obj = bytes_make_op(context, 10);
     for (size_t i = 0; bytes_capacity(obj) > i; i++) {
         ASSERT_EQ(bytes_index(obj, i), 0);
@@ -1011,6 +1024,8 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+
+    // string buffer
     obj = string_buffer_make_op(context, 1);
     ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
     ASSERT_TRUE(string_buffer_empty(obj));
@@ -1182,6 +1197,7 @@ UTEST(value_test, all_type_function_test) {
                              " ns\n", time);
     }
 
+    // string append
     tmp1 = string_make_from_cstr_op(context, "abc");
     tmp2 = string_make_from_cstr_op(context, "def");
     obj = string_append_op(context, tmp1, tmp2);
@@ -1194,6 +1210,8 @@ UTEST(value_test, all_type_function_test) {
     UTEST_PRINTF("gc time: %"
                          PRId64
                          " ns\n", time);
+
+    // stack
 
     obj = IMM_UNIT;
     tmp1 = IMM_UNIT;
