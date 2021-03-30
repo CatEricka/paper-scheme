@@ -249,6 +249,7 @@ string_buffer_make_from_string_op(REF NOTNULL context_t context, COPY object str
     ret->value.string_buffer.buffer_size = new_buffer_size;
     ret->value.string_buffer.buffer_length = str_len;
 
+    assert(bytes_capacity(string_buffer_bytes_obj(ret)) == string_buffer_capacity(ret));
     gc_release_param(context);
     return ret;
 }
@@ -468,6 +469,8 @@ string_append_op(REF NOTNULL context_t context, COPY NULLABLE object string_a, C
     memcpy(((char *) string_get_cstr(ret)) + string_a_len, string_get_cstr(string_b), string_b_len + 1);
     // 保险起见, 末尾填充 '\0'
     ((char *) string_get_cstr(ret))[new_len_with_null - 1] = '\0';
+    // 修正字符串长度
+    ret->value.string.len = new_len_with_null;
 
     gc_release_param(context);
     return ret;
@@ -508,6 +511,7 @@ string_buffer_append_string_op(
 
     // 不复制 '\0'
     memcpy(string_buffer_bytes_data(str_buffer) + str_buffer_len, string_get_cstr(str), str_len);
+    // 修正长度
     str_buffer->value.string_buffer.buffer_length = str_buffer_len + str_len;
 
     gc_release_param(context);
@@ -557,6 +561,8 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object s
 
     // char 拼接
     string_buffer_bytes_data(str_buffer)[buffer_len] = ch;
+    // string_buffer 长度 +1
+    string_buffer_length(str_buffer)++;
 
     gc_release_param(context);
     return str_buffer;
@@ -608,6 +614,8 @@ string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buf
     // 内部 bytes 对象扩容, 自动复制旧内容
     new_buffer = bytes_capacity_increase(context, string_buffer_bytes_obj(str_buffer), add_size);
     string_buffer_bytes_obj(str_buffer) = new_buffer;
+    // 修正容量
+    string_buffer_capacity(str_buffer) = bytes_capacity(new_buffer);
 
     gc_release_param(context);
     return str_buffer;

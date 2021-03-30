@@ -128,7 +128,7 @@ static object gc_mark(context_t context) {
 
     // todo context 修改后, 修改gc_mark
 
-    // 全局符号表
+    // 全局类型
     for (size_t i = 0; i < context->global_type_table_len; i++) {
         gc_mark_one_start(context, context->global_type_table[i].name);
         gc_mark_one_start(context, context->global_type_table[i].getter);
@@ -137,6 +137,8 @@ static object gc_mark(context_t context) {
     }
 
     // env & dump stack ?
+
+    // 符号表为弱引用, 此处不应当进行标记
 
     // C 调用栈上变量保护表
     for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
@@ -334,6 +336,7 @@ EXPORT_API CHECKED GC object gc_collect(REF NOTNULL context_t context) {
 #endif
 
     gc_mark(context);
+    // TODO 重设符号表弱引用
     gc_set_forwarding(context);
     gc_adjust_ref(context);
     move_objects(context);

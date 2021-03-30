@@ -243,7 +243,7 @@ struct object_struct_t {
             - pair:             is_pair(obj)
             - bytes:            is_bytes(obj)
             - string:           is_string(obj)
-            - string_buffer:    TODO is_string_buffer(obj)
+            - string_buffer:    is_string_buffer(obj)
             - symbol:           is_symbol(obj)
             - vector:           is_vector(obj)
             - stack:            TODO is_stack(obj)
@@ -261,7 +261,7 @@ struct object_struct_t {
             - pair:             pair_make_op()
             - bytes:            bytes_make_op()
             - string:           string_make_from_cstr_op()
-            - string_buffer:    TODO string_buffer_make_op(), string_buffer_make_from_string_op()
+            - string_buffer:    string_buffer_make_op(), string_buffer_make_from_string_op()
             - symbol:           symbol_make_from_cstr_op()
             - vector:           vector_make_op()
             - stack:            TODO stack_make_op()
@@ -274,9 +274,9 @@ struct object_struct_t {
             - pair:             pair_getcar(), pair_getcdr()
             - bytes:            bytes_capacity(), bytes_index(), bytes_data()
             - string:           string_get_cstr(), string_len(), string_index()
-            - string_buffer:    TODO string_buffer_empty(), string_buffer_full(),
-                                TODO string_buffer_length(), string_buffer_index(), string_buffer_bytes_data(),
-                                TODO string_buffer_capacity(), string_buffer_bytes_obj
+            - string_buffer:    string_buffer_empty(), string_buffer_full(),
+                                string_buffer_length(), string_buffer_index(), string_buffer_bytes_data(),
+                                string_buffer_capacity(), string_buffer_bytes_obj
             - symbol:           symbol_make_get_cstr(), symbol_len(), symbol_index()
             - vector:           vector_len(), vector_ref()
             - stack:            TODO stack_empty(), stack_clean(), stack_capacity(), stack_len(), stack_peek(),
@@ -284,18 +284,18 @@ struct object_struct_t {
             - string_port:      TODO string_port_kind(obj)
             - stdio_port:       TODO stdio_port_kind(obj)
         操作:
-            - string:           TODO string_append_op()
-            - string_buffer:    TODO string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
-                                TODO string_buffer_append_char_op()
+            - string:           string_append_op()
+            - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
+                                string_buffer_append_char_op()
         扩容:
-            - bytes:            TODO bytes_capacity_increase()
-            - string_buffer:    TODO string_buffer_capacity_increase()
+            - bytes:            bytes_capacity_increase()
+            - string_buffer:    string_buffer_capacity_increase()
             - vector:           TODO vector_capacity_increase()
             - stack:            TODO stack_capacity_increase(),  stack_push_auto_increase()
         类型转换:
-            - char (立即数):     TODO imm_char_to_string()
-            - char (C 原始类型): TODO char_to_string()
-            - string_buffer:    TODO string_buffer_to_string()
+            - char (立即数):     imm_char_to_string()
+            - char (C 原始类型): char_to_string()
+            - string_buffer:    string_buffer_to_string()
 ******************************************************************************/
 
 
