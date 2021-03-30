@@ -53,6 +53,8 @@ typedef struct scheme_context_t {
     // 堆
     heap_t heap;
 
+    // TODO 解释器寄存器
+
     // 抑制 gc 时 gc_collect() 函数功能, 仅用于测试
     int gc_collect_on;
     // GC! gc 时的临时变量保护链
@@ -62,6 +64,7 @@ typedef struct scheme_context_t {
     // 标记栈顶
     gc_mark_stack_ptr mark_stack_top;
 
+    // 解释器输入输出
     FILE *context_stdin;
     FILE *context_stdout;
     FILE *context_stderr;
