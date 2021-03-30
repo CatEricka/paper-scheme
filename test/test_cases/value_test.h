@@ -9,7 +9,7 @@
  * 测试基础类型是否工作正常
  */
 
-UTEST(value_test, all_type_function_test) {
+UTEST(value_test, all_value_type_function_test) {
     context_t context = context_make(0x100, 2, 0x100000);
     gc_var4(context, obj, tmp1, tmp2, tmp3);
 
@@ -839,6 +839,46 @@ UTEST(value_test, all_type_function_test) {
     vector_ref(obj, 1) = imm_i64;
     ASSERT_EQ(vector_ref(obj, 1), imm_i64);
     ASSERT_EQ(10, vector_len(obj));
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_TRUE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_FALSE(is_string_port(obj));
+    ASSERT_FALSE(is_string_port_input(obj));
+    ASSERT_FALSE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_FALSE(is_port_input(obj));
+    ASSERT_FALSE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_FALSE(is_srfi6_port(obj));
+
+    vector_set(obj, 0, char_imm_make('x'));
+    obj = vector_capacity_increase(context, obj, 10);
+    ASSERT_EQ(vector_ref(obj, 0), char_imm_make('x'));
+    ASSERT_EQ(vector_ref(obj, 1), imm_i64);
+    for (size_t i = 2; i < vector_len(obj); i++) {
+        ASSERT_EQ(IMM_UNIT, vector_ref(obj, i));
+    }
+    ASSERT_EQ(20, vector_len(obj));
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
     ASSERT_FALSE(is_unique_imm(obj));

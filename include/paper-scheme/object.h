@@ -291,7 +291,7 @@ struct object_struct_t {
         扩容:
             - bytes:            bytes_capacity_increase()
             - string_buffer:    string_buffer_capacity_increase()
-            - vector:           TODO vector_capacity_increase()
+            - vector:           vector_capacity_increase()
             - stack:            stack_capacity_increase(),  stack_push_auto_increase()
         类型转换:
             - char (立即数):     imm_char_to_string()
