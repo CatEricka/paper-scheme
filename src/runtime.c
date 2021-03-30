@@ -683,18 +683,19 @@ stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t a
  * @param context
  * @param stack
  * @param element
- * @param growth_size 如果栈满, 会自动增长 growth_size + 1 (填 0 则自动增长 1)
+ * @param extern_growth_size 如果栈满, 会自动增长 extern_growth_size + 1 (填 0 则自动增长 1)
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF object element, size_t growth_size) {
+stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF object element,
+                         size_t extern_growth_size) {
     assert(context != NULL);
     assert(is_stack(stack));
 
     gc_param2(context, stack, element);
 
     if (stack_full(stack)) {
-        stack = stack_capacity_increase(context, stack, growth_size + 1);
+        stack = stack_capacity_increase(context, stack, extern_growth_size + 1);
     }
     int push_result = stack_push(stack, element);
     assert(push_result == 1);

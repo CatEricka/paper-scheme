@@ -1207,11 +1207,243 @@ UTEST(value_test, all_type_function_test) {
     start = utest_ns();
     gc_collect(context);
     time = utest_ns() - start;
-    UTEST_PRINTF("gc time: %"
-                         PRId64
-                         " ns\n", time);
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
 
     // stack
+    const int stack_size = 2;
+    obj = stack_make_op(context, stack_size);
+    ASSERT_TRUE(is_stack(obj));
+    ASSERT_TRUE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 0);
+    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+    stack_clean(obj);
+    ASSERT_TRUE(stack_empty(obj));
+    ASSERT_EQ(stack_len(obj), 0);
+    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { a, }
+    ASSERT_TRUE(stack_push(obj, char_imm_make('a')));
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 1);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('a'));
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { a, b }
+    ASSERT_TRUE(stack_push(obj, char_imm_make('b')));
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_TRUE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 2);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('b'));
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { a, b }
+    ASSERT_FALSE(stack_push(obj, char_imm_make('b')));
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_TRUE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 2);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('b'));
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { a, }
+    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 1);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('a'));
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { }
+    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 0);
+    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { }
+    ASSERT_FALSE(stack_pop(obj));
+    ASSERT_TRUE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 0);
+    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+    // { c }
+    obj = stack_push_auto_increase(context, obj, char_imm_make('c'), 0);
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 1);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('c'));
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+    // { c, d }
+    obj = stack_push_auto_increase(context, obj, char_imm_make('d'), 0);
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_TRUE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 2);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('d'));
+    ASSERT_EQ(stack_capacity(obj), stack_size);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+    // { c, d, e }
+    obj = stack_push_auto_increase(context, obj, char_imm_make('e'), 1);
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 3);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('e'));
+    ASSERT_EQ(stack_capacity(obj), stack_size + 2);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+    // { c, d, e, f }
+    obj = stack_push_auto_increase(context, obj, char_imm_make('f'), 0);
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_TRUE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 4);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('f'));
+    ASSERT_EQ(stack_capacity(obj), stack_size + 2);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+    // { c, d, e, f, g }
+    obj = stack_push_auto_increase(context, obj, char_imm_make('g'), 10);
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 5);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('g'));
+    ASSERT_EQ(stack_capacity(obj), stack_size + 2 + 11);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+        // { c }
+    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_FALSE(stack_empty(obj));
+    ASSERT_FALSE(stack_full(obj));
+    ASSERT_EQ(stack_len(obj), 1);
+    ASSERT_EQ(stack_peek(obj), char_imm_make('c'));
+    ASSERT_EQ(stack_capacity(obj), stack_size + 2 + 11);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
 
     obj = IMM_UNIT;
     tmp1 = IMM_UNIT;
