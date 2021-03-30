@@ -20,6 +20,7 @@ UTEST(runtime_test, auto_imm_test) {
     size_t n = 20;
     srand(0);
     int64_t *tests = malloc(n * sizeof(int64_t));
+    ASSERT_TRUE(tests);
     context_t context = context_make(0x100, 2, 0x10000);
     gc_collect_disable(context);
 

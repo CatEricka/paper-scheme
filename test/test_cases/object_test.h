@@ -112,6 +112,7 @@ UTEST(object_test, i64_imm_test) {
     size_t n = 20;
     srand(0);
     int64_t *tests = malloc(n * sizeof(int64_t));
+    ASSERT_TRUE(tests);
 
     // ≤‚ ‘”√¿˝
     tests[0] = I64_IMM_MIN;

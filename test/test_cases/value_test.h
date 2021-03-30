@@ -1254,7 +1254,7 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
     // stack
-    const int stack_size = 2;
+    const size_t stack_size = 2;
     obj = stack_make_op(context, stack_size);
     ASSERT_TRUE(is_stack(obj));
     ASSERT_TRUE(stack_empty(obj));

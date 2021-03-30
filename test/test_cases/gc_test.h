@@ -52,6 +52,7 @@ UTEST(gc_test, alloc_test) {
     UTEST_PRINTF("after first heap_grow(), heap node count: %d\n", count);
     ASSERT_EQ(count, 2);
     object *objs = malloc(n * (sizeof(object)));
+    ASSERT_TRUE(objs);
 
     // ∑÷≈‰≤‚ ‘
     for (size_t i = 0; i < n; i++) {
