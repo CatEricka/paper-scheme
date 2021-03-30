@@ -4,10 +4,37 @@
 /******************************************************************************
                             解释器初始化与解释器 API
 ******************************************************************************/
+/**
+ * 初始化环境
+ * @param context
+ * @return 0: 初始化失败; 1: 初始化成功
+ */
 static int interpreter_default_env_init(context_t context) {
+    gc_var1(context, tmp);
+
     context->debug = 0;
     context->repl_mode = 0;
 
+    context->args = IMM_UNIT;
+    context->code = IMM_UNIT;
+    // TODO current_env hash map
+    context->current_env = IMM_UNIT;
+    tmp = stack_make_op(context, MAX_STACK_BLOCK_DEEP);
+    tmp = pair_make_op(context, tmp, IMM_UNIT);
+    context->scheme_stack = tmp;
+
+    // TODO op_code 初始化
+    context->op_code = OP_TOP_LEVEL;
+    context->value = IMM_UNIT;
+
+    context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
+
+    // TODO global_symbol_table hash set
+    context->global_symbol_table = IMM_UNIT;
+    // TODO global_environment
+    context->global_environment = IMM_UNIT;
+
+    gc_release_var(context);
     return 1;
 }
 
@@ -18,7 +45,6 @@ EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growt
     interpreter_default_env_init(context);
     return context;
 }
-
 
 
 /******************************************************************************

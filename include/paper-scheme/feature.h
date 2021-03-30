@@ -120,8 +120,22 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 /**
                                 gc 特征
 ******************************************************************************/
-#define MAX_MARK_STACK_DEEP 1024u
+// 初始标记栈深度
+#define GC_MAX_MARK_STACK_DEEP 1024u
+// 使用带有 debug 信息的 gc
 #define USE_DEBUG_GC 1
+
+/**
+                               解释器特征
+******************************************************************************/
+// 单个调用栈块最大深度, 超出这个长度会分配新的 stack 块
+#define MAX_STACK_BLOCK_DEEP 1024
+// 全局符号表初始大小
+#define GLOBAL_SYMBOL_TABLE_INIT_SIZE 512
+// 全局 environment 初始大小
+#define GLOBAL_ENVIRONMENT_INIT_SIZE 512
+// (load "") 函数最大嵌套深度
+#define MAX_LOAD_FILE_DEEP 64
 
 /**
                                 其它定义

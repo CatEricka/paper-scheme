@@ -12,6 +12,7 @@
  */
 
 
+#include <paper-scheme/opcodes.h>
 #include <paper-scheme/gc.h>
 
 

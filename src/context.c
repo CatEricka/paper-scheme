@@ -24,6 +24,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Doublenum", .tag = OBJ_D64,
@@ -39,6 +41,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Char", .tag = OBJ_CHAR,
@@ -54,6 +58,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Boolean", .tag = OBJ_BOOLEAN,
@@ -69,6 +75,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Unit", .tag = OBJ_UNIT,
@@ -84,6 +92,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Pair", .tag = OBJ_PAIR,
@@ -99,6 +109,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Bytes", .tag = OBJ_BYTES,
@@ -114,6 +126,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(bytes, capacity),
                 .size_meta_size_scale = sizeof(char),
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "String", .tag = OBJ_STRING,
@@ -129,6 +143,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(string, len),
                 .size_meta_size_scale = sizeof(char),
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "String-Buffer", .tag = OBJ_STRING_BUFFER,
@@ -144,6 +160,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Symbol", .tag = OBJ_SYMBOL,
@@ -159,6 +177,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(symbol, len),
                 .size_meta_size_scale = sizeof(char),
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Vector", .tag = OBJ_VECTOR,
@@ -174,6 +194,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(vector, len),
                 .size_meta_size_scale = sizeof(object),
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Stack", .tag = OBJ_STACK,
@@ -189,6 +211,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(stack, size),
                 .size_meta_size_scale = sizeof(object),
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "String-Port", .tag = OBJ_STRING_PORT,
@@ -204,6 +228,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
         {
                 .name = (object) "Stdio-Port", .tag = OBJ_STDIO_PORT,
@@ -219,6 +245,60 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = stdio_finalizer,
+                .hash_code = NULL,
+                .equals = NULL,
+        },
+        {
+                .name = (object) "Hash-Set", .tag = OBJ_HASH_SET,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(hashset, table),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(hashset),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
+        },
+        {
+                .name = (object) "Hash-Map", .tag = OBJ_HASH_MAP,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(hashmap, table),
+                .member_eq_len_base = 1,
+                .member_len_base = 3,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(hashmap),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
+        },
+
+        {
+                .name = (object) "Weak-References", .tag = OBJ_WEAK_REF,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(weak_ref, ref),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(weak_ref),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = NULL,
+                .equals = NULL,
         },
 };
 
@@ -264,6 +344,8 @@ static int context_init_globals_type_specs(REF context_t context) {
         context->global_type_table[type->tag].size_meta_size_scale = type->size_meta_size_scale;
 
         context->global_type_table[type->tag].finalizer = type->finalizer;
+        context->global_type_table[type->tag].hash_code = type->hash_code;
+        context->global_type_table[type->tag].equals = type->equals;
 
         context->global_type_table_len++;
     }
@@ -348,12 +430,12 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
     context->mark_stack_top = NULL;
     context->saves = NULL;
 
-    context->context_stdin = stdin;
-    context->context_stdout = stdout;
-    context->context_stderr = stderr;
+    context->in_port = stdin;
+    context->out_port = stdout;
+    context->err_out_port = stderr;
 
 
-    context->scheme_type_specs = scheme_type_specs;
+    context->_internal_scheme_type_specs = scheme_type_specs;
     // 初始化类型信息结束, 此时堆结构已经正常工作, 但类型信息还不完整
     // 初始化解释器结构时应当完整初始化
     if (context_init_globals_type_specs(context)) return context;
@@ -391,8 +473,8 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     if (context->global_type_table != NULL) {
         raw_free(context->global_type_table);
     }
-    if (context->scheme_type_specs != NULL) {
-        context->scheme_type_specs = NULL;
+    if (context->_internal_scheme_type_specs != NULL) {
+        context->_internal_scheme_type_specs = NULL;
     }
     heap_destroy(context->heap);
     raw_free(context);
@@ -419,5 +501,70 @@ object stdio_finalizer(context_t context, object port) {
         return IMM_TRUE;
     } else {
         return IMM_FALSE;
+    }
+}
+
+
+/**
+                               hash 值算法
+******************************************************************************/
+/**
+ * symbol hash code 计算
+ * @param context
+ * @param symbol
+ * @return imm_i64, 非负数
+ */
+EXPORT_API object symbol_hash_code(context_t context, object symbol) {
+    // TODO 字符串 hash 值
+    return i64_imm_make(0);
+}
+
+/**
+ * string hash code 计算
+ * @param context
+ * @param str
+ * @return imm_i64, 非负数
+ */
+EXPORT_API object string_hash_code(context_t context, object str) {
+    // TODO 字符串 hash 值
+    return i64_imm_make(0);
+}
+
+/**
+                               equals 函数
+******************************************************************************/
+/**
+ * symbol 比较
+ * @param context
+ * @param symbol_a
+ * @param symbol_b
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API object symbol_equals(context_t context, object symbol_a, object symbol_b) {
+    if (!is_symbol(symbol_a) || !is_symbol(symbol_b)) {
+        return IMM_FALSE;
+    } else if (symbol_len(symbol_a) != symbol_len(symbol_b)) {
+        return IMM_FALSE;
+    } else {
+        int cmp = memcmp(symbol_get_cstr(symbol_a), symbol_get_cstr(symbol_b), symbol_len(symbol_a) + 1);
+        return (cmp == 0) ? IMM_TRUE : IMM_FALSE;
+    }
+}
+
+/**
+ * string 比较
+ * @param context
+ * @param str_a
+ * @param str_b
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API object string_equals(context_t context, object str_a, object str_b) {
+    if (!is_string(str_a) || !is_string(str_b)) {
+        return IMM_FALSE;
+    } else if (string_len(str_a) != string_len(str_b)) {
+        return IMM_FALSE;
+    } else {
+        int cmp = memcmp(string_get_cstr(str_a), string_get_cstr(str_b), string_len(str_a) + 1);
+        return (cmp == 0) ? IMM_TRUE : IMM_FALSE;
     }
 }

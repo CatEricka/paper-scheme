@@ -18,7 +18,7 @@ static void gc_mark_stack_push(context_t context, object *start, object *end) {
         context->mark_stack_top = context->mark_stack;
         context->mark_stack_top->prev = NULL;
     } else if (context->mark_stack_top >= context->mark_stack &&
-               context->mark_stack_top + 1 < context->mark_stack + MAX_MARK_STACK_DEEP) {
+               context->mark_stack_top + 1 < context->mark_stack + GC_MAX_MARK_STACK_DEEP) {
         // 如果默认栈深度够大, 直接增加栈指针即可
         gc_mark_stack_ptr old = context->mark_stack_top;
         context->mark_stack_top++;
@@ -27,7 +27,7 @@ static void gc_mark_stack_push(context_t context, object *start, object *end) {
         // 默认栈深度不足, 额外分配内存, 分配失败则停机
         gc_mark_stack_ptr new_mark_stack_node = (gc_mark_stack_ptr) raw_alloc(sizeof(struct gc_mark_stack_node_t));
         if (new_mark_stack_node == NULL) {
-            fprintf(context->context_stderr, "gc stack too deep.\n");
+            fprintf(context->err_out_port, "gc stack too deep.\n");
             exit(EXIT_FAILURE_MALLOC_FAILED);
         }
         new_mark_stack_node->prev = context->mark_stack_top;
@@ -46,7 +46,7 @@ static void gc_mark_stack_pop(context_t context) {
     context->mark_stack_top = context->mark_stack_top->prev;
 
     // 旧的栈顶指针如果指向默认栈以外的空间, 则说明需要释放
-    if (old < context->mark_stack || old >= context->mark_stack + MAX_MARK_STACK_DEEP) {
+    if (old < context->mark_stack || old >= context->mark_stack + GC_MAX_MARK_STACK_DEEP) {
         printf("old %p, stack %p, top %p\n", old, context->mark_stack, context->mark_stack_top);
         raw_free(old);
     }
@@ -66,6 +66,13 @@ static void gc_mark_one(context_t context, object obj) {
 
     do {
         if (!is_object(obj) || is_marked(obj)) return;
+
+        // 处理弱引用
+        if (is_weak_ref(obj)) {
+            obj->marked = 1;
+            // 弱引用对象的成员不需要标记
+            return;
+        }
 
         obj->marked = 1;
         object_type_info_ptr t = context_get_object_type(context, obj);
@@ -119,14 +126,33 @@ static void gc_mark_one_start(context_t context, object obj) {
 
 /**
  * 内部方法 1. 标记存活对象
- * <p>第二次图遍历</p>
+ * <p>第一次图遍历</p>
  * @param context
- * @return <li>IMM_TRUE: 运行成功</li><li>IMM_FALSE: 运行失败</li>
+ * @return <li>IMM_TRUE: 运行成功</li>
+ * <li>IMM_FALSE: 运行失败</li>
  */
 static object gc_mark(context_t context) {
     assert(context != NULL);
 
     // todo context 修改后, 修改gc_mark
+
+    // 标记寄存器
+    gc_mark_one_start(context, context->args);
+    gc_mark_one_start(context, context->code);
+    gc_mark_one_start(context, context->current_env);
+    gc_mark_one_start(context, context->scheme_stack);
+
+    // 标记返回值
+    gc_mark_one_start(context, context->value);
+    // 标记 load stack
+    gc_mark_one_start(context, context->load_stack);
+
+    // 标记全局符号表
+    gc_mark_one_start(context, context->global_symbol_table);
+
+    // 标记全局 environment
+    gc_mark_one_start(context, context->global_environment);
+
 
     // 全局类型
     for (size_t i = 0; i < context->global_type_table_len; i++) {
@@ -135,10 +161,6 @@ static object gc_mark(context_t context) {
         gc_mark_one_start(context, context->global_type_table[i].setter);
         gc_mark_one_start(context, context->global_type_table[i].to_string);
     }
-
-    // env & dump stack ?
-
-    // 符号表为弱引用, 此处不应当进行标记
 
     // C 调用栈上变量保护表
     for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
@@ -150,10 +172,89 @@ static object gc_mark(context_t context) {
     return IMM_TRUE;
 }
 
+#define gc_reset_weak_references_one(obj) \
+    do { \
+        if (is_weak_ref(obj)) { \
+            if (is_object(weak_ref_get(obj)) && weak_ref_get(obj)->marked == 0) { \
+                (obj)->value.weak_ref.ref = NULL; \
+            } \
+        } \
+    } while(0)
+
 /**
- * 内部方法 2. 计算紧凑对象后地址并设置 object->forwarding 字段,
- * 同时运行对象的 finalize
+ * 内部方法 2. 重置弱引用
  * <p>第一次堆遍历</p>
+ * @param context
+ * @param context
+ */
+static void gc_reset_weak_references(context_t context) {
+
+    // 标记寄存器
+    gc_reset_weak_references_one(context->args);
+    gc_reset_weak_references_one(context->code);
+    gc_reset_weak_references_one(context->current_env);
+    gc_reset_weak_references_one(context->scheme_stack);
+
+    // 标记返回值
+    gc_reset_weak_references_one(context->value);
+    // 标记 load stack
+    gc_reset_weak_references_one(context->load_stack);
+
+    // 标记全局符号表
+    gc_reset_weak_references_one(context->global_symbol_table);
+
+    // 标记全局 environment
+    gc_reset_weak_references_one(context->global_environment);
+
+
+    // 全局类型
+    for (size_t i = 0; i < context->global_type_table_len; i++) {
+        gc_reset_weak_references_one(context->global_type_table[i].name);
+        gc_reset_weak_references_one(context->global_type_table[i].getter);
+        gc_reset_weak_references_one(context->global_type_table[i].setter);
+        gc_reset_weak_references_one(context->global_type_table[i].to_string);
+    }
+
+    // C 调用栈上变量保护表
+    // 如果弱引用指向的 object 已经被标记, 这时弱引用不会被破坏
+    for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
+        // 使用 macro gc_var_n() 时, 必须保证第一次调用会触发 GC 的函数前必须初始化变量值
+        if (save->illusory_object != NULL && is_object(*save->illusory_object)) {
+            gc_reset_weak_references_one(*save->illusory_object);
+        }
+    }
+
+    // 最后遍历堆结构
+    heap_t heap = context->heap;
+    for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
+        char *ptr = node->data;
+
+        while (ptr < node->free_ptr) {
+            object obj = (object) ptr;
+            assert(is_object(obj));
+            size_t size = context_object_sizeof(context, obj);
+
+            if (is_marked(obj)) {
+                // 对于存活的对象, 检查是否是弱引用
+                if (is_weak_ref(obj)) {
+                    // 如果引用未存活, 引用设置 NULL
+                    object ref = weak_ref_get(obj);
+                    if (is_object(ref) && (!is_marked(ref))) {
+                        weak_ref_get(obj) = NULL;
+                    }
+                }
+            }
+            ptr += size;
+        }
+
+        assert(ptr == node->free_ptr);
+    }
+}
+
+/**
+ * 内部方法 3. 计算紧凑对象后地址并设置 object->forwarding 字段,
+ * 同时运行对象的 finalize
+ * <p>第二次堆遍历</p>
  * @param context
  */
 static void gc_set_forwarding(context_t context) {
@@ -216,10 +317,17 @@ static void gc_set_forwarding(context_t context) {
     }
 }
 
+#define gc_adjust_ref_one(obj) \
+    do { \
+        if (is_object(*(obj))) { \
+            *(obj) = (*(obj))->forwarding; \
+        } \
+    } while (0);
+
 /**
- * 内部方法 3. 根据 object->forwarding 字段更新对象引用
+ * 内部方法 4. 根据 object->forwarding 字段更新对象引用
  * <p>注意! 这会破坏旧的引用关系</p>
- * <p>第二次堆遍历</p>
+ * <p>第三次堆遍历</p>
  * @param context
  */
 static void gc_adjust_ref(context_t context) {
@@ -227,8 +335,23 @@ static void gc_adjust_ref(context_t context) {
 
     // todo context 修改后, 修改 gc_adjust_ref, 更新根引用
 
-    // 先更新根引用
-    // 全局符号表
+    // 更新根引用
+
+    // 寄存器
+    gc_adjust_ref_one(&(context->args));
+    gc_adjust_ref_one(&(context->code));
+    gc_adjust_ref_one(&(context->current_env));
+    gc_adjust_ref_one(&(context->scheme_stack));
+
+    // 返回值
+    gc_adjust_ref_one(&(context->value));
+    // load stack
+    gc_adjust_ref_one(&(context->load_stack));
+
+    // 标记 global_environment
+    gc_adjust_ref_one(&(context->global_environment));
+
+    // 全局类型信息
     for (size_t i = 0; i < context->global_type_table_len; i++) {
         object_type_info_ptr t = &context->global_type_table[i];
         if (is_object(t->name))
@@ -240,8 +363,6 @@ static void gc_adjust_ref(context_t context) {
         if (is_object(t->to_string))
             t->to_string = t->to_string->forwarding;
     }
-
-    // env & dump stack ?
 
     // C 调用栈上变量保护表
     for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
@@ -284,7 +405,7 @@ static void gc_adjust_ref(context_t context) {
 }
 
 /**
- * 内部方法 4. 移动对象
+ * 内部方法 5. 移动对象
  * @param context
  */
 static void move_objects(context_t context) {
@@ -336,7 +457,8 @@ EXPORT_API CHECKED GC object gc_collect(REF NOTNULL context_t context) {
 #endif
 
     gc_mark(context);
-    // TODO 重设符号表弱引用
+    // 重设弱引用
+    gc_reset_weak_references(context);
     gc_set_forwarding(context);
     gc_adjust_ref(context);
     move_objects(context);
@@ -434,14 +556,14 @@ EXPORT_API OUT GC object gc_alloc(REF NOTNULL context_t context, IN size_t size)
     // 6. 永远不会分配失败. 失败时结束运行
     heap_t heap = context->heap;
     if (heap_grow_result == IMM_FALSE) {
-        fprintf(context->context_stderr, "[ERROR] Out of Memory:");
-        fprintf(context->context_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+        fprintf(context->err_out_port, "[ERROR] Out of Memory:");
+        fprintf(context->err_out_port, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_OUT_OF_MEMORY);
         //return IMM_FALSE;
     } else {
-        fprintf(context->context_stderr, "[ERROR] malloc() failed:");
-        fprintf(context->context_stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+        fprintf(context->err_out_port, "[ERROR] malloc() failed:");
+        fprintf(context->err_out_port, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_MALLOC_FAILED);
         //return IMM_UNIT;

@@ -44,43 +44,84 @@ typedef struct object_runtime_type_info_t *object_type_info_ptr;
  */
 struct scheme_context_t;
 typedef struct scheme_context_t {
-    // debug 开关
+    /**
+     *                      开关选项
+     ****************************************************/
+    // 调试信息 开关
     int debug;
-
     // 是否处于 repl 模式
     int repl_mode;
 
+
+    /**
+     *                    解释器寄存器
+     ****************************************************/
+    // TODO 解释器寄存器
+    // 参数寄存器, pair / IMM_UNIT
+    GC object args;
+    // s-exp 寄存器, pair / IMM_UNIT
+    GC object code;
+    // 当前 environment 指针, (const (make-hashmap GLOBAL_SYMBOL_TABLE_INIT_SIZE) '())
+    // TODO hashmap symbol->object
+    GC object current_env;
+    // 栈记录, (cons (stack MAX_STACK_BLOCK_DEEP) '())
+    GC object scheme_stack;
+
+    // 当前操作码
+    int op_code;
+    // 返回值, any type
+    GC object value;
+
+    // (load "") 栈, (make-stack MAX_LOAD_FILE_DEEP)
+    GC object load_stack;
+
+
+    /**
+     *                   全局信息表
+     ****************************************************/
+    // TODO 实现 hash set
+    // TODO 全局符号表, 应为弱引用, gc 处理时应当特殊处理
+    // 因为除此之外没有用到弱引用的地方, 因此不额外实现弱引用功能
+    // (make-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)
+    // symbol
+    GC object global_symbol_table;
+    // TODO 实现全局 environment, (make-hashmap)
+    // symbol->any
+    GC object global_environment;
+
+    // GC 全局类型信息表
+    GC struct object_runtime_type_info_t *global_type_table;
+    // 全局类型信息表最大长度
+    size_t type_info_table_size;
+    // 全局类型信息表当前长度
+    size_t global_type_table_len;
+
+
+    /**
+     *                      堆结构
+     ****************************************************/
     // 堆
     heap_t heap;
-
-    // TODO 解释器寄存器
-
     // 抑制 gc 时 gc_collect() 函数功能, 仅用于测试
     int gc_collect_on;
     // GC! gc 时的临时变量保护链
     GC gc_saves_list_t saves;
     // gc 标记栈
-    struct gc_mark_stack_node_t mark_stack[MAX_MARK_STACK_DEEP];
+    struct gc_mark_stack_node_t mark_stack[GC_MAX_MARK_STACK_DEEP];
     // 标记栈顶
     gc_mark_stack_ptr mark_stack_top;
 
     // 解释器输入输出
-    FILE *context_stdin;
-    FILE *context_stdout;
-    FILE *context_stderr;
+    FILE *in_port;
+    FILE *out_port;
+    FILE *err_out_port;
 
-    // 全局类型信息表最大长度
-    size_t type_info_table_size;
-    // GC! 全局类型信息表
-    GC struct object_runtime_type_info_t *global_type_table;
-    // 全局类型信息表当前长度
-    size_t global_type_table_len;
 
-    // TODO 全局符号表, 此处应为弱引用, gc 处理时应当特殊处理
-    // 因为除此之外没有用到弱引用的地方, 因此不额外实现弱引用功能
-
+    /**
+     *                   公共信息引用
+     ****************************************************/
     // 基础类型信息索引表, 仅用于构造期, 其中 object 类型均不可用; .name 字段为字符串指针
-    struct object_runtime_type_info_t const *scheme_type_specs;
+    struct object_runtime_type_info_t const *_internal_scheme_type_specs;
 } *context_t;
 
 
@@ -118,6 +159,8 @@ struct object_runtime_type_info_t {
     size_t size_meta_size_scale;        // 柔性数组元素大小
 
     proc_1 finalizer;                   // finalizer
+    proc_1 hash_code;                   // hash值计算      (context, object) -> i64, 非负数
+    proc_1 equals;                      // 比较是否相等     (context, object) -> boolean 立即数
 };
 
 
@@ -132,6 +175,46 @@ struct object_runtime_type_info_t {
  */
 object stdio_finalizer(context_t context, object port);
 
+
+/**
+                               hash 值算法
+******************************************************************************/
+/**
+ * symbol hash code 计算
+ * @param context
+ * @param symbol
+ * @return imm_i64, 非负数
+ */
+EXPORT_API object symbol_hash_code(context_t context, object symbol);
+
+/**
+ * string hash code 计算
+ * @param context
+ * @param str
+ * @return imm_i64, 非负数
+ */
+EXPORT_API object string_hash_code(context_t context, object str);
+
+/**
+                               equals 函数
+******************************************************************************/
+/**
+ * symbol 比较
+ * @param context
+ * @param symbol_a
+ * @param symbol_b
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API object symbol_equals(context_t context, object symbol_a, object symbol_b);
+
+/**
+ * string 比较
+ * @param context
+ * @param str_a
+ * @param str_b
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API object string_equals(context_t context, object str_a, object str_b);
 
 /**
                            运行时类型信息计算辅助宏
@@ -159,7 +242,11 @@ object stdio_finalizer(context_t context, object port);
 #define type_info_size_meta_size_scale(_t)      type_info_field((_t), size_meta_size_scale)
 
 // finalize
-#define type_info_finalizer(t)                   type_info_field((t), finalizer)
+#define type_info_finalizer(t)                  type_info_field((t), finalizer)
+// hash_code
+#define type_info_hash_code(t)                  type_info_field((t), hash_code)
+// equals
+#define type_info_equals(t)                     type_info_field((t), equals)
 
 
 /**

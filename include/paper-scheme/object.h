@@ -31,11 +31,14 @@ enum object_type_enum {
     OBJ_STACK,
     OBJ_STRING_PORT,
     OBJ_STDIO_PORT,
+    OBJ_HASH_SET,
+    OBJ_HASH_MAP,
+    OBJ_WEAK_REF,
 
     OBJECT_TYPE_ENUM_MAX, // 标记枚举最大值
 };
 typedef enum object_type_enum object_type_tag;
-compile_time_assert(((size_t) OBJECT_TYPE_ENUM_MAX) <= SIZE_MAX);
+//compile_time_assert(((size_t) OBJECT_TYPE_ENUM_MAX) <= SIZE_MAX);
 
 // 对象头魔数, uint8_t, B1010 1010
 #define OBJECT_HEADER_MAGIC (0xAAu)
@@ -189,6 +192,41 @@ struct object_struct_t {
             int need_close;
         } stdio_port;
 
+        // TODO 实现 hash set
+        struct value_hashset_t {
+            // 表大小
+            size_t size;
+            // 负载因子
+            double load_factor;
+            // bucket 个数, 等于 vector(table)+1
+            size_t mod_count;
+            // #(x x x x)
+            // vector
+            object table;
+        } hashset;
+
+        // TODO 实现 hash map
+        struct value_hashmap_t {
+            size_t size;
+            double load_factor;
+            // bucket 个数, 等于 vector(table)+1
+            size_t mod_count;
+            // #( ((k v) '())
+            //    ((k v) '())
+            //    ((k v) '()))
+            // vector
+            object table;
+            // hashset
+            object key_set;
+            // hashset
+            object value_set;
+        } hashmap;
+
+        // TODO 实现弱引用, 测试弱引用的 GC 工作
+        struct value_weak_ref_t {
+            object ref;
+        } weak_ref;
+
         /*  运行时结构  */
     } value;
     /*  对齐填充, 对齐到 ALIGN_SIZE, 即 sizeof(void *)  */
@@ -255,6 +293,9 @@ struct object_struct_t {
                                 TODO is_port_input(obj), is_port_output(obj), is_port_in_out_put(obj), is_port_eof(obj)
             - srfi6 string_port:
                                 TODO is_srfi6_port(obj)
+            - hashset:          TODO is_hashset(obj)
+            - hashmap:          TODO is_hashmap(obj)
+            - weak_ref:         TODO is_weak_ref(obj)
         构造:
             - i64:              i64_make_op()
             - double number:    doublenum_make_op()
@@ -268,6 +309,9 @@ struct object_struct_t {
             - string_port:      TODO string_port_input_from_string(), string_port_output_use_buffer(),
                                 TODO string_port_in_out_put_from_string_use_buffer()
             - stdio_port:       TODO stdio_port_from_filename(), stdio_port_from_file()
+            - hashset:          TODO hashset_make_op()
+            - hashmap:          TODO hashmap_make_op()
+            - weak_ref:         TODO weak_ref_make_op()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -282,12 +326,20 @@ struct object_struct_t {
             - stack:            stack_clean(), stack_capacity(), stack_len()
                                 stack_full(), stack_empty()
                                 stack_push, stack_pop(),  stack_peek(),
-            - string_port:      TODO string_port_kind(obj)
-            - stdio_port:       TODO stdio_port_kind(obj)
+            - string_port:      TODO string_port_kind()
+            - stdio_port:       TODO stdio_port_kind()
+            - hashset:          TODO hashset_size()
+            - hashmap:          TODO hashmap_size()
+            - weak_ref:         TODO weak_ref_is_valid()
         操作:
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
                                 string_buffer_append_char_op()
+            - hashset:          TODO hashset_contains_op(), hashset_put_op, hashset_put_all_op
+                                TODO hashset_clear_op(), hashset_remove_op()
+            - hashmap:          TODO hashmap_contains_key_op, hashmap_put_op, hashmap_remove_op, hashmap_put_all_op
+                                TODO hashmap_clear_op(), hashmap_remove_op()
+            - weak_ref:         TODO weak_ref_get()
         扩容:
             - bytes:            bytes_capacity_increase()
             - string_buffer:    string_buffer_capacity_increase()
@@ -564,6 +616,14 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 #define is_port_in_out_put(obj)         (is_string_port(obj) ? is_string_port_in_out_put(obj) : is_stdio_port_in_out_put(obj))
 
 #define is_port_eof(obj)                (is_string_port(obj) ? is_string_port_eof(obj) : is_stdio_port_eof(obj))
+
+// hash set
+#define is_hashset(obj)                 (is_object(obj) && (obj)->type == OBJ_HASH_SET)
+// hash map
+#define is_hashmap(obj)                 (is_object(obj) && (obj)->type == OBJ_HASH_MAP)
+
+// 弱引用
+#define is_weak_ref(obj)                (is_object(obj) && (obj)->type == OBJ_WEAK_REF)
 /**
                                 对象值操作
 ******************************************************************************/
@@ -797,6 +857,29 @@ CHECKED OUT int stack_pop(REF object stack);
  * port 是否已经释放
  */
 #define stdio_port_is_released(obj) ((obj)->value.stdio_port.is_released)
+
+/**
+ * hashset 元素数量
+ */
+#define hashset_size(obj)   ((obj)->value.hashset.size)
+
+/**
+ *  hashmap 元素数量
+ */
+#define hashmap_size(obj)   ((obj)->value.hashmap.size)
+
+/**
+ * 弱引用是否可用
+ * @return 0: 不可用; 1: 可用
+ */
+#define weak_ref_is_valid(obj)   ((obj)->value.weak_ref != NULL)
+
+/**
+ * 获取弱引用对应的引用
+ * 如果不可用, 返回 NULL
+ */
+#define weak_ref_get(obj)   ((obj)->value.weak_ref.ref)
+
 
 /**
                            对象值操作: compare
