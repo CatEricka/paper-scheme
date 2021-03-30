@@ -133,7 +133,7 @@ struct object_struct_t {
 
         //字符串
         struct value_string_t {
-            // char data[] 大小, 注意是指 char 个数
+            // char data[] 大小, 注意是指 char 个数, 包括 '\0'
             size_t len;
             char data[0];
         } string;
@@ -241,7 +241,7 @@ struct object_struct_t {
             - i64:              is_i64(obj)
             - double number:    is_doublenum(obj
             - pair:             is_pair(obj)
-            - bytes:            TODO is_bytes(obj)
+            - bytes:            is_bytes(obj)
             - string:           is_string(obj)
             - string_buffer:    TODO is_string_buffer(obj)
             - symbol:           is_symbol(obj)
@@ -259,7 +259,7 @@ struct object_struct_t {
             - i64:              i64_make_op()
             - double number:    doublenum_make_op()
             - pair:             pair_make_op()
-            - bytes:            TODO bytes_make_op()
+            - bytes:            bytes_make_op()
             - string:           string_make_from_cstr_op()
             - string_buffer:    TODO string_buffer_make_op(), string_buffer_make_from_string_op()
             - symbol:           symbol_make_from_cstr_op()
@@ -272,11 +272,11 @@ struct object_struct_t {
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
             - pair:             pair_getcar(), pair_getcdr()
-            - bytes:            TODO bytes_capacity(), bytes_index(), bytes_data()
+            - bytes:            bytes_capacity(), bytes_index(), bytes_data()
             - string:           string_get_cstr(), string_len(), string_index()
             - string_buffer:    TODO string_buffer_empty(), string_buffer_full(),
                                 TODO string_buffer_length(), string_buffer_index(), string_buffer_bytes_data(),
-                                TODO string_buffer_buffer_size(),string_buffer_buffer_capacity(), string_buffer_bytes_obj
+                                TODO string_buffer_capacity(), string_buffer_bytes_obj
             - symbol:           symbol_make_get_cstr(), symbol_len(), symbol_index()
             - vector:           vector_len(), vector_ref()
             - stack:            TODO stack_empty(), stack_clean(), stack_capacity(), stack_len(), stack_peek(),
@@ -541,28 +541,28 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 // string_port
 #define string_port_kind(obj)           ((obj)->value.string_port.kind)
 #define is_string_port(obj)             (is_port(obj) && ((obj)->type == OBJ_STRING_PORT))
-#define is_string_port_input(obj)       (is_port(obj) && (string_port_kind(obj) & PORT_INPUT))
-#define is_string_port_output(obj)      (is_port(obj) && (string_port_kind(obj) & PORT_OUTPUT))
-#define is_string_port_in_out_put(obj)  (is_port(obj) && (string_port_kind(obj) & (PORT_INPUT | PORT_OUTPUT)))
-#define is_string_port_eof(obj)         (is_port(obj) && (string_port_kind(obj) & PORT_AT_EOF))
+#define is_string_port_input(obj)       (is_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_INPUT))
+#define is_string_port_output(obj)      (is_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_OUTPUT))
+#define is_string_port_in_out_put(obj)  (is_port(obj) && ((unsigned)string_port_kind(obj) & ((unsigned)PORT_INPUT | (unsigned)PORT_OUTPUT)))
+#define is_string_port_eof(obj)         (is_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_EOF))
 
 // stdio_port
 #define stdio_port_kind(obj)            ((obj)->value.stdio_port.kind)
 #define is_stdio_port(obj)              (is_port(obj) && ((obj)->type == OBJ_STDIO_PORT))
-#define is_stdio_port_input(obj)        (is_port(obj) && (stdio_port_kind(obj) & PORT_INPUT))
-#define is_stdio_port_output(obj)       (is_port(obj) && (stdio_port_kind(obj) & PORT_OUTPUT))
-#define is_stdio_port_in_out_put(obj)   (is_port(obj) && (stdio_port_kind(obj) & (PORT_INPUT | PORT_OUTPUT)))
-#define is_stdio_port_eof(obj)          (is_port(obj) && (stdio_port_kind(obj) & PORT_AT_EOF))
+#define is_stdio_port_input(obj)        (is_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_INPUT))
+#define is_stdio_port_output(obj)       (is_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_OUTPUT))
+#define is_stdio_port_in_out_put(obj)   (is_port(obj) && ((unsigned)stdio_port_kind(obj) & ((unsigned)PORT_INPUT | (unsigned)PORT_OUTPUT)))
+#define is_stdio_port_eof(obj)          (is_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_EOF))
 
 // srfi6
-#define is_srfi6_port(obj)              ((is_string_port(obj)) && (string_port_kind(obj) & PORT_SRFI6))
+#define is_srfi6_port(obj)              ((is_string_port(obj)) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_SRFI6))
 
 // port
-#define is_port_input(obj)              (is_port(obj) && (is_string_port(obj) ? is_string_port_input(obj) : is_stdio_port_input(obj)))
-#define is_port_output(obj)             (is_port(obj) && (is_string_port(obj) ? is_string_port_output(obj) : is_stdio_port_output(obj)))
-#define is_port_in_out_put(obj)         (is_port(obj) && (is_string_port(obj) ? is_string_port_in_out_put(obj) : is_stdio_port_in_out_put(obj)))
+#define is_port_input(obj)              (is_string_port(obj) ? is_string_port_input(obj) : is_stdio_port_input(obj))
+#define is_port_output(obj)             (is_string_port(obj) ? is_string_port_output(obj) : is_stdio_port_output(obj))
+#define is_port_in_out_put(obj)         (is_string_port(obj) ? is_string_port_in_out_put(obj) : is_stdio_port_in_out_put(obj))
 
-#define is_port_eof(obj)                (is_port(obj) && (is_string_port(obj) ? is_string_port_eof(obj) : is_stdio_port_eof(obj)))
+#define is_port_eof(obj)                (is_string_port(obj) ? is_string_port_eof(obj) : is_stdio_port_eof(obj))
 /**
                                 对象值操作
 ******************************************************************************/
@@ -659,24 +659,19 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
 #define string_buffer_empty(obj)    ((obj)->value.string_buffer.buffer_length == 0)
 
 /**
- * string buffer 总大小, 包括 '\0'
+ * string buffer 字符容量
  */
-#define string_buffer_buffer_size(obj)     ((obj)->value.string_buffer.buffer_size)
+#define string_buffer_capacity(obj)     ((obj)->value.string_buffer.buffer_size)
 
 /**
- * string buffer 字符容量, 不包括 '\0'
+ * string buffer 当前长度
  */
-#define string_buffer_buffer_capacity(obj)     ((obj)->value.string_buffer.buffer_size - 1)
-
-/**
- * string buffer 当前长度, 不包括 '\0'
- */
-#define string_buffer_length(obj)   ((obj)->value.string_buffer.buffer_length - 1u)
+#define string_buffer_length(obj)   ((obj)->value.string_buffer.buffer_length)
 
 /**
  * string buffer 是否已满
  */
-#define string_buffer_full(obj)     (string_buffer_size(obj) == string_buffer_length(obj))
+#define string_buffer_full(obj)     (string_buffer_capacity(obj) == string_buffer_length(obj))
 
 /**
  * string buffer 访问内容

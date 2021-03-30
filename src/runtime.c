@@ -196,7 +196,7 @@ string_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
 /**
  * 构造 string_buffer 对象
  * @param context
- * @param char_size char 容量, 实际 string_buffer 要多用一个 char 存储 '\0\
+ * @param char_size char 容量, 注意 string_buffer 不以 '\0' 结束
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
@@ -204,7 +204,7 @@ string_buffer_make_op(REF NOTNULL context_t context, IN size_t char_size) {
     assert(context != NULL);
     gc_var2(context, ret, tmp);
 
-    size_t buffer_size = char_size + 1;
+    size_t buffer_size = char_size;
     ret = raw_object_make(context, OBJ_STRING_BUFFER,
                           object_sizeof_base(string_buffer));
     tmp = bytes_make_op(context, buffer_size);
@@ -212,8 +212,8 @@ string_buffer_make_op(REF NOTNULL context_t context, IN size_t char_size) {
 
     ret->value.string_buffer.bytes_buffer = tmp;
     ret->value.string_buffer.buffer_size = buffer_size;
-    // 默认长度包括 '\0'
-    ret->value.string_buffer.buffer_length = 1u;
+    // buffer 中没有 '\0' 作为结尾
+    ret->value.string_buffer.buffer_length = 0;
 
     gc_release_var(context);
     return ret;
@@ -237,20 +237,17 @@ string_buffer_make_from_string_op(REF NOTNULL context_t context, COPY object str
     ret = raw_object_make(context, OBJ_STRING_BUFFER,
                           object_sizeof_base(string_buffer));
 
-    // 包括结束的 '\0'
-    size_t capacity = string_len(str) + 1;
+    // 不包括结束的 '\0'
+    size_t str_len = string_len(str);
     // 实际 buffer 大小要加上 STRING_BUFFER_DEFAULT_INIT_SIZE, 因为 buffer 常常继续增长
     // todo string_buffer 增长策略也许需要修改
-    size_t new_buffer_size = capacity + STRING_BUFFER_DEFAULT_GROWTH_SIZE;
+    size_t new_buffer_size = str_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE;
     tmp = bytes_make_op(context, new_buffer_size);
-    memcpy(bytes_data(tmp), string_get_cstr(str), capacity);
-
-    // 保险起见手动填 '\0'
-    bytes_data(tmp)[capacity - 1u] = '\0';
+    memcpy(bytes_data(tmp), string_get_cstr(str), str_len);
 
     ret->value.string_buffer.bytes_buffer = tmp;
     ret->value.string_buffer.buffer_size = new_buffer_size;
-    ret->value.string_buffer.buffer_length = capacity;
+    ret->value.string_buffer.buffer_length = str_len;
 
     gc_release_param(context);
     return ret;
@@ -299,7 +296,7 @@ stack_make_op(REF NOTNULL context_t context, IN size_t stack_size) {
 
 /**
  * 从输入字符串打开 input port, 传入的 string 应当是不可变对象
- * <p>obj->value.string_port.length 长度包含 '\0'</p>
+ * <p>obj->value.string_port.length 长度 不包含 '\0'</p>
  * <p>(open-input-string "string here")</p>
  * @param context
  * @param str
@@ -315,7 +312,7 @@ string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
     ret->value.string_port.kind = PORT_INPUT;
     ret->value.string_port.string_buffer_data = str;
-    ret->value.string_port.length = string_len(str) + 1;
+    ret->value.string_port.length = string_len(str);
     ret->value.string_port.current = 0;
 
     gc_release_param(context);
@@ -497,22 +494,21 @@ string_buffer_append_string_op(
 
     size_t str_buffer_len = string_buffer_length(str_buffer);
     size_t str_len = string_len(str);
-    size_t buffer_size = string_buffer_buffer_size(str_buffer);
+    size_t buffer_size = string_buffer_capacity(str_buffer);
 
     assert(string_get_cstr(str)[str_len] == '\0');
 
-    if (str_len + str_buffer_len + 1 > buffer_size) {
+    if (str_len + str_buffer_len > buffer_size) {
         // 容量不足
-        size_t add_size = (str_len + str_buffer_len + 1 + STRING_BUFFER_DEFAULT_GROWTH_SIZE) - buffer_size;
+        size_t add_size = (str_len + str_buffer_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE) - buffer_size;
         str_buffer = string_buffer_capacity_increase(context, str_buffer, add_size);
 
-        assert(add_size + buffer_size == string_buffer_buffer_size(str_buffer));
+        assert(add_size + buffer_size == string_buffer_capacity(str_buffer));
     }
 
-    memcpy(string_buffer_bytes_data(str_buffer) + str_buffer_len, string_get_cstr(str), str_len + 1);
-    str_buffer->value.string_buffer.buffer_length = str_buffer_len + str_len + 1;
-
-    assert(string_buffer_bytes_data(str_buffer)[string_buffer_length(str_buffer)] == '\0');
+    // 不复制 '\0'
+    memcpy(string_buffer_bytes_data(str_buffer) + str_buffer_len, string_get_cstr(str), str_len);
+    str_buffer->value.string_buffer.buffer_length = str_buffer_len + str_len;
 
     gc_release_param(context);
     return str_buffer;
@@ -554,13 +550,13 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object s
     gc_param1(context, str_buffer);
 
     size_t buffer_len = string_buffer_length(str_buffer);
-    if ((buffer_len + 1) + 1 > string_buffer_buffer_size(str_buffer)) {
-        // 当前 string_buffer_length(str_buffer) + 1, 其中 '+1' 为 '\0'
+    if (buffer_len + 1 > string_buffer_capacity(str_buffer)) {
+        // 当前 string_buffer_length(str_buffer) + 1, 其中 '+1' 为 新增加的 char
         str_buffer = string_buffer_capacity_increase(context, str_buffer, STRING_BUFFER_DEFAULT_GROWTH_SIZE + 1);
     }
 
+    // char 拼接
     string_buffer_bytes_data(str_buffer)[buffer_len] = ch;
-    string_buffer_bytes_data(str_buffer)[buffer_len + 1] = '\0';
 
     gc_release_param(context);
     return str_buffer;
@@ -747,11 +743,15 @@ string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer) {
     gc_param1(context, str_buffer);
     gc_var1(context, str);
 
-    size_t size = string_buffer_length(str_buffer) + 1;
+    // string 长度要比 string_buffer 长度多一个 '\0'
+    size_t char_length = string_buffer_length(str_buffer);
+    size_t size_with_null = char_length + 1;
     str = raw_object_make(context, OBJ_STRING,
-                          object_sizeof_base(string) + size * sizeof(char));
-    str->value.string.len = size;
-    memcpy(string_get_cstr(str), string_buffer_bytes_data(str_buffer), size);
+                          object_sizeof_base(string) + size_with_null * sizeof(char));
+    str->value.string.len = size_with_null;
+    // string_buffer 末尾没有 '\0', 需要手动添加
+    memcpy(string_get_cstr(str), string_buffer_bytes_data(str_buffer), char_length);
+    string_get_cstr(str)[char_length] = '\0';
 
     gc_release_param(context);
     return str;
