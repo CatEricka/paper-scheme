@@ -1,5 +1,5 @@
 ﻿# 项目定义
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required(VERSION 3.8)
 
 project(paper-scheme LANGUAGES C)
 
@@ -52,10 +52,12 @@ message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 
 if (ENABLE_UNIT_TESTS)
     # 配置测试
-    INCLUDE_DIRECTORIES(test/test_cases)
+    INCLUDE_DIRECTORIES(test/)
+    aux_source_directory(test/test_cases TEST_SRCS)
     add_executable(paper-scheme-test "")
     target_sources(paper-scheme-test
             PRIVATE
+            ${TEST_SRCS}
             "test/test_run.c"
             )
     target_link_libraries(paper-scheme-test paper-scheme-lib)
@@ -81,4 +83,4 @@ if (ENABLE_UNIT_TESTS)
             NAME paper-scheme-test
             COMMAND $<TARGET_FILE:paper-scheme-test>
     )
-endif()
+endif ()

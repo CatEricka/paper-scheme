@@ -3,6 +3,7 @@
 #pragma once
 
 
+#include "lib/utest.h"
 #include "paper-scheme/object.h"
 
 

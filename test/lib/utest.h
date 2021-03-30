@@ -187,8 +187,8 @@ UTEST_C_FUNC __declspec(dllimport) int __stdcall QueryPerformanceFrequency(
 #define UTEST_EXTERN extern "C"
 #define UTEST_NULL NULL
 #else
-#define UTEST_CAST(type, x) ((type)x)
-#define UTEST_PTR_CAST(type, x) ((type)x)
+#define UTEST_CAST(type, x) ((type)(x))
+#define UTEST_PTR_CAST(type, x) ((type)(x))
 #define UTEST_EXTERN extern
 #define UTEST_NULL 0
 #endif

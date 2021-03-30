@@ -2,6 +2,7 @@
 #define BASE_SCHEME_VALUE_TEST_H
 #pragma once
 
+#include "lib/utest.h"
 #include "paper-scheme/runtime.h"
 
 /**

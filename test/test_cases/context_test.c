@@ -1,8 +1,9 @@
-#ifndef PAPER_SCHEME_CONTEXT_TEST_H
-#define PAPER_SCHEME_CONTEXT_TEST_H
+#ifndef PAPER_SCHEME_CONTEXT_TEST_C
+#define PAPER_SCHEME_CONTEXT_TEST_C
 #pragma once
 
 
+#include "lib/utest.h"
 #include <paper-scheme/context.h>
 
 
@@ -31,4 +32,4 @@ UTEST(context_test, object_type_info_cal_test) {
     type_info_get_object_ptr_of_first_member(&info, &obj);
 }
 
-#endif //PAPER_SCHEME_CONTEXT_TEST_H
+#endif //PAPER_SCHEME_CONTEXT_TEST_C
