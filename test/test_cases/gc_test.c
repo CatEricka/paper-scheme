@@ -19,7 +19,7 @@ UTEST(gc_test, hello_utest) {
 
 
 // 是否开启 heap dump 信息输出
-#define heap_make_free_test_print_on 1
+#define heap_make_free_test_print_on 0
 
 #if heap_make_free_test_print_on
 #define HEAP_DUMP_PRINTF(...) UTEST_PRINTF(__VA_ARGS__)
@@ -240,8 +240,18 @@ UTEST(gc_test, heap_make_free_test) {
     object string_empty = string_make_from_cstr_op(context, "");
     object symbol_obj = symbol_make_from_cstr_op(context, "this is a symbol object");
     object vector10 = vector_make_op(context, 10);
-    vector_ref(vector10, 1) = doublenum;
-    vector_ref(vector10, 9) = IMM_TRUE;
+
+    vector_ref(vector10, 0) = i64;
+    vector_ref(vector10, 1) = i64max;
+    vector_ref(vector10, 2) = i64min;
+    vector_ref(vector10, 3) = doublenum;
+    vector_ref(vector10, 4) = pair_carImmI64_cdrDouble;
+
+    vector_ref(vector10, 5) = string_obj;
+    vector_ref(vector10, 6) = string_null_object;
+    vector_ref(vector10, 7) = string_empty;
+    vector_ref(vector10, 8) = symbol_obj;
+    vector_ref(vector10, 9) = vector10;
 
     // 遍历所有块
     heap_dump(context);
