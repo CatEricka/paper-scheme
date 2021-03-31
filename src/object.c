@@ -121,7 +121,7 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
     // todo 新实现的类型记得修改这里
 
     // 未知的类型
-    assert(("UNKNOWN_OBJECT_TYPE", 0));
+    assert((0 && "UNKNOWN_OBJECT_TYPE"));
 #pragma pop_macro("size_helper")
     return 0;
 }
