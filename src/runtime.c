@@ -619,21 +619,23 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object s
 
 /**
  * hashset 是否包含指定的对象
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashset
  * @param obj object 不能为 NULL
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API OUT NOTNULL object
 hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
     assert(context != NULL);
     assert(is_hashset(hashset));
     assert(!is_null(obj));
+    gc_set_flag(context);
 
-    gc_param2(context, hashset, obj);
     object ret = hashmap_contains_key_op(context, hashset->value.hashset.map, obj);
+
     assert(is_imm_true(ret) || is_imm_false(ret));
-    gc_release_param(context);
+    gc_assert_no_gc(context);
     return ret;
 }
 
@@ -643,7 +645,7 @@ hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, R
  * @param obj
  * @return 如果已经存在旧值, 将存入新值返回旧值, 否则返回 IMM_UNIT
  */
-EXPORT_API void
+EXPORT_API GC void
 hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
     assert(context != NULL);
     assert(is_hashset(hashset));
@@ -674,21 +676,24 @@ hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, 
 
 /**
  * 清空 hashset
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashset 不能为空
  * @return
  */
-EXPORT_API GC void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashset) {
+EXPORT_API void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashset) {
     assert(context != NULL);
     assert(is_hashset(hashset));
+    gc_set_flag(context);
 
-    gc_param1(context, hashset);
     hashmap_clear_op(context, hashset->value.hashset.map);
-    gc_release_param(context);
+
+    gc_assert_no_gc(context);
 }
 
 /**
  * 从 hashset 中移除 object
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashset
  * @param obj 不能为空, 可以为 IMM_UNIT
@@ -698,28 +703,28 @@ hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF
     assert(context != NULL);
     assert(is_hashset(hashset));
     assert(!is_null(obj));
+    gc_set_flag(context);
 
-    gc_param2(context, hashset, obj);
     hashmap_remove_op(context, hashset->value.hashset.map, obj);
-    gc_release_param(context);
+
+    gc_assert_no_gc(context);
 }
 
 
 /**
  * hashmap 是否包含指定的对象
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashmap
  * @param key object 不能为 NULL
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API OUT NOTNULL object
 hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key) {
     assert(context != NULL);
     assert(is_hashmap(hashmap));
     assert(!is_null(key));
-
-    gc_param2(context, hashmap, key);
-    gc_var2(context, entry_list, found_key);
+    gc_set_flag(context);
 
     if (hashmap->value.hashmap.size == 0) {
         return IMM_UNIT;
@@ -736,15 +741,15 @@ hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashma
     }
     index = hash % map_vector_len;
 
-    for (entry_list = vector_ref(hashmap->value.hashmap.table, index);
+    for (object entry_list = vector_ref(hashmap->value.hashmap.table, index);
          entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
-        found_key = pair_caar(entry_list);
+        object found_key = pair_caar(entry_list);
         if (found_key == key || equals(context, found_key, key)) {
             return IMM_TRUE;
         }
     }
 
-    gc_release_param(context);
+    gc_assert_no_gc(context);
     // 找不到节点
     return IMM_FALSE;
 }
@@ -858,19 +863,18 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
 
 /**
  * hashmap 取出 key 对应的 value
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashmap
  * @param key
  * @return 如果 key 存在, 则返回对应的 value, 否则返回 IMM_UNIT
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API OUT NOTNULL object
 hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object key) {
     assert(context != NULL);
     assert(is_hashmap(hashmap));
     assert(!is_null(key));
-
-    gc_param2(context, hashmap, key);
-    gc_var3(context, entry_list, found_key, found_value);
+    gc_set_flag(context);
 
     if (hashmap->value.hashmap.size == 0) {
         return IMM_UNIT;
@@ -887,16 +891,16 @@ hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
     }
     index = hash % map_vector_len;
 
-    for (entry_list = vector_ref(hashmap->value.hashmap.table, index);
+    for (object entry_list = vector_ref(hashmap->value.hashmap.table, index);
          entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
-        found_key = pair_caar(entry_list);
-        found_value = pair_cdar(entry_list);
+        object found_key = pair_caar(entry_list);
+        object found_value = pair_cdar(entry_list);
         if (found_key == key || equals(context, found_key, key)) {
             return found_value;
         }
     }
 
-    gc_release_param(context);
+    gc_assert_no_gc(context);
     // 找不到节点
     return IMM_UNIT;
 }
@@ -934,43 +938,40 @@ hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, 
 
 /**
  * 清空 hashmap
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashmap
  */
 EXPORT_API void hashmap_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashmap) {
     assert(context != NULL);
     assert(is_hashmap(hashmap));
+    gc_set_flag(context);
 
-    gc_param1(context, hashmap);
-    gc_var1(context, vector);
-
-    vector = hashmap->value.hashmap.table;
+    object vector = hashmap->value.hashmap.table;
     size_t len = vector_len(vector);
 
     for (size_t i = 0; i < len; i++) {
         vector_set(vector, i, IMM_UNIT);
     }
 
+    gc_assert_no_gc(context);
     hashmap->value.hashmap.size = 0;
-
-    gc_release_param(context);
 }
 
 /**
  * 从 hashmap 移除指定的 key
+ * <p>不会触发 GC</p>
  * @param context
  * @param hashmap
  * @param key
  * @return 如果 key 已经存在, 返回被移除的 value, 否则返回 IMM_UNIT
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API OUT NOTNULL object
 hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key) {
     assert(context != NULL);
     assert(is_hashmap(hashmap));
     assert(!is_null(key));
-
-    gc_param2(context, hashmap, key);
-    gc_var4(context, pre_entry_list, entry_list, deleted_key, deleted_value);
+    gc_set_flag(context);
 
     // 空表
     if (hashmap->value.hashmap.size == 0) {
@@ -988,15 +989,15 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
     }
     index = hash % map_vector_len;
 
-    entry_list = vector_ref(hashmap->value.hashmap.table, index);
+    object entry_list = vector_ref(hashmap->value.hashmap.table, index);
     if (entry_list == IMM_UNIT) {
         return IMM_UNIT;
     }
     // 此时至少有一个 entry
-    pre_entry_list = NULL;
+    object pre_entry_list = NULL;
     do {
-        deleted_key = pair_caar(entry_list);
-        deleted_value = pair_cdar(entry_list);
+        object deleted_key = pair_caar(entry_list);
+        object deleted_value = pair_cdar(entry_list);
 
         if (deleted_key == key || equals(context, deleted_key, key)) {
             if (pre_entry_list == NULL) {
@@ -1015,7 +1016,7 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
         entry_list = pair_cdr(entry_list);
     } while (entry_list != IMM_UNIT);
 
-    gc_release_param(context);
+    gc_assert_no_gc(context);
     // 找不到节点
     return IMM_UNIT;
 }

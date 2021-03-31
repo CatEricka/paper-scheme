@@ -151,4 +151,16 @@ EXPORT_API OUT GC object gc_alloc(REF NOTNULL context_t context, IN size_t size)
 #define gc_param9(ctx, a, b, c, d, e, f, g, h, i)   gc_param8(ctx, a, b, c, d, e, f, g, h); gc_param(ctx, i, __gc_param_dream9__)
 
 
+/**
+                               gc 调试断言
+******************************************************************************/
+/**
+ * 设置 context->gc_happened 位
+ */
+#define gc_set_flag(context) ((context)->gc_happened = 0)
+/**
+ * 断言: gc 并未发生
+ */
+#define gc_assert_no_gc(context) (assert((context)->gc_happened == 0))
+
 #endif // BASE_SCHEME_GC_H

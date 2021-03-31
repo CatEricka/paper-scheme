@@ -408,6 +408,8 @@ EXPORT_API CHECKED GC object gc_collect(REF NOTNULL context_t context) {
 #if USE_DEBUG_GC
 #endif
 
+    context->gc_happened = 1;
+
     gc_mark(context);
     // 重设弱引用
     gc_reset_weak_references(context);

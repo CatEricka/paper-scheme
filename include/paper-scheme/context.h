@@ -104,6 +104,8 @@ typedef struct scheme_context_t {
     int gc_collect_on;
     // GC! gc 时的临时变量保护链
     GC gc_saves_list_t saves;
+    // 当发生过 GC 时, 该标志被设置为 1, 用于调试于断言
+    int gc_happened;
     // 弱引用链, 用于 GC 时扫描对象后标记弱引用
     GC WEAK_REF object weak_ref_chain;
     // gc 标记栈
