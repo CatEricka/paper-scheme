@@ -626,8 +626,15 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object s
  */
 EXPORT_API OUT NOTNULL GC object
 hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
-    // TODO
-    return NULL;
+    assert(context != NULL);
+    assert(is_hashset(hashset));
+    assert(!is_null(obj));
+
+    gc_param2(context, hashset, obj);
+    object ret = hashmap_contains_key_op(context, hashset->value.hashset.map, obj);
+    assert(is_imm_true(ret) || is_imm_false(ret));
+    gc_release_param(context);
+    return ret;
 }
 
 /**
@@ -636,10 +643,16 @@ hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, R
  * @param obj
  * @return 如果已经存在旧值, 将存入新值返回旧值, 否则返回 IMM_UNIT
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API void
 hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
-    // TODO
-    return NULL;
+    assert(context != NULL);
+    assert(is_hashset(hashset));
+    assert(!is_null(obj));
+
+    gc_param2(context, hashset, obj);
+    // 所有的 key 对应的 value 都是 IMM_TRUE
+    hashmap_put_op(context, hashset->value.hashset.map, obj, IMM_TRUE);
+    gc_release_param(context);
 }
 
 /**
@@ -650,8 +663,13 @@ hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NO
  */
 EXPORT_API GC void
 hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, REF NOTNULL object hashset_b) {
-    // TODO
-    return;
+    assert(context != NULL);
+    assert(is_hashset(hashset_a));
+    assert(is_hashset(hashset_b));
+
+    gc_param2(context, hashset_a, hashset_b);
+    hashmap_put_all_op(context, hashset_a->value.hashset.map, hashset_b->value.hashset.map);
+    gc_release_param(context);
 }
 
 /**
@@ -661,8 +679,12 @@ hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, 
  * @return
  */
 EXPORT_API GC void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashset) {
-    // TODO
-    return;
+    assert(context != NULL);
+    assert(is_hashset(hashset));
+
+    gc_param1(context, hashset);
+    hashmap_clear_op(context, hashset->value.hashset.map);
+    gc_release_param(context);
 }
 
 /**
@@ -670,12 +692,16 @@ EXPORT_API GC void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL o
  * @param context
  * @param hashset
  * @param obj 不能为空, 可以为 IMM_UNIT
- * @return 如果存在,返回旧值; 不存在则返回 IMM_UNIT
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API void
 hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
-    // TODO
-    return NULL;
+    assert(context != NULL);
+    assert(is_hashset(hashset));
+    assert(!is_null(obj));
+
+    gc_param2(context, hashset, obj);
+    hashmap_remove_op(context, hashset->value.hashset.map, obj);
+    gc_release_param(context);
 }
 
 
@@ -688,8 +714,39 @@ hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF
  */
 EXPORT_API OUT NOTNULL GC object
 hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key) {
-    // TODO
-    return NULL;
+    assert(context != NULL);
+    assert(is_hashmap(hashmap));
+    assert(!is_null(key));
+
+    gc_param2(context, hashmap, key);
+    gc_var2(context, entry_list, found_key);
+
+    if (hashmap->value.hashmap.size == 0) {
+        return IMM_UNIT;
+    }
+
+    size_t map_vector_len = vector_len(hashmap->value.hashmap.table);
+    size_t hash = 0;
+    size_t index = 0;
+    hash_code_fn hash_fn = object_hash_helper(context, key);
+    equals_fn equals = object_equals_helper(context, key);
+    assert(equals != NULL);
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, key);
+    }
+    index = hash % map_vector_len;
+
+    for (entry_list = vector_ref(hashmap->value.hashmap.table, index);
+         entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+        found_key = pair_caar(entry_list);
+        if (found_key == key || equals(context, found_key, key)) {
+            return IMM_TRUE;
+        }
+    }
+
+    gc_release_param(context);
+    // 找不到节点
+    return IMM_FALSE;
 }
 
 /**
@@ -712,6 +769,7 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
 
     hash_code_fn hash_fn = object_hash_helper(context, k);
     equals_fn equals = object_equals_helper(context, k);
+    assert(equals != NULL);
 
     // 1. 计算 hash 值
     uint32_t hash = 0;
@@ -790,7 +848,7 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
     entry_list = pair_make_op(context, new_entry, vector_ref(new_vector, index));
     vector_set(new_vector, index, entry_list);
     hashmap->value.hashmap.table = new_vector;
-    hashmap->value.hashmap.threshold = vector_len(new_vector) * hashmap->value.hashmap.load_factor;
+    hashmap->value.hashmap.threshold = (size_t) (vector_len(new_vector) * hashmap->value.hashmap.load_factor);
     hashmap->value.hashmap.size++;
 
     gc_release_param(context);
@@ -807,7 +865,40 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
  */
 EXPORT_API OUT NOTNULL GC object
 hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object key) {
-    // TODO
+    assert(context != NULL);
+    assert(is_hashmap(hashmap));
+    assert(!is_null(key));
+
+    gc_param2(context, hashmap, key);
+    gc_var3(context, entry_list, found_key, found_value);
+
+    if (hashmap->value.hashmap.size == 0) {
+        return IMM_UNIT;
+    }
+
+    size_t map_vector_len = vector_len(hashmap->value.hashmap.table);
+    size_t hash = 0;
+    size_t index = 0;
+    hash_code_fn hash_fn = object_hash_helper(context, key);
+    equals_fn equals = object_equals_helper(context, key);
+    assert(equals != NULL);
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, key);
+    }
+    index = hash % map_vector_len;
+
+    for (entry_list = vector_ref(hashmap->value.hashmap.table, index);
+         entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+        found_key = pair_caar(entry_list);
+        found_value = pair_cdar(entry_list);
+        if (found_key == key || equals(context, found_key, key)) {
+            return found_value;
+        }
+    }
+
+    gc_release_param(context);
+    // 找不到节点
+    return IMM_UNIT;
 }
 
 /**
@@ -879,12 +970,19 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
     assert(!is_null(key));
 
     gc_param2(context, hashmap, key);
-    gc_var4(context, pre_entry_list, entry_list, tmp_key, value);
+    gc_var4(context, pre_entry_list, entry_list, deleted_key, deleted_value);
+
+    // 空表
+    if (hashmap->value.hashmap.size == 0) {
+        return IMM_UNIT;
+    }
 
     size_t map_vector_len = vector_len(hashmap->value.hashmap.table);
     size_t hash = 0;
     size_t index = 0;
     hash_code_fn hash_fn = object_hash_helper(context, key);
+    equals_fn equals = object_equals_helper(context, key);
+    assert(equals != NULL);
     if (hash_fn != NULL) {
         hash = hash_fn(context, key);
     }
@@ -895,14 +993,31 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
         return IMM_UNIT;
     }
     // 此时至少有一个 entry
-    //TODO 完成这个
-    for (pre_entry_list = entry_list, entry_list = pair_cdr(entry_list);
-         pre_entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
-        key = pair_car(entry_list);
-        value = pair_cdr(entry_list);
-    }
+    pre_entry_list = NULL;
+    do {
+        deleted_key = pair_caar(entry_list);
+        deleted_value = pair_cdar(entry_list);
+
+        if (deleted_key == key || equals(context, deleted_key, key)) {
+            if (pre_entry_list == NULL) {
+                // entry_list 是第一个节点
+                vector_ref(hashmap->value.hashmap.table, index) = pair_cdr(entry_list);
+            } else {
+                // entry_list 是第二个或以后节点
+                pair_cdr(pre_entry_list) = pair_cdr(entry_list);
+            }
+
+            hashmap->value.hashmap.size--;
+            return deleted_value;
+        }
+
+        pre_entry_list = entry_list;
+        entry_list = pair_cdr(entry_list);
+    } while (entry_list != IMM_UNIT);
 
     gc_release_param(context);
+    // 找不到节点
+    return IMM_UNIT;
 }
 
 

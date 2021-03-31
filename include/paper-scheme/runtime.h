@@ -261,9 +261,8 @@ hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, R
  * obj 放入 hashset
  * @param context
  * @param obj
- * @return 如果已经存在旧值, 将存入新值返回旧值, 否则返回 IMM_UNIT
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API void
 hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj);
 
 /**
@@ -288,9 +287,8 @@ EXPORT_API GC void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL o
  * @param context
  * @param hashset
  * @param obj 不能为空, 可以为 IMM_UNIT
- * @return 如果存在,返回旧值; 不存在则返回 IMM_UNIT
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API void
 hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj);
 
 
