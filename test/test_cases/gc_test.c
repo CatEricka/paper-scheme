@@ -1,8 +1,3 @@
-#ifndef BASE_SCHEME_GC_TEST_H
-#define BASE_SCHEME_GC_TEST_H
-#pragma once
-
-
 #include "lib/utest.h"
 #include <paper-scheme/runtime.h>
 
@@ -466,5 +461,3 @@ UTEST(gc_test, weak_ref_test) {
     gc_release_var(context);
     context_destroy(context);
 }
-
-#endif // BASE_SCHEME_GC_TEST_H

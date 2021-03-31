@@ -53,11 +53,15 @@ message(STATUS "Enable testing: ${ENABLE_UNIT_TESTS}")
 if (ENABLE_UNIT_TESTS)
     # 配置测试
     INCLUDE_DIRECTORIES(test/)
-    aux_source_directory(test/test_cases TEST_SRCS)
     add_executable(paper-scheme-test "")
     target_sources(paper-scheme-test
             PRIVATE
-            ${TEST_SRCS}
+            "test/test_cases/object_test.c"
+            "test/test_cases/context_test.c"
+            "test/test_cases/gc_test.c"
+            "test/test_cases/runtime_test.c"
+            "test/test_cases/value_test.c"
+            "test/test_cases/hash_test.c"
             "test/test_run.c"
             )
     target_link_libraries(paper-scheme-test paper-scheme-lib)

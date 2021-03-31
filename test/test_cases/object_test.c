@@ -1,8 +1,3 @@
-#ifndef BASE_SCHEME_OBJECT_TEST_H
-#define BASE_SCHEME_OBJECT_TEST_H
-#pragma once
-
-
 #include "lib/utest.h"
 #include "paper-scheme/object.h"
 
@@ -148,6 +143,3 @@ UTEST(object_test, i64_imm_test) {
         ASSERT_EQ(tests[i], i64_getvalue(obj));
     }
 }
-
-
-#endif // BASE_SCHEME_OBJECT_TEST_H

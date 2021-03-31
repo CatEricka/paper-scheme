@@ -1,7 +1,3 @@
-#ifndef BASE_SCHEME_VALUE_TEST_H
-#define BASE_SCHEME_VALUE_TEST_H
-#pragma once
-
 #include "lib/utest.h"
 #include "paper-scheme/runtime.h"
 
@@ -1503,5 +1499,3 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_EQ(context->saves, NULL);
     context_destroy(context);
 }
-
-#endif //BASE_SCHEME_VALUE_TEST_H

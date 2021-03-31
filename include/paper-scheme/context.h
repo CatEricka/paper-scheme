@@ -179,7 +179,7 @@ struct object_runtime_type_info_t {
  * @param port
  * @return
  */
-object stdio_finalizer(context_t context, object port);
+object stdio_finalizer(context_t _context, object port);
 
 
 /**
@@ -192,7 +192,7 @@ object stdio_finalizer(context_t context, object port);
  * @param symbol
  * @return imm_i64, 非负数
  */
-EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol);
+EXPORT_API uint32_t symbol_hash_code(context_t _context, object symbol);
 
 /**
  * string hash code 计算
@@ -201,7 +201,7 @@ EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol);
  * @param str
  * @return imm_i64, 非负数
  */
-EXPORT_API uint32_t string_hash_code(context_t context, object str);
+EXPORT_API uint32_t string_hash_code(context_t _context, object str);
 
 /**
                                equals 函数
@@ -213,7 +213,7 @@ EXPORT_API uint32_t string_hash_code(context_t context, object str);
  * @param symbol_b
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b);
+EXPORT_API int symbol_equals(context_t _context, object symbol_a, object symbol_b);
 
 /**
  * string 比较
@@ -222,7 +222,7 @@ EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b
  * @param str_b
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API int string_equals(context_t context, object str_a, object str_b);
+EXPORT_API int string_equals(context_t _context, object str_a, object str_b);
 
 /**
                            运行时类型信息计算辅助宏

@@ -1,8 +1,3 @@
-#ifndef BASE_SCHEME_RUNTIME_TEST_H
-#define BASE_SCHEME_RUNTIME_TEST_H
-#pragma once
-
-
 #include "lib/utest.h"
 #include "paper-scheme/runtime.h"
 
@@ -285,5 +280,3 @@ UTEST(runtime_test, context_runtime_type_test) {
     ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
     context_destroy(context);
 }
-
-#endif //BASE_SCHEME_RUNTIME_TEST_H

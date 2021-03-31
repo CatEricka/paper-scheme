@@ -523,6 +523,18 @@ EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     uint32_t hash = 0;
     uint32_t seed = 131;
 
+    // 添加类型标记
+    // 大端序, 减小 0 的影响
+    char tag[4] = {
+            (((uint32_t) OBJ_SYMBOL) >> 24u) & 0xffu,
+            (((uint32_t) OBJ_SYMBOL) >> 16u) & 0xffu,
+            (((uint32_t) OBJ_SYMBOL) >> 8u) & 0xffu,
+            (((uint32_t) OBJ_SYMBOL) >> 0u) & 0xffu,
+    };
+    for (size_t i = 0; i < 4; i++) {
+        hash = (hash * seed) + tag[i];
+    }
+
     for (size_t i = 0; i < length; ++str, ++i) {
         hash = (hash * seed) + (*str);
     }
@@ -544,6 +556,18 @@ EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
 
     uint32_t hash = 0;
     uint32_t seed = 131;
+
+    // 添加类型标记
+    // 大端序, 减小 0 的影响
+    char tag[4] = {
+            (((uint32_t) OBJ_STRING) >> 24u) & 0xffu,
+            (((uint32_t) OBJ_STRING) >> 16u) & 0xffu,
+            (((uint32_t) OBJ_STRING) >> 8u) & 0xffu,
+            (((uint32_t) OBJ_STRING) >> 0u) & 0xffu,
+    };
+    for (size_t i = 0; i < 4; i++) {
+        hash = (hash * seed) + tag[i];
+    }
 
     for (size_t i = 0; i < length; ++str, ++i) {
         hash = (hash * seed) + (*str);
