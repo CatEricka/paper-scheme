@@ -143,8 +143,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(string, len),
                 .size_meta_size_scale = sizeof(char),
                 .finalizer = NULL,
-                .hash_code = NULL,
-                .equals = NULL,
+                .hash_code = string_hash_code,
+                .equals = string_equals,
         },
         {
                 .name = (object) "String-Buffer", .tag = OBJ_STRING_BUFFER,
@@ -177,8 +177,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = object_offsetof(symbol, len),
                 .size_meta_size_scale = sizeof(char),
                 .finalizer = NULL,
-                .hash_code = NULL,
-                .equals = NULL,
+                .hash_code = symbol_hash_code,
+                .equals = symbol_equals,
         },
         {
                 .name = (object) "Vector", .tag = OBJ_VECTOR,
@@ -514,9 +514,20 @@ object stdio_finalizer(context_t context, object port) {
  * @param symbol
  * @return imm_i64, 非负数
  */
-EXPORT_API object symbol_hash_code(context_t context, object symbol) {
-    // TODO 字符串 hash 值
-    return i64_imm_make(0);
+EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
+    assert(is_symbol(symbol));
+
+    size_t length = symbol_len(symbol);
+    const char *str = symbol_get_cstr(symbol);
+
+    uint32_t hash = 0;
+    uint32_t seed = 131;
+
+    for (size_t i = 0; i < length; ++str, ++i) {
+        hash = (hash * seed) + (*str);
+    }
+
+    return hash;
 }
 
 /**
@@ -525,9 +536,20 @@ EXPORT_API object symbol_hash_code(context_t context, object symbol) {
  * @param str
  * @return imm_i64, 非负数
  */
-EXPORT_API object string_hash_code(context_t context, object str) {
-    // TODO 字符串 hash 值
-    return i64_imm_make(0);
+EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
+    assert(is_string(str_obj));
+
+    size_t length = string_len(str_obj);
+    const char *str = string_get_cstr(str_obj);
+
+    uint32_t hash = 0;
+    uint32_t seed = 131;
+
+    for (size_t i = 0; i < length; ++str, ++i) {
+        hash = (hash * seed) + (*str);
+    }
+
+    return hash;
 }
 
 /**
@@ -538,16 +560,16 @@ EXPORT_API object string_hash_code(context_t context, object str) {
  * @param context
  * @param symbol_a
  * @param symbol_b
- * @return IMM_TRUE / IMM_FALSE
+ * @return 1: 相等; 0: 不相等
  */
-EXPORT_API object symbol_equals(context_t context, object symbol_a, object symbol_b) {
+EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b) {
     if (!is_symbol(symbol_a) || !is_symbol(symbol_b)) {
-        return IMM_FALSE;
+        return 0;
     } else if (symbol_len(symbol_a) != symbol_len(symbol_b)) {
-        return IMM_FALSE;
+        return 0;
     } else {
         int cmp = memcmp(symbol_get_cstr(symbol_a), symbol_get_cstr(symbol_b), symbol_len(symbol_a) + 1);
-        return (cmp == 0) ? IMM_TRUE : IMM_FALSE;
+        return (cmp == 0);
     }
 }
 
@@ -558,13 +580,13 @@ EXPORT_API object symbol_equals(context_t context, object symbol_a, object symbo
  * @param str_b
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API object string_equals(context_t context, object str_a, object str_b) {
+EXPORT_API int string_equals(context_t context, object str_a, object str_b) {
     if (!is_string(str_a) || !is_string(str_b)) {
-        return IMM_FALSE;
+        return 0;
     } else if (string_len(str_a) != string_len(str_b)) {
-        return IMM_FALSE;
+        return 0;
     } else {
         int cmp = memcmp(string_get_cstr(str_a), string_get_cstr(str_b), string_len(str_a) + 1);
-        return (cmp == 0) ? IMM_TRUE : IMM_FALSE;
+        return (cmp == 0);
     }
 }

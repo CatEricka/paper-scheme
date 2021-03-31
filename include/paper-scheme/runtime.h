@@ -177,6 +177,21 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
 EXPORT_API OUT NOTNULL GC object
 stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind);
 
+/**
+ * 构造 hashset
+ * @param context
+ * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor);
+
+EXPORT_API OUT NOTNULL GC object
+hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor);
+
+EXPORT_API OUT NOTNULL GC object
+weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj);
 
 /******************************************************************************
                                 对象操作 API
@@ -225,6 +240,27 @@ string_buffer_append_imm_char_op(
  */
 EXPORT_API OUT NOTNULL GC object
 string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object str_buffer, COPY char ch);
+
+EXPORT_API OUT NOTNULL GC object hashset_contains_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashset_put_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashset_put_all_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashset_clear_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashset_remove_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashmap_contains_key_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashmap_put_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashmap_put_all_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashmap_clear_op(REF NOTNULL context_t context, object obj);
+
+EXPORT_API OUT NOTNULL GC object hashmap_remove_op(REF NOTNULL context_t context, object obj);
+
 
 /******************************************************************************
                                 对象扩容 API

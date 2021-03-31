@@ -459,4 +459,12 @@ UTEST(gc_test, gc_collect_move_test) {
     context_destroy(context);
 }
 
+UTEST(gc_test, weak_ref_test) {
+    context_t context = context_make(16, 2, 0x10000);
+    gc_var2(context, obj1, obj2);
+
+    gc_release_var(context);
+    context_destroy(context);
+}
+
 #endif // BASE_SCHEME_GC_TEST_H

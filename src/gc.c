@@ -70,7 +70,9 @@ static void gc_mark_one(context_t context, object obj) {
         // 处理弱引用
         if (is_weak_ref(obj)) {
             obj->marked = 1;
-            // 弱引用对象的成员不需要标记
+            // 弱引用对象的成员不需要标记, 同时将扫描到的弱引用加入弱引用链表
+            obj->value.weak_ref._internal_next_ref = context->weak_ref_chain;
+            context->weak_ref_chain = obj;
             return;
         }
 
@@ -136,6 +138,9 @@ static object gc_mark(context_t context) {
 
     // todo context 修改后, 修改gc_mark
 
+    // 先重置弱引用链表
+    context->weak_ref_chain = NULL;
+
     // 标记寄存器
     gc_mark_one_start(context, context->args);
     gc_mark_one_start(context, context->code);
@@ -172,89 +177,30 @@ static object gc_mark(context_t context) {
     return IMM_TRUE;
 }
 
-#define gc_reset_weak_references_one(obj) \
-    do { \
-        if (is_weak_ref(obj)) { \
-            if (is_object(weak_ref_get(obj)) && weak_ref_get(obj)->marked == 0) { \
-                (obj)->value.weak_ref.ref = NULL; \
-            } \
-        } \
-    } while(0)
-
 /**
  * 内部方法 2. 重置弱引用
- * <p>第一次堆遍历</p>
+ * <p>注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的</p>
  * @param context
  * @param context
  */
 static void gc_reset_weak_references(context_t context) {
-
-    // 标记寄存器
-    gc_reset_weak_references_one(context->args);
-    gc_reset_weak_references_one(context->code);
-    gc_reset_weak_references_one(context->current_env);
-    gc_reset_weak_references_one(context->scheme_stack);
-
-    // 标记返回值
-    gc_reset_weak_references_one(context->value);
-    // 标记 load stack
-    gc_reset_weak_references_one(context->load_stack);
-
-    // 标记全局符号表
-    gc_reset_weak_references_one(context->global_symbol_table);
-
-    // 标记全局 environment
-    gc_reset_weak_references_one(context->global_environment);
-
-
-    // 全局类型
-    for (size_t i = 0; i < context->global_type_table_len; i++) {
-        gc_reset_weak_references_one(context->global_type_table[i].name);
-        gc_reset_weak_references_one(context->global_type_table[i].getter);
-        gc_reset_weak_references_one(context->global_type_table[i].setter);
-        gc_reset_weak_references_one(context->global_type_table[i].to_string);
-    }
-
-    // C 调用栈上变量保护表
-    // 如果弱引用指向的 object 已经被标记, 这时弱引用不会被破坏
-    for (gc_saves_list_t save = context->saves; save != NULL; save = save->next) {
-        // 使用 macro gc_var_n() 时, 必须保证第一次调用会触发 GC 的函数前必须初始化变量值
-        if (save->illusory_object != NULL && is_object(*save->illusory_object)) {
-            gc_reset_weak_references_one(*save->illusory_object);
+    object weak_ref = context->weak_ref_chain;
+    while (weak_ref != NULL) {
+        assert(is_weak_ref(weak_ref));
+        object ref = weak_ref_get(weak_ref);
+        if (is_object(ref) && is_marked(ref)) {
+            weak_ref_get(weak_ref) = NULL;
         }
+        weak_ref = weak_ref->value.weak_ref._internal_next_ref;
     }
 
-    // 最后遍历堆结构
-    heap_t heap = context->heap;
-    for (heap_node_t node = heap->first_node; node != NULL; node = node->next) {
-        char *ptr = node->data;
-
-        while (ptr < node->free_ptr) {
-            object obj = (object) ptr;
-            assert(is_object(obj));
-            size_t size = context_object_sizeof(context, obj);
-
-            if (is_marked(obj)) {
-                // 对于存活的对象, 检查是否是弱引用
-                if (is_weak_ref(obj)) {
-                    // 如果引用未存活, 引用设置 NULL
-                    object ref = weak_ref_get(obj);
-                    if (is_object(ref) && (!is_marked(ref))) {
-                        weak_ref_get(obj) = NULL;
-                    }
-                }
-            }
-            ptr += size;
-        }
-
-        assert(ptr == node->free_ptr);
-    }
+    context->weak_ref_chain = NULL;
 }
 
 /**
  * 内部方法 3. 计算紧凑对象后地址并设置 object->forwarding 字段,
  * 同时运行对象的 finalize
- * <p>第二次堆遍历</p>
+ * <p>第一次堆遍历</p>
  * @param context
  */
 static void gc_set_forwarding(context_t context) {
@@ -327,7 +273,7 @@ static void gc_set_forwarding(context_t context) {
 /**
  * 内部方法 4. 根据 object->forwarding 字段更新对象引用
  * <p>注意! 这会破坏旧的引用关系</p>
- * <p>第三次堆遍历</p>
+ * <p>第二次堆遍历</p>
  * @param context
  */
 static void gc_adjust_ref(context_t context) {
@@ -406,6 +352,7 @@ static void gc_adjust_ref(context_t context) {
 
 /**
  * 内部方法 5. 移动对象
+ * <p>第三次堆遍历</p>
  * @param context
  */
 static void move_objects(context_t context) {

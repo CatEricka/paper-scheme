@@ -56,6 +56,8 @@
 // 该函数可能触发 GC 导致对象移动, 调用该函数的函数需要将参数存入保护链
 // 具有传染性
 #define GC
+// 弱引用标记
+#define WEAK_REF
 
 
 /**
@@ -136,6 +138,12 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 #define GLOBAL_ENVIRONMENT_INIT_SIZE 512
 // (load "") 函数最大嵌套深度
 #define MAX_LOAD_FILE_DEEP 64
+
+/**
+                             基础对象特征
+******************************************************************************/
+#define DEFAULT_HASH_SET_MAP_LOAD_FACTOR 0.75
+#define DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY 16
 
 /**
                                 其它定义

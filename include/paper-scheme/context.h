@@ -106,6 +106,8 @@ typedef struct scheme_context_t {
     int gc_collect_on;
     // GC! gc 时的临时变量保护链
     GC gc_saves_list_t saves;
+    // 弱引用链, 用于 GC 时扫描对象后标记弱引用
+    GC WEAK_REF object weak_ref_chain;
     // gc 标记栈
     struct gc_mark_stack_node_t mark_stack[GC_MAX_MARK_STACK_DEEP];
     // 标记栈顶
@@ -139,6 +141,10 @@ typedef object (*proc_4)(context_t context, object arg1, object arg2, object arg
 
 typedef object (*proc_n)(context_t context, size_t argument_length, object args[]);
 
+typedef uint32_t (*hash_code_fn)(context_t context, object arg);
+
+typedef int (*equals_fn)(context_t context, object arg1, object arg2);
+
 /**
  * 运行时类型信息
  */
@@ -159,8 +165,8 @@ struct object_runtime_type_info_t {
     size_t size_meta_size_scale;        // 柔性数组元素大小
 
     proc_1 finalizer;                   // finalizer
-    proc_1 hash_code;                   // hash值计算      (context, object) -> i64, 非负数
-    proc_1 equals;                      // 比较是否相等     (context, object) -> boolean 立即数
+    hash_code_fn hash_code;                   // hash值计算      (context, object) -> i64, 非负数
+    equals_fn equals;                      // 比较是否相等     (context, object) -> boolean 立即数
 };
 
 
@@ -181,19 +187,21 @@ object stdio_finalizer(context_t context, object port);
 ******************************************************************************/
 /**
  * symbol hash code 计算
+ * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
  * @param context
  * @param symbol
  * @return imm_i64, 非负数
  */
-EXPORT_API object symbol_hash_code(context_t context, object symbol);
+EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol);
 
 /**
  * string hash code 计算
+ * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
  * @param context
  * @param str
  * @return imm_i64, 非负数
  */
-EXPORT_API object string_hash_code(context_t context, object str);
+EXPORT_API uint32_t string_hash_code(context_t context, object str);
 
 /**
                                equals 函数
@@ -205,7 +213,7 @@ EXPORT_API object string_hash_code(context_t context, object str);
  * @param symbol_b
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API object symbol_equals(context_t context, object symbol_a, object symbol_b);
+EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b);
 
 /**
  * string 比较
@@ -214,7 +222,7 @@ EXPORT_API object symbol_equals(context_t context, object symbol_a, object symbo
  * @param str_b
  * @return IMM_TRUE / IMM_FALSE
  */
-EXPORT_API object string_equals(context_t context, object str_a, object str_b);
+EXPORT_API int string_equals(context_t context, object str_a, object str_b);
 
 /**
                            运行时类型信息计算辅助宏

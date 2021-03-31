@@ -194,12 +194,12 @@ struct object_struct_t {
 
         // TODO 实现 hash set
         struct value_hashset_t {
-            // 表大小
+            // 当前 hashset 存储值数量
             size_t size;
             // 负载因子
             double load_factor;
-            // bucket 个数, 等于 vector(table)+1
-            size_t mod_count;
+            // 扩容上限
+            size_t threshold;
             // #(x x x x)
             // vector
             object table;
@@ -207,10 +207,11 @@ struct object_struct_t {
 
         // TODO 实现 hash map
         struct value_hashmap_t {
+            // 当前 hashmap 键值对数量
             size_t size;
             double load_factor;
-            // bucket 个数, 等于 vector(table)+1
-            size_t mod_count;
+            // 扩容上限
+            size_t threshold;
             // #( ((k v) '())
             //    ((k v) '())
             //    ((k v) '()))
@@ -223,7 +224,12 @@ struct object_struct_t {
         } hashmap;
 
         // TODO 实现弱引用, 测试弱引用的 GC 工作
+        // 弱引用
+        // 注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的
         struct value_weak_ref_t {
+            // GC 时使用的内部结构
+            object _internal_next_ref;
+            // 弱引用
             object ref;
         } weak_ref;
 
@@ -335,9 +341,9 @@ struct object_struct_t {
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
                                 string_buffer_append_char_op()
-            - hashset:          TODO hashset_contains_op(), hashset_put_op, hashset_put_all_op
+            - hashset:          TODO hashset_contains_op(), hashset_put_op(), hashset_put_all_op()
                                 TODO hashset_clear_op(), hashset_remove_op()
-            - hashmap:          TODO hashmap_contains_key_op, hashmap_put_op, hashmap_remove_op, hashmap_put_all_op
+            - hashmap:          TODO hashmap_contains_key_op(), hashmap_put_op(), hashmap_put_all_op()
                                 TODO hashmap_clear_op(), hashmap_remove_op()
             - weak_ref:         TODO weak_ref_get()
         扩容:
@@ -349,6 +355,23 @@ struct object_struct_t {
             - char (立即数):     imm_char_to_string()
             - char (C 原始类型): char_to_string()
             - string_buffer:    string_buffer_to_string()
+        哈希算法 & equals 算法:
+            - i64:
+            - double number:
+            - pair:
+            - bytes:
+            - string:          string_hash_code(), string_equals()
+            - string_buffer:
+            - symbol:           symbol_hash_code(), symbol_equals()
+            - vector:
+            - stack:
+            - string_port:
+            - stdio_port:
+            - string_port & stdio_port:
+            - srfi6 string_port:
+            - hashset:
+            - hashmap:
+            - weak_ref:
 ******************************************************************************/
 
 
@@ -877,6 +900,7 @@ CHECKED OUT int stack_pop(REF object stack);
 /**
  * 获取弱引用对应的引用
  * 如果不可用, 返回 NULL
+ * 注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的
  */
 #define weak_ref_get(obj)   ((obj)->value.weak_ref.ref)
 
