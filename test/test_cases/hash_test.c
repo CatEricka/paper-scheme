@@ -9,7 +9,7 @@ UTEST(hash_test, string_hash_test) {
     str = string_make_from_cstr_op(context, cstr);
     object_type_info_ptr t = context_get_object_type(context, str);
     hash_code_fn hash = type_info_hash_code(t);
-    ASSERT_NE(hash, NULL);
+    ASSERT_NE((void *) hash, NULL);
     UTEST_PRINTF("%s hash: 0x%08"
                          PRIx32
                          "\n", cstr, hash(context, str));
@@ -33,7 +33,7 @@ UTEST(hash_test, symbol_hash_test) {
     str = symbol_make_from_cstr_op(context, cstr);
     object_type_info_ptr t = context_get_object_type(context, str);
     hash_code_fn hash = type_info_hash_code(t);
-    ASSERT_NE(hash, NULL);
+    ASSERT_NE((void *) hash, NULL);
     UTEST_PRINTF("%s hash: 0x%08"
                          PRIx32
                          "\n", cstr, hash(context, str));
