@@ -252,7 +252,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .name = (object) "Hash-Set", .tag = OBJ_HASH_SET,
                 .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
 
-                .member_base = object_offsetof(hashset, table),
+                .member_base = object_offsetof(hashset, map),
                 .member_eq_len_base = 1,
                 .member_len_base = 1,
                 .member_meta_len_offset = 0,
@@ -271,7 +271,7 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
 
                 .member_base = object_offsetof(hashmap, table),
                 .member_eq_len_base = 1,
-                .member_len_base = 3,
+                .member_len_base = 1,
                 .member_meta_len_offset = 0,
                 .member_meta_len_scale = 0,
 
@@ -589,6 +589,8 @@ EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
 EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b) {
     if (!is_symbol(symbol_a) || !is_symbol(symbol_b)) {
         return 0;
+    } else if (symbol_a == symbol_b) {
+        return 1;
     } else if (symbol_len(symbol_a) != symbol_len(symbol_b)) {
         return 0;
     } else {
@@ -607,10 +609,39 @@ EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b
 EXPORT_API int string_equals(context_t context, object str_a, object str_b) {
     if (!is_string(str_a) || !is_string(str_b)) {
         return 0;
+    } else if (str_a == str_b) {
+        return 1;
     } else if (string_len(str_a) != string_len(str_b)) {
         return 0;
     } else {
         int cmp = memcmp(string_get_cstr(str_a), string_get_cstr(str_b), string_len(str_a) + 1);
         return (cmp == 0);
     }
+}
+
+
+/**
+                                    帮助函数
+******************************************************************************/
+
+/**
+ * 从对象返回 hash_code 函数
+ * @param context
+ * @param obj
+ * @return 如果不存在, 返回 NULL
+ */
+EXPORT_API hash_code_fn object_hash_helper(context_t context, object obj) {
+    object_type_info_ptr t = context_get_object_type(context, obj);
+    return type_info_hash_code(t);
+}
+
+/**
+ * 从对象返回 equals 函数
+ * @param context
+ * @param obj
+ * @return 如果不存在, 返回 NULL
+ */
+EXPORT_API equals_fn object_equals_helper(context_t context, object obj) {
+    object_type_info_ptr t = context_get_object_type(context, obj);
+    return type_info_equals(t);
 }

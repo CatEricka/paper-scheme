@@ -2,52 +2,6 @@
 
 
 /******************************************************************************
-                            解释器初始化与解释器 API
-******************************************************************************/
-/**
- * 初始化环境
- * @param context
- * @return 0: 初始化失败; 1: 初始化成功
- */
-static int interpreter_default_env_init(context_t context) {
-    gc_var1(context, tmp);
-
-    context->debug = 0;
-    context->repl_mode = 0;
-
-    context->args = IMM_UNIT;
-    context->code = IMM_UNIT;
-    // TODO current_env hash map
-    context->current_env = IMM_UNIT;
-    tmp = stack_make_op(context, MAX_STACK_BLOCK_DEEP);
-    tmp = pair_make_op(context, tmp, IMM_UNIT);
-    context->scheme_stack = tmp;
-
-    // TODO op_code 初始化
-    context->op_code = OP_TOP_LEVEL;
-    context->value = IMM_UNIT;
-
-    context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
-
-    // TODO global_symbol_table hash set
-    context->global_symbol_table = IMM_UNIT;
-    // TODO global_environment
-    context->global_environment = IMM_UNIT;
-
-    gc_release_var(context);
-    return 1;
-}
-
-EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growth_scale, size_t heap_max_size) {
-    context_t context = context_make(heap_init_size, heap_growth_scale, heap_max_size);
-    notnull_or_return(context, "interpreter_create failed", NULL);
-
-    interpreter_default_env_init(context);
-    return context;
-}
-
-
-/******************************************************************************
                                 对象构造 API
 ******************************************************************************/
 
@@ -459,6 +413,74 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
     return NULL;
 }
 
+/**
+ * 构造 hashset
+ * @param context
+ * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor) {
+    assert(context != NULL);
+    assert(load_factor >= 0);
+
+    gc_var2(context, hashset, map);
+
+    map = hashmap_make_op(context, init_capacity, load_factor);
+    hashset = raw_object_make(context, OBJ_HASH_SET, object_sizeof_base(hashset));
+    hashset->value.hashset.map = map;
+
+    gc_release_var(context);
+    return hashset;
+}
+
+/**
+ * 构造 hashmap
+ * @param context
+ * @param init_capacity hashmap 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor) {
+    assert(context != NULL);
+    assert(load_factor >= 0);
+
+    gc_var2(context, hashmap, table);
+
+    table = vector_make_op(context, init_capacity);
+    hashmap = raw_object_make(context, OBJ_HASH_MAP, object_sizeof_base(hashmap));
+    hashmap->value.hashmap.table = table;
+    hashmap->value.hashmap.size = 0;
+    hashmap->value.hashmap.load_factor = load_factor;
+    hashmap->value.hashmap.threshold = init_capacity;
+
+    gc_release_var(context);
+    return hashmap;
+}
+
+/**
+ * 构造 weak ref
+ * @param context
+ * @param obj
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj) {
+    assert(context != NULL);
+
+    gc_param1(context, obj);
+    gc_var1(context, weak);
+
+    weak = raw_object_make(context, OBJ_WEAK_REF, object_sizeof_base(weak_ref));
+    weak->value.weak_ref._internal_next_ref = NULL;
+    weak->value.weak_ref.ref = obj;
+
+    gc_release_param(context);
+    return weak;
+}
+
 /******************************************************************************
                                 对象操作 API
 ******************************************************************************/
@@ -594,6 +616,296 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object s
     return str_buffer;
 }
 
+
+/**
+ * hashset 是否包含指定的对象
+ * @param context
+ * @param hashset
+ * @param obj object 不能为 NULL
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
+    // TODO
+    return NULL;
+}
+
+/**
+ * obj 放入 hashset
+ * @param context
+ * @param obj
+ * @return 如果已经存在旧值, 将存入新值返回旧值, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
+    // TODO
+    return NULL;
+}
+
+/**
+ * hashset_b 全部放入 hashset_a, 浅拷贝
+ * @param context
+ * @param hashset_a 不能为空
+ * @param hashset_b 不能为空
+ */
+EXPORT_API GC void
+hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, REF NOTNULL object hashset_b) {
+    // TODO
+    return;
+}
+
+/**
+ * 清空 hashset
+ * @param context
+ * @param hashset 不能为空
+ * @return
+ */
+EXPORT_API GC void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashset) {
+    // TODO
+    return;
+}
+
+/**
+ * 从 hashset 中移除 object
+ * @param context
+ * @param hashset
+ * @param obj 不能为空, 可以为 IMM_UNIT
+ * @return 如果存在,返回旧值; 不存在则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
+    // TODO
+    return NULL;
+}
+
+
+/**
+ * hashmap 是否包含指定的对象
+ * @param context
+ * @param hashmap
+ * @param key object 不能为 NULL
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key) {
+    // TODO
+    return NULL;
+}
+
+/**
+ * obj 放入 hashmap
+ * @param context
+ * @param hashmap
+ * @param k 键
+ * @param v 值
+ * @return 如果 k 已经存在, 则返回旧的 v, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object k, REF NOTNULL object v) {
+    assert(context != NULL);
+    assert(hashmap != NULL);
+    assert(!is_null(k));
+    assert(!is_null(v));
+
+    gc_param3(context, hashmap, k, v);
+    gc_var7(context, vector, new_vector, old_key, old_value, new_entry, old_entry, entry_list);
+
+    hash_code_fn hash_fn = object_hash_helper(context, k);
+    equals_fn equals = object_equals_helper(context, k);
+
+    // 1. 计算 hash 值
+    uint32_t hash = 0;
+
+    // hash 函数为空, hash 值为 0
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, k);
+    }
+
+    // 2. 根据 hash 值计算索引位置
+    vector = hashmap->value.hashmap.table;
+    size_t vec_len = vector_len(vector);
+    size_t index = hash % vec_len;
+
+    // 3. 检查索引位置是否有旧值, 如果存在则替换, 返回旧值
+    for (entry_list = vector_ref(vector, index); entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+        assert(is_pair(entry_list));
+        old_entry = pair_car(entry_list);
+        assert(is_pair(old_entry));
+
+        // 取出旧值
+        old_key = pair_car(old_entry);
+        if (k == old_key || equals(context, k, old_key)) {
+            old_value = pair_cdr(old_entry);
+
+            // 创建新节点替换链表
+            new_entry = pair_make_op(context, k, v);
+            pair_car(entry_list) = new_entry;
+
+            return old_value;
+        }
+    }
+
+
+    // 4. 没有找到旧值, 说明要创建新的 entry
+    if (hashmap->value.hashmap.size >= hashmap->value.hashmap.threshold &&
+        (vector_ref(vector, index) != IMM_UNIT)) {
+        // 此时容量大于等于扩容阈值, 且 index 位置不为 IMM_UNIT
+        // 则需要扩容
+        size_t new_len = vec_len * 2;
+        new_vector = vector_make_op(context, new_len);
+
+        // 转移旧的内容, 需要重新计算 index
+        for (size_t i = 0; i < vec_len; i++) {
+
+            // 取出旧的 entry
+            entry_list = vector_ref(vector, i);
+
+            if (entry_list != IMM_UNIT) {
+
+                // 不为空的时候需要进行 entry 重新 hash 并转移
+                // 否则不需要处理, 因为 vector 默认初始化为 IMM_UNIT
+                old_entry = pair_car(entry_list);
+                old_key = pair_car(old_entry);
+                size_t tmp_hash = 0;
+                hash_code_fn tmp_hash_fn = object_hash_helper(context, old_key);
+                if (tmp_hash_fn != NULL) {
+                    tmp_hash = tmp_hash_fn(context, old_key);
+                }
+                size_t new_index = tmp_hash % new_len;
+
+                vector_ref(new_vector, new_index) = old_entry;
+            }
+        }
+
+        // 转移结束, 重新计算 hash 值
+        hash = 0;
+        if (hash_fn != NULL) {
+            hash = hash_fn(context, k);
+        }
+        index = hash % new_len;
+    }
+
+    // 5. 最后插入新节点
+    new_entry = pair_make_op(context, k, v);
+    entry_list = pair_make_op(context, new_entry, vector_ref(new_vector, index));
+    vector_set(new_vector, index, entry_list);
+    hashmap->value.hashmap.table = new_vector;
+    hashmap->value.hashmap.threshold = vector_len(new_vector) * hashmap->value.hashmap.load_factor;
+    hashmap->value.hashmap.size++;
+
+    gc_release_param(context);
+    // 此时插入过新的键值对, 返回 IMM_UNIT
+    return IMM_UNIT;
+}
+
+/**
+ * hashmap 取出 key 对应的 value
+ * @param context
+ * @param hashmap
+ * @param key
+ * @return 如果 key 存在, 则返回对应的 value, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object key) {
+    // TODO
+}
+
+/**
+ * hashmap_b 全部放入 hashmap_a, 浅拷贝
+ * @param context
+ * @param hashmap_a
+ * @param hashmap_b
+ */
+EXPORT_API void
+hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, REF NOTNULL object hashmap_b) {
+    assert(context != NULL);
+    assert(is_hashmap(hashmap_a));
+    assert(is_hashmap(hashmap_b));
+
+    gc_param2(context, hashmap_a, hashmap_b);
+    gc_var3(context, entry_list, key, value);
+
+    size_t map_b_vector_len = vector_len(hashmap_b->value.hashmap.table);
+    for (size_t i = 0; i < map_b_vector_len; i++) {
+
+        entry_list = vector_ref(hashmap_b->value.hashmap.table, i);
+        for (; entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+
+            key = pair_car(entry_list);
+            value = pair_cdr(entry_list);
+
+            hashmap_put_op(context, hashmap_a, key, value);
+        }
+    }
+
+    gc_release_param(context);
+}
+
+/**
+ * 清空 hashmap
+ * @param context
+ * @param hashmap
+ */
+EXPORT_API void hashmap_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashmap) {
+    assert(context != NULL);
+    assert(is_hashmap(hashmap));
+
+    gc_param1(context, hashmap);
+    gc_var1(context, vector);
+
+    vector = hashmap->value.hashmap.table;
+    size_t len = vector_len(vector);
+
+    for (size_t i = 0; i < len; i++) {
+        vector_set(vector, i, IMM_UNIT);
+    }
+
+    hashmap->value.hashmap.size = 0;
+
+    gc_release_param(context);
+}
+
+/**
+ * 从 hashmap 移除指定的 key
+ * @param context
+ * @param hashmap
+ * @param key
+ * @return 如果 key 已经存在, 返回被移除的 value, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key) {
+    assert(context != NULL);
+    assert(is_hashmap(hashmap));
+    assert(!is_null(key));
+
+    gc_param2(context, hashmap, key);
+    gc_var4(context, pre_entry_list, entry_list, tmp_key, value);
+
+    size_t map_vector_len = vector_len(hashmap->value.hashmap.table);
+    size_t hash = 0;
+    size_t index = 0;
+    hash_code_fn hash_fn = object_hash_helper(context, key);
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, key);
+    }
+    index = hash % map_vector_len;
+
+    entry_list = vector_ref(hashmap->value.hashmap.table, index);
+    if (entry_list == IMM_UNIT) {
+        return IMM_UNIT;
+    }
+    // 此时至少有一个 entry
+    //TODO 完成这个
+    for (pre_entry_list = entry_list, entry_list = pair_cdr(entry_list);
+         pre_entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+        key = pair_car(entry_list);
+        value = pair_cdr(entry_list);
+    }
+
+    gc_release_param(context);
+}
+
+
 /******************************************************************************
                                 对象扩容 API
 ******************************************************************************/
@@ -667,6 +979,9 @@ vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t ad
     new_vector = vector_make_op(context, new_size);
     for (size_t i = 0; i < old_size; i++) {
         vector_set(new_vector, i, vector_ref(vec, i));
+    }
+    for (size_t i = old_size; i < new_size; i++) {
+        vector_set(new_vector, i, IMM_UNIT);
     }
 
     gc_release_param(context);

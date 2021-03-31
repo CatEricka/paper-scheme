@@ -456,7 +456,24 @@ UTEST(gc_test, gc_collect_move_test) {
 
 UTEST(gc_test, weak_ref_test) {
     context_t context = context_make(16, 2, 0x10000);
-    gc_var2(context, obj1, obj2);
+    gc_var3(context, weak1, weak2, obj);
+
+    obj = string_make_from_cstr_op(context, "weak_object");
+    weak1 = weak_ref_make_op(context, obj);
+    weak2 = weak_ref_make_op(context, obj);
+
+    gc_collect(context);
+    ASSERT_TRUE(weak_ref_is_valid(weak1));
+    ASSERT_TRUE(weak1->value.weak_ref._internal_next_ref == NULL);
+    ASSERT_TRUE(weak_ref_is_valid(weak2));
+    ASSERT_TRUE(weak2->value.weak_ref._internal_next_ref == NULL);
+
+    obj = NULL;
+    gc_collect(context);
+    ASSERT_FALSE(weak_ref_is_valid(weak1));
+    ASSERT_TRUE(weak1->value.weak_ref._internal_next_ref == NULL);
+    ASSERT_FALSE(weak_ref_is_valid(weak2));
+    ASSERT_TRUE(weak2->value.weak_ref._internal_next_ref == NULL);
 
     gc_release_var(context);
     context_destroy(context);

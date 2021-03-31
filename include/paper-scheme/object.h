@@ -194,15 +194,8 @@ struct object_struct_t {
 
         // TODO 实现 hash set
         struct value_hashset_t {
-            // 当前 hashset 存储值数量
-            size_t size;
-            // 负载因子
-            double load_factor;
-            // 扩容上限
-            size_t threshold;
-            // #(x x x x)
-            // vector
-            object table;
+            // hashmap 实现
+            object map;
         } hashset;
 
         // TODO 实现 hash map
@@ -217,13 +210,8 @@ struct object_struct_t {
             //    ((k v) '()))
             // vector
             object table;
-            // hashset
-            object key_set;
-            // hashset
-            object value_set;
         } hashmap;
 
-        // TODO 实现弱引用, 测试弱引用的 GC 工作
         // 弱引用
         // 注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的
         struct value_weak_ref_t {
@@ -299,9 +287,9 @@ struct object_struct_t {
                                 TODO is_port_input(obj), is_port_output(obj), is_port_in_out_put(obj), is_port_eof(obj)
             - srfi6 string_port:
                                 TODO is_srfi6_port(obj)
-            - hashset:          TODO is_hashset(obj)
-            - hashmap:          TODO is_hashmap(obj)
-            - weak_ref:         TODO is_weak_ref(obj)
+            - hashset:          is_hashset(obj)
+            - hashmap:          is_hashmap(obj)
+            - weak_ref:         is_weak_ref(obj)
         构造:
             - i64:              i64_make_op()
             - double number:    doublenum_make_op()
@@ -334,18 +322,18 @@ struct object_struct_t {
                                 stack_push, stack_pop(),  stack_peek(),
             - string_port:      TODO string_port_kind()
             - stdio_port:       TODO stdio_port_kind()
-            - hashset:          TODO hashset_size()
-            - hashmap:          TODO hashmap_size()
-            - weak_ref:         TODO weak_ref_is_valid()
+            - hashset:          hashset_size()
+            - hashmap:          hashmap_size()
+            - weak_ref:         weak_ref_is_valid()
         操作:
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
                                 string_buffer_append_char_op()
             - hashset:          TODO hashset_contains_op(), hashset_put_op(), hashset_put_all_op()
                                 TODO hashset_clear_op(), hashset_remove_op()
-            - hashmap:          TODO hashmap_contains_key_op(), hashmap_put_op(), hashmap_put_all_op()
-                                TODO hashmap_clear_op(), hashmap_remove_op()
-            - weak_ref:         TODO weak_ref_get()
+            - hashmap:          TODO hashmap_contains_key_op(), hashmap_put_op(), hashmap_get_op()
+                                TODO hashmap_put_all_op(), hashmap_clear_op(), hashmap_remove_op()
+            - weak_ref:         weak_ref_get()
         扩容:
             - bytes:            bytes_capacity_increase()
             - string_buffer:    string_buffer_capacity_increase()
@@ -895,7 +883,7 @@ CHECKED OUT int stack_pop(REF object stack);
  * 弱引用是否可用
  * @return 0: 不可用; 1: 可用
  */
-#define weak_ref_is_valid(obj)   ((obj)->value.weak_ref != NULL)
+#define weak_ref_is_valid(obj)   ((obj)->value.weak_ref.ref != NULL)
 
 /**
  * 获取弱引用对应的引用

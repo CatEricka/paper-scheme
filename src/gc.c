@@ -154,7 +154,6 @@ static object gc_mark(context_t context) {
 
     // 标记全局符号表
     gc_mark_one_start(context, context->global_symbol_table);
-
     // 标记全局 environment
     gc_mark_one_start(context, context->global_environment);
 
@@ -185,13 +184,17 @@ static object gc_mark(context_t context) {
  */
 static void gc_reset_weak_references(context_t context) {
     object weak_ref = context->weak_ref_chain;
+    object tmp = NULL;
     while (weak_ref != NULL) {
         assert(is_weak_ref(weak_ref));
         object ref = weak_ref_get(weak_ref);
-        if (is_object(ref) && is_marked(ref)) {
+        if (is_object(ref) && !is_marked(ref)) {
+            // weak ref 引用的对象未标记时设置为空
             weak_ref_get(weak_ref) = NULL;
         }
+        tmp = weak_ref;
         weak_ref = weak_ref->value.weak_ref._internal_next_ref;
+        tmp->value.weak_ref._internal_next_ref = NULL;
     }
 
     context->weak_ref_chain = NULL;
@@ -294,7 +297,9 @@ static void gc_adjust_ref(context_t context) {
     // load stack
     gc_adjust_ref_one(&(context->load_stack));
 
-    // 标记 global_environment
+    // 调整 global_symbol_table
+    gc_adjust_ref_one(&(context->global_symbol_table));
+    // 调整 global_environment
     gc_adjust_ref_one(&(context->global_environment));
 
     // 全局类型信息

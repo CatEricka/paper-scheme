@@ -17,14 +17,6 @@
 
 
 /******************************************************************************
-                            解释器初始化与解释器 API
-******************************************************************************/
-
-EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growth_scale, size_t heap_max_size);
-
-
-
-/******************************************************************************
                                 对象构造 API
 ******************************************************************************/
 
@@ -187,9 +179,22 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
 EXPORT_API OUT NOTNULL GC object
 hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor);
 
+/**
+ * 构造 hashmap
+ * @param context
+ * @param init_capacity hashmap 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
+ * @return
+ */
 EXPORT_API OUT NOTNULL GC object
 hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor);
 
+/**
+ * 构造 weak ref
+ * @param context
+ * @param obj
+ * @return
+ */
 EXPORT_API OUT NOTNULL GC object
 weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj);
 
@@ -241,25 +246,110 @@ string_buffer_append_imm_char_op(
 EXPORT_API OUT NOTNULL GC object
 string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object str_buffer, COPY char ch);
 
-EXPORT_API OUT NOTNULL GC object hashset_contains_op(REF NOTNULL context_t context, object obj);
 
-EXPORT_API OUT NOTNULL GC object hashset_put_op(REF NOTNULL context_t context, object obj);
+/**
+ * hashset 是否包含指定的对象
+ * @param context
+ * @param hashset
+ * @param obj object 不能为 NULL
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj);
 
-EXPORT_API OUT NOTNULL GC object hashset_put_all_op(REF NOTNULL context_t context, object obj);
+/**
+ * obj 放入 hashset
+ * @param context
+ * @param obj
+ * @return 如果已经存在旧值, 将存入新值返回旧值, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj);
 
-EXPORT_API OUT NOTNULL GC object hashset_clear_op(REF NOTNULL context_t context, object obj);
+/**
+ * hashset_b 全部放入 hashset_a, 浅拷贝
+ * @param context
+ * @param hashset_a 不能为空
+ * @param hashset_b 不能为空
+ */
+EXPORT_API GC void
+hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, REF NOTNULL object hashset_b);
 
-EXPORT_API OUT NOTNULL GC object hashset_remove_op(REF NOTNULL context_t context, object obj);
+/**
+ * 清空 hashset
+ * @param context
+ * @param hashset 不能为空
+ * @return
+ */
+EXPORT_API GC void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashset);
 
-EXPORT_API OUT NOTNULL GC object hashmap_contains_key_op(REF NOTNULL context_t context, object obj);
+/**
+ * 从 hashset 中移除 object
+ * @param context
+ * @param hashset
+ * @param obj 不能为空, 可以为 IMM_UNIT
+ * @return 如果存在,返回旧值; 不存在则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj);
 
-EXPORT_API OUT NOTNULL GC object hashmap_put_op(REF NOTNULL context_t context, object obj);
 
-EXPORT_API OUT NOTNULL GC object hashmap_put_all_op(REF NOTNULL context_t context, object obj);
+/**
+ * hashmap 是否包含指定的对象
+ * @param context
+ * @param hashmap
+ * @param key object 不能为 NULL
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key);
 
-EXPORT_API OUT NOTNULL GC object hashmap_clear_op(REF NOTNULL context_t context, object obj);
+/**
+ * obj 放入 hashmap
+ * @param context
+ * @param hashmap
+ * @param k 键
+ * @param v 值
+ * @return 如果 k 已经存在, 则返回旧的 v, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object k, REF NOTNULL object v);
 
-EXPORT_API OUT NOTNULL GC object hashmap_remove_op(REF NOTNULL context_t context, object obj);
+/**
+ * hashmap 取出 key 对应的 value
+ * @param context
+ * @param hashmap
+ * @param key
+ * @return 如果 key 存在, 则返回对应的 value, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object key);
+
+/**
+ * hashmap_b 全部放入 hashmap_a, 浅拷贝
+ * @param context
+ * @param hashmap_a
+ * @param hashmap_b
+ */
+EXPORT_API void
+hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, REF NOTNULL object hashmap_b);
+
+/**
+ * 清空 hashmap
+ * @param context
+ * @param hashmap
+ */
+EXPORT_API void hashmap_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashmap);
+
+/**
+ * 从 hashmap 移除指定的 key
+ * @param context
+ * @param hashmap
+ * @param key
+ * @return 如果 key 已经存在, 返回被移除的 value, 否则返回 IMM_UNIT
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key);
 
 
 /******************************************************************************

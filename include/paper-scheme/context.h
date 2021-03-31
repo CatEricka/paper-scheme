@@ -79,9 +79,7 @@ typedef struct scheme_context_t {
     /**
      *                   全局信息表
      ****************************************************/
-    // TODO 实现 hash set
-    // TODO 全局符号表, 应为弱引用, gc 处理时应当特殊处理
-    // 因为除此之外没有用到弱引用的地方, 因此不额外实现弱引用功能
+    // TODO 实现 weak-ref hash set 全局符号表
     // (make-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)
     // symbol
     GC object global_symbol_table;
@@ -153,20 +151,20 @@ struct object_runtime_type_info_t {
     object_type_tag tag;
 
     /** 用于标记对象引用的子对象, 类型必须是object, 且排列在一起 */
-    size_t member_base;                  // 对象成员起始偏移量
-    size_t member_eq_len_base;           // 比较对象时需要比较的 成员基本数量
-    size_t member_len_base;              // 成员基本数量
+    size_t member_base;                 // 对象成员起始偏移量
+    size_t member_eq_len_base;          // 比较对象时需要比较的 成员基本数量
+    size_t member_len_base;             // 成员基本数量
     // 可变长度数据结构会用到这个属性, 如 vector, stack
-    size_t member_meta_len_offset;       // 成员如果是可变长度, 则 描述成员数量的数量 在结构体的偏移量, 否则填 0
-    size_t member_meta_len_scale;        // 成员数量的缩放系数, 一般为 1 或 0, 取决于成员数量是否可变
+    size_t member_meta_len_offset;      // 成员如果是可变长度, 则 描述成员数量的数量 在结构体的偏移量, 否则填 0
+    size_t member_meta_len_scale;       // 成员数量的缩放系数, 一般为 1 或 0, 取决于成员数量是否可变
     /** 用于计算对象大小, 包含可变长度对象的信息 */
     size_t size_base;                   // 对象基本大小
     size_t size_meta_size_offset;       // 柔性数组长度属性偏移量
     size_t size_meta_size_scale;        // 柔性数组元素大小
 
     proc_1 finalizer;                   // finalizer
-    hash_code_fn hash_code;                   // hash值计算      (context, object) -> i64, 非负数
-    equals_fn equals;                      // 比较是否相等     (context, object) -> boolean 立即数
+    hash_code_fn hash_code;             // hash值计算      (context, object) -> uint32_t
+    equals_fn equals;                   // 比较是否相等     (context, object) -> int 0/1
 };
 
 
@@ -327,6 +325,28 @@ EXPORT_API int string_equals(context_t _context, object str_a, object str_b);
   (type_info_get_size_by_size_field_offset((_obj), type_info_member_meta_len_offset((_type))) \
    * type_info_member_meta_len_scale((_type)) \
    + type_info_member_eq_len_base((_type)))
+
+
+/**
+                                    帮助函数
+******************************************************************************/
+
+/**
+ * 从对象返回 hash_code 函数
+ * @param context
+ * @param obj
+ * @return 如果不存在, 返回 NULL
+ */
+EXPORT_API hash_code_fn object_hash_helper(context_t context, object obj);
+
+/**
+ * 从对象返回 equals 函数
+ * @param context
+ * @param obj
+ * @return 如果不存在, 返回 NULL
+ */
+EXPORT_API equals_fn object_equals_helper(context_t context, object obj);
+
 
 /**
                                解释器上下文结构
