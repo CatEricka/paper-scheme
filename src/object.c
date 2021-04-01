@@ -103,12 +103,26 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
         return size_helper(i64, 0);
     } else if (is_doublenum(obj)) {
         return size_helper(doublenum, 0);
+    } else if (is_imm_char(obj)) {
+        return 0;
+    } else if (is_imm_true(obj)) {
+        return 0;
+    } else if (is_imm_false(obj)) {
+        return 0;
+    } else if (is_imm_unit(obj)) {
+        return 0;
+    } else if (is_imm_eof(obj)) {
+        return 0;
     } else if (is_pair(obj)) {
         return size_helper(pair, 0);
+    } else if (is_bytes(obj)) {
+        return size_helper(bytes, sizeof(char) * obj->value.bytes.capacity);
     } else if (is_symbol(obj)) {
         return size_helper(symbol, sizeof(char) * obj->value.symbol.len);
     } else if (is_string(obj)) {
         return size_helper(string, sizeof(char) * obj->value.string.len);
+    } else if (is_string_buffer(obj)) {
+        return size_helper(string_buffer, 0);
     } else if (is_vector(obj)) {
         return size_helper(vector, sizeof(object) * obj->value.vector.len);
     } else if (is_stack(obj)) {
@@ -117,8 +131,14 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
         return size_helper(string_port, 0);
     } else if (is_stdio_port(obj)) {
         return size_helper(stdio_port, 0);
+    } else if (is_hashset(obj)) {
+        return size_helper(hashset, 0);
+    } else if (is_hashmap(obj)) {
+        return size_helper(hashmap, 0);
+    } else if (is_weak_ref(obj)) {
+        return size_helper(weak_ref, 0);
     }
-    // todo 新实现的类型记得修改这里
+    // todo 新实现的类型记得修改 object_bootstrap_sizeof
 
     // 未知的类型
     assert((0 && "UNKNOWN_OBJECT_TYPE"));

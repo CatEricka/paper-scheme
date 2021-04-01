@@ -1196,6 +1196,28 @@ char_to_string(REF NOTNULL context_t context, COPY char ch) {
 }
 
 /**
+ * symbol 转 string
+ * @param context
+ * @param symbol
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
+    // TODO
+}
+
+/**
+ * string 转 symbol
+ * @param context
+ * @param string
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+string_to_symbol(REF NOTNULL context_t context, COPY object str) {
+    // TODO
+}
+
+/**
  * string_buffer 转换为 string, 深拷贝
  * @param context
  * @param str_buffer string_buffer
@@ -1221,4 +1243,15 @@ string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer) {
 
     gc_release_param(context);
     return str;
+}
+
+/**
+ * string_buffer 转换为 symbol, 深拷贝
+ * @param context
+ * @param str_buffer string_buffer
+ * @return symbol
+ */
+EXPORT_API OUT NOTNULL GC object
+string_buffer_to_symbol(REF NOTNULL context_t context, COPY object str_buffer) {
+    // TODO
 }

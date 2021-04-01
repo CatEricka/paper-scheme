@@ -1180,6 +1180,46 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
+    tmp1 = imm_char_to_string(context, char_imm_make('\0'));
+    string_buffer_append_string_op(context, obj, tmp1);
+    ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
+    ASSERT_TRUE(memcmp(string_buffer_bytes_data(obj), "abcdefghi", 9) == 0);
+    ASSERT_EQ(9, string_buffer_length(obj));
+    ASSERT_FALSE(string_buffer_empty(obj));
+    ASSERT_FALSE(string_buffer_full(obj));
+    tmp1 = string_buffer_to_string(context, obj);
+    ASSERT_EQ(string_len(tmp1), 9);
+    ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefghi\0", string_len(tmp1) + 1), 0);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
+    tmp1 = string_make_from_cstr_op(context, "\0\0abcabc\0");
+    string_buffer_append_string_op(context, obj, tmp1);
+    ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
+    ASSERT_TRUE(memcmp(string_buffer_bytes_data(obj), "abcdefghi", 9) == 0);
+    ASSERT_EQ(9, string_buffer_length(obj));
+    ASSERT_FALSE(string_buffer_empty(obj));
+    ASSERT_FALSE(string_buffer_full(obj));
+    tmp1 = string_buffer_to_string(context, obj);
+    ASSERT_EQ(string_len(tmp1), 9);
+    ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefghi\0", string_len(tmp1) + 1), 0);
+
+    start = utest_ns();
+    gc_collect(context);
+    time = utest_ns() - start;
+    if (gc_print) {
+        UTEST_PRINTF("gc time: %"
+                             PRId64
+                             " ns\n", time);
+    }
+
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
     ASSERT_FALSE(is_unique_imm(obj));

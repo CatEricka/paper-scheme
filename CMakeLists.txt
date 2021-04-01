@@ -62,6 +62,9 @@ if (ENABLE_UNIT_TESTS)
             "test/test_cases/runtime_test.c"
             "test/test_cases/value_test.c"
             "test/test_cases/hash_test.c"
+            "test/test_cases/equals_test.c"
+            "test/test_cases/hashmap_test.c"
+            "test/test_cases/hashset_test.c"
             "test/test_run.c"
             )
     target_link_libraries(paper-scheme-test paper-scheme-lib)

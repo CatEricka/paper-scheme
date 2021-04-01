@@ -16,12 +16,14 @@
 /**
                                对象类型标记
 ******************************************************************************/
+// todo  增加新类型重写 object_type_enum 枚举
 enum object_type_enum {
     OBJ_I64 = 0,
     OBJ_D64,
     OBJ_CHAR,
     OBJ_BOOLEAN,
     OBJ_UNIT,
+    OBJ_EOF,
     OBJ_PAIR,
     OBJ_BYTES,
     OBJ_STRING,
@@ -193,12 +195,14 @@ struct object_struct_t {
         } stdio_port;
 
         // TODO 实现 hash set
+        // 最好只放入原子类型, 无法保证复合类型正常工作
         struct value_hashset_t {
             // hashmap 实现
             object map;
         } hashset;
 
         // TODO 实现 hash map
+        // key 最好为原子类型
         struct value_hashmap_t {
             // 当前 hashmap 键值对数量
             size_t size;
@@ -342,13 +346,15 @@ struct object_struct_t {
         类型转换:
             - char (立即数):     imm_char_to_string()
             - char (C 原始类型): char_to_string()
-            - string_buffer:    string_buffer_to_string()
+            - symbol:           TODO symbol_to_string()
+            - string:           TODO string_to_symbol()
+            - string_buffer:    string_buffer_to_string(), TODO string_buffer_to_symbol()
         哈希算法 & equals 算法:
             - i64:
             - double number:
             - pair:
             - bytes:
-            - string:          string_hash_code(), string_equals()
+            - string:           string_hash_code(), string_equals()
             - string_buffer:
             - symbol:           symbol_hash_code(), symbol_equals()
             - vector:
