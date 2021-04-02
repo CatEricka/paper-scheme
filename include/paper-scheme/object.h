@@ -132,6 +132,8 @@ struct object_struct_t {
 
         // bytes
         struct value_bytes_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             size_t capacity;
             char data[0];
         } bytes;
@@ -145,6 +147,8 @@ struct object_struct_t {
 
         // 字符串缓冲
         struct value_string_buffer_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // 缓冲总长度
             size_t buffer_size;
             // 当前长度, 包括 '\0'
@@ -168,6 +172,8 @@ struct object_struct_t {
 
         //栈
         struct value_stack_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // 栈大小
             size_t size;
             // 栈内 object 数量, 空栈为 0
@@ -177,6 +183,8 @@ struct object_struct_t {
 
         // 字符串类型输入输出
         struct value_string_port_t {
+            // 用于 hash 计算, 构造后固定不变
+            uint32_t hash;
             enum port_kind kind;
             object string_buffer_data;
             size_t length;
@@ -185,6 +193,8 @@ struct object_struct_t {
 
         // stdio 类型输入输出
         struct value_stdio_port_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             enum port_kind kind;
             FILE *file;
             object filename;
@@ -197,6 +207,8 @@ struct object_struct_t {
         // TODO 实现 hash set
         // 最好只放入原子类型, 无法保证复合类型正常工作
         struct value_hashset_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // hashmap 实现
             object map;
         } hashset;
@@ -204,6 +216,8 @@ struct object_struct_t {
         // TODO 实现 hash map
         // key 最好为原子类型
         struct value_hashmap_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // 当前 hashmap 键值对数量
             size_t size;
             double load_factor;

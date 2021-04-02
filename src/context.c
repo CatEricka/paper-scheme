@@ -798,31 +798,52 @@ EXPORT_API int stack_equals(context_t context, object stack_a, object stack_b) {
 }
 
 EXPORT_API int string_port_equals(context_t context, object string_port_a, object string_port_b) {
-    // TODO
-    return 0;
+    if (!is_string_port(string_port_a) || !is_string_port(string_port_b)) {
+        return 0;
+    } else {
+        // 考虑到流的特殊性, 只检查是否是同一个对象
+        return string_port_a == string_port_b;
+    }
 }
 
 EXPORT_API int stdio_port_equals(context_t context, object stdio_a, object stdio_b) {
-    // TODO
-    return 0;
+    if (!is_stdio_port(stdio_a) || !is_stdio_port(stdio_b)) {
+        return 0;
+    } else {
+        return stdio_a == stdio_b;
+    }
 }
 
 EXPORT_API int hash_set_equals(context_t context, object hashset_a, object hashset_b) {
-    // TODO
-    return 0;
+    if (!is_hashset(hashset_a) || !is_hashset(hashset_b)) {
+        return 0;
+    } else {
+        return hashset_a == hashset_b;
+    }
 }
 
 EXPORT_API int hash_map_equals(context_t context, object hashmap_a, object hashmap_b) {
-    // TODO
-    return 0;
+    if (!is_hashmap(hashmap_a) || !is_hashmap(hashmap_b)) {
+        return 0;
+    } else {
+        return hashmap_a == hashmap_b;
+    }
 }
 
 EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak_ref_b) {
     if (!is_weak_ref(weak_ref_a) || !is_weak_ref(weak_ref_b)) {
         return 0;
-    } else if (!weak_ref_is_valid(weak_ref_a) || !weak_ref_is_valid(weak_ref_b)) {
+    } else if (!weak_ref_is_valid(weak_ref_a) && !weak_ref_is_valid(weak_ref_b)) {
+        // 都是空的弱引用
+        return 1;
+    } else if (!weak_ref_is_valid(weak_ref_a) && weak_ref_is_valid(weak_ref_b)) {
+        // weak_ref_a 无效, weak_ref_b 有效
         return 0;
+    } else if (weak_ref_is_valid(weak_ref_a) && !weak_ref_is_valid(weak_ref_b)) {
+        // weak_ref_a 有效, weak_ref_b 无效
+        return 10;
     } else {
+        // 二者都有效
         object ref_a = weak_ref_get(weak_ref_a);
         object ref_b = weak_ref_get(weak_ref_b);
         equals_fn equals = object_equals_helper(context, ref_a);

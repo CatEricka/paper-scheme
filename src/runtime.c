@@ -1203,7 +1203,19 @@ char_to_string(REF NOTNULL context_t context, COPY char ch) {
  */
 EXPORT_API OUT NOTNULL GC object
 symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
-    // TODO
+    assert(context != NULL);
+    assert(is_symbol(symbol));
+
+    gc_param1(context, symbol);
+    gc_var1(context, str);
+
+    size_t len = symbol_len(symbol) + 1;
+    str = raw_object_make(context, OBJ_STRING, object_sizeof_base(string) + sizeof(char) * len);
+    str->value.string.len = len;
+    memcpy(string_get_cstr(str), symbol_get_cstr(symbol), len);
+
+    gc_release_param(context);
+    return str;
 }
 
 /**
@@ -1214,7 +1226,19 @@ symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
  */
 EXPORT_API OUT NOTNULL GC object
 string_to_symbol(REF NOTNULL context_t context, COPY object str) {
-    // TODO
+    assert(context != NULL);
+    assert(is_string(str));
+
+    gc_param1(context, str);
+    gc_var1(context, symbol);
+
+    size_t len = string_len(str) + 1;
+    symbol = raw_object_make(context, OBJ_SYMBOL, object_sizeof_base(symbol) + sizeof(char) * len);
+    symbol->value.symbol.len = len;
+    memcpy(symbol_get_cstr(symbol), string_get_cstr(str), len);
+
+    gc_release_param(context);
+    return symbol;
 }
 
 /**
@@ -1253,5 +1277,22 @@ string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer) {
  */
 EXPORT_API OUT NOTNULL GC object
 string_buffer_to_symbol(REF NOTNULL context_t context, COPY object str_buffer) {
-    // TODO
+    assert(context != 0);
+    assert(is_string_buffer(str_buffer));
+
+    gc_param1(context, str_buffer);
+    gc_var1(context, symbol);
+
+    // string 长度要比 string_buffer 长度多一个 '\0'
+    size_t char_length = string_buffer_length(str_buffer);
+    size_t size_with_null = char_length + 1;
+    symbol = raw_object_make(context, OBJ_SYMBOL,
+                             object_sizeof_base(symbol) + size_with_null * sizeof(char));
+    symbol->value.symbol.len = size_with_null;
+    // string_buffer 末尾没有 '\0', 需要手动添加
+    memcpy(symbol_get_cstr(symbol), string_buffer_bytes_data(str_buffer), char_length);
+    string_get_cstr(symbol)[char_length] = '\0';
+
+    gc_release_param(context);
+    return symbol;
 }
