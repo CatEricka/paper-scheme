@@ -165,6 +165,8 @@ struct object_struct_t {
 
         //向量
         struct value_vector_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // object data[0] 大小, 注意是指 object 个数, 不是字节长度!
             size_t len;
             object data[0];

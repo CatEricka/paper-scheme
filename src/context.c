@@ -526,12 +526,33 @@ object stdio_finalizer(context_t context, object port) {
 /**
                                hash ֵ�㷨
 ******************************************************************************/
+EXPORT_API uint32_t hash_of_hash(uint32_t x, uint32_t y) {
+    // https://stackoverflow.com/questions/17765494/commutative-hash-function-for-uint32-t-value-pairs
+    const uint64_t a = (uint64_t) (x);
+    const uint64_t b = (uint64_t) (y);
+
+    const uint64_t h0 = (b << 32u) | a;
+    const uint64_t h1 = (a << 32u) | b;
+
+    return (x < y) ? h0 : h1; // conditional move (CMOV) instruction
+}
+
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64) {
-    return 0;
+    uint32_t a = (uint64_t) i64_getvalue(i64) & 0xffffffff;
+    uint32_t b = ((uint64_t) i64_getvalue(i64) >> 32u) & 0xffffffff;
+    return hash_of_hash(a, b);
 }
 
 EXPORT_API uint32_t d64_hash_code(context_t context, object d64) {
-    return 0;
+    assert(sizeof
+                   double == 8);
+    double num = doublenum_getvalue(d64);
+
+    uint64_t x = *((uint64_t *) &num);
+    uint32_t a = (uint64_t) x & 0xffffffff;
+    uint32_t b = ((uint64_t) x >> 32u) & 0xffffffff;
+
+    return hash_of_hash(a, b);
 }
 
 EXPORT_API uint32_t char_hash_code(context_t context, object imm_char) {

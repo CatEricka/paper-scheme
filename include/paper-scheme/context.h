@@ -186,6 +186,9 @@ object stdio_finalizer(context_t _context, object port);
                                hash 值算法
                        todo 增加新类型重写 hash 算法
 ******************************************************************************/
+// https://stackoverflow.com/questions/17765494/commutative-hash-function-for-uint32-t-value-pairs
+EXPORT_API uint32_t hash_of_hash(uint32_t x, uint32_t y);
+
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64);
 
 EXPORT_API uint32_t d64_hash_code(context_t context, object d64);
