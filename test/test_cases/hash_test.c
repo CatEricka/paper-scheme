@@ -1,6 +1,14 @@
 #include "lib/utest.h"
 #include <paper-scheme/runtime.h>
 
+UTEST(hash_test, value_type_hash_test) {
+    context_t context = context_make(16, 2, 0x10000);;
+    gc_var3(context, obj, tmp1, tmp2);
+
+
+    gc_release_var(context);
+}
+
 UTEST(hash_test, string_hash_test) {
     context_t context = context_make(16, 2, 0x10000);
     gc_var1(context, str);

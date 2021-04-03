@@ -526,97 +526,23 @@ object stdio_finalizer(context_t context, object port) {
 /**
                                hash 值算法
 ******************************************************************************/
-EXPORT_API uint32_t hash_of_hash(uint32_t x, uint32_t y) {
-    // https://stackoverflow.com/questions/17765494/commutative-hash-function-for-uint32-t-value-pairs
-    const uint64_t a = (uint64_t) (x);
-    const uint64_t b = (uint64_t) (y);
-
-    const uint64_t h0 = (b << 32u) | a;
-    const uint64_t h1 = (a << 32u) | b;
-
-    return (x < y) ? h0 : h1; // conditional move (CMOV) instruction
-}
-
-EXPORT_API uint32_t i64_hash_code(context_t context, object i64) {
-    uint32_t a = (uint64_t) i64_getvalue(i64) & 0xffffffff;
-    uint32_t b = ((uint64_t) i64_getvalue(i64) >> 32u) & 0xffffffff;
-    return hash_of_hash(a, b);
-}
-
-EXPORT_API uint32_t d64_hash_code(context_t context, object d64) {
-    assert(sizeof
-                   double == 8);
-    double num = doublenum_getvalue(d64);
-
-    uint64_t x = *((uint64_t *) &num);
-    uint32_t a = (uint64_t) x & 0xffffffff;
-    uint32_t b = ((uint64_t) x >> 32u) & 0xffffffff;
-
-    return hash_of_hash(a, b);
-}
-
-EXPORT_API uint32_t char_hash_code(context_t context, object imm_char) {
+EXPORT_API uint32_t uint32_pair_hash(uint32_t x, uint32_t y) {
+    // TODO uint32_pair_hash
     return 0;
 }
 
-EXPORT_API uint32_t boolean_hash_code(context_t context, object imm_bool) {
+EXPORT_API uint32_t uint64_hash(uint64_t value) {
+    // TODO uint64_hash
     return 0;
 }
 
-EXPORT_API uint32_t unit_hash_code(context_t context, object unit_obj) {
-    return 0;
+EXPORT_API uint32_t double_number_hash(double num) {
+    uint64_t x = 0;
+    memcpy(&x, &num, sizeof(double));
+    return uint64_hash(x);
 }
 
-EXPORT_API uint32_t eof_hash_code(context_t context, object eof_obj) {
-    return 0;
-}
-
-EXPORT_API uint32_t pair_hash_code(context_t context, object pair) {
-    return 0;
-}
-
-EXPORT_API uint32_t bytes_hash_code(context_t context, object bytes) {
-    return 0;
-}
-
-EXPORT_API uint32_t string_buffer_hash_code(context_t context, object string_buffer) {
-    return 0;
-}
-
-EXPORT_API uint32_t vector_hash_code(context_t context, object vector) {
-    return 0;
-}
-
-EXPORT_API uint32_t stack_hash_code(context_t context, object stack) {
-    return 0;
-}
-
-EXPORT_API uint32_t string_port_hash_code(context_t context, object string_port) {
-    return 0;
-}
-
-EXPORT_API uint32_t stdio_port_hash_code(context_t context, object stdio_port) {
-    return 0;
-}
-
-EXPORT_API uint32_t hash_set_hash_code(context_t context, object hashset) {
-    return 0;
-}
-
-EXPORT_API uint32_t hash_map_hash_code(context_t context, object hashmap) {
-    return 0;
-}
-
-EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref) {
-    return 0;
-}
-/**
- * symbol hash code 计算
- * @param context
- * @param symbol
- * @return imm_i64, 非负数
- */
-EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
+EXPORT_API uint32_t symbol_hash_helper(object symbol) {
     assert(is_symbol(symbol));
 
     size_t length = symbol_len(symbol);
@@ -644,13 +570,7 @@ EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     return hash;
 }
 
-/**
- * string hash code 计算
- * @param context
- * @param str
- * @return imm_i64, 非负数
- */
-EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
+EXPORT_API uint32_t string_hash_helper(object str_obj) {
     assert(is_string(str_obj));
 
     size_t length = string_len(str_obj);
@@ -676,6 +596,144 @@ EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
     }
 
     return hash;
+}
+
+/**
+ * 根据对象地址和对象的类型枚举生成 hash 值, 保证 hash_code_fn 与 equals 匹配
+ * @param ptr
+ * @param enum
+ * @return
+ */
+EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum type_enum) {
+    uint32_t type = (uint32_t) type_enum;
+#ifdef IS_32_BIT_ARCH
+    return uint32_pair_hash((uint32_t) ptr, type);
+#elif IS_64_BIT_ARCH
+    return uint32_pair_hash(uint64_hash((uint64_t) ptr), type);
+#else
+# error("UNKNOWN Arch")
+#endif
+}
+
+/**
+                              获取 hash 值
+                       todo 增加新类型重写 hash 算法
+******************************************************************************/
+EXPORT_API uint32_t i64_hash_code(context_t context, object i64) {
+    assert(is_i64(i64));
+    return uint64_hash(i64_getvalue(i64));
+}
+
+EXPORT_API uint32_t d64_hash_code(context_t context, object d64) {
+    assert(is_doublenum(d64));
+    return double_number_hash(doublenum_getvalue(d64));
+}
+
+EXPORT_API uint32_t char_hash_code(context_t context, object imm_char) {
+    assert(is_imm_char(imm_char));
+    uint32_t hash = 0;
+    uint32_t seed = 131;
+
+    // 添加类型标记
+    // 大端序, 减小 0 的影响
+    const char tag[4] = {
+            (((uint32_t) OBJ_CHAR) >> 24u) & 0xffu,
+            (((uint32_t) OBJ_CHAR) >> 16u) & 0xffu,
+            (((uint32_t) OBJ_CHAR) >> 8u) & 0xffu,
+            (((uint32_t) OBJ_CHAR) >> 0u) & 0xffu,
+    };
+
+    hash = (hash * seed) + tag[0];
+    hash = (hash * seed) + tag[1];
+    hash = (hash * seed) + tag[2];
+    hash = (hash * seed) + tag[3];
+    hash = (hash * seed) + char_imm_getvalue(imm_char);
+
+    return hash;
+}
+
+EXPORT_API uint32_t boolean_hash_code(context_t context, object imm_bool) {
+    assert(is_imm_true(imm_bool) || is_imm_false(imm_bool));
+
+    if (imm_bool == IMM_TRUE)
+        return pointer_with_type_to_hash(IMM_TRUE, OBJ_BOOLEAN);
+    else
+        return pointer_with_type_to_hash(IMM_FALSE, OBJ_BOOLEAN);
+}
+
+EXPORT_API uint32_t unit_hash_code(context_t context, object unit_obj) {
+    assert(is_imm_unit(unit_obj));
+    return pointer_with_type_to_hash(IMM_UNIT, OBJ_UNIT);
+}
+
+EXPORT_API uint32_t eof_hash_code(context_t context, object eof_obj) {
+    assert(is_imm_eof(eof_obj));
+    return pointer_with_type_to_hash(IMM_EOF, OBJ_EOF);
+}
+
+EXPORT_API uint32_t pair_hash_code(context_t context, object pair) {
+    assert(is_pair(pair));
+    assert(!is_null(pair_car(pair)) && !is_null(pair_cdr(pair)));
+    object obj_car = pair_car(pair);
+    object obj_cdr = pair_cdr(pair);
+    hash_code_fn hash_code_car = object_hash_helper(context, obj_car);
+    hash_code_fn hash_code_cdr = object_hash_helper(context, obj_cdr);
+    return uint32_pair_hash(hash_code_car(context, obj_car), hash_code_cdr(context, obj_cdr));
+}
+
+EXPORT_API uint32_t bytes_hash_code(context_t context, object bytes) {
+    assert(is_bytes(bytes));
+    return bytes->value.bytes.hash;
+}
+
+EXPORT_API uint32_t string_buffer_hash_code(context_t context, object string_buffer) {
+    assert(is_string_buffer(string_buffer));
+    return string_buffer->value.string_buffer.hash;
+}
+
+EXPORT_API uint32_t vector_hash_code(context_t context, object vector) {
+    assert(is_vector(vector));
+    return vector->value.vector.hash;
+}
+
+EXPORT_API uint32_t stack_hash_code(context_t context, object stack) {
+    assert(is_stack(stack));
+    return stack->value.stack.hash;
+}
+
+EXPORT_API uint32_t string_port_hash_code(context_t context, object string_port) {
+    assert(is_string_port(string_port));
+    return string_port->value.string_port.hash;
+}
+
+EXPORT_API uint32_t stdio_port_hash_code(context_t context, object stdio_port) {
+    assert(is_stdio_port(stdio_port));
+    return stdio_port->value.stdio_port.hash;
+}
+
+EXPORT_API uint32_t hash_set_hash_code(context_t context, object hashset) {
+    assert(is_hashset(hashset));
+    return hashset->value.hashset.hash;
+}
+
+EXPORT_API uint32_t hash_map_hash_code(context_t context, object hashmap) {
+    assert(is_hashmap(hashmap));
+    return hashmap->value.hashmap.hash;
+}
+
+EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref) {
+    assert(is_weak_ref(weak_ref));
+    return weak_ref->value.weak_ref.hash;
+}
+
+EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
+    assert(is_symbol(symbol));
+    return symbol->value.string_buffer.hash;
+}
+
+EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
+    assert(is_string(str_obj));
+    return str_obj->value.string.hash;
 }
 
 /**

@@ -186,9 +186,28 @@ object stdio_finalizer(context_t _context, object port);
                                hash 值算法
                        todo 增加新类型重写 hash 算法
 ******************************************************************************/
-// https://stackoverflow.com/questions/17765494/commutative-hash-function-for-uint32-t-value-pairs
-EXPORT_API uint32_t hash_of_hash(uint32_t x, uint32_t y);
+// 辅助函数
+EXPORT_API uint32_t uint32_pair_hash(uint32_t x, uint32_t y);
 
+EXPORT_API uint32_t uint64_hash(uint64_t value);
+
+EXPORT_API uint32_t double_number_hash(double num);
+// https://www.partow.net/programming/hashfunctions/#BKDRHashFunction
+EXPORT_API uint32_t symbol_hash_helper(object symbol);
+
+EXPORT_API uint32_t string_hash_helper(object str_obj);
+/**
+ * 根据对象地址和对象的类型枚举生成 hash 值, 保证 hash_code_fn 与 equals 匹配
+ * @param ptr
+ * @param enum
+ * @return
+ */
+EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum type_enum);
+
+/**
+                              获取 hash 值
+                       todo 增加新类型重写 hash 算法
+******************************************************************************/
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64);
 
 EXPORT_API uint32_t d64_hash_code(context_t context, object d64);
@@ -200,25 +219,15 @@ EXPORT_API uint32_t boolean_hash_code(context_t context, object imm_bool);
 EXPORT_API uint32_t unit_hash_code(context_t context, object unit_obj);
 
 EXPORT_API uint32_t eof_hash_code(context_t context, object eof_obj);
-
 EXPORT_API uint32_t pair_hash_code(context_t context, object pair);
-
 EXPORT_API uint32_t bytes_hash_code(context_t context, object bytes);
-
 EXPORT_API uint32_t string_buffer_hash_code(context_t context, object string_buffer);
-
 EXPORT_API uint32_t vector_hash_code(context_t context, object vector);
-
 EXPORT_API uint32_t stack_hash_code(context_t context, object stack);
-
 EXPORT_API uint32_t string_port_hash_code(context_t context, object string_port);
-
 EXPORT_API uint32_t stdio_port_hash_code(context_t context, object stdio_port);
-
 EXPORT_API uint32_t hash_set_hash_code(context_t context, object hashset);
-
 EXPORT_API uint32_t hash_map_hash_code(context_t context, object hashmap);
-
 EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref);
 /**
  * symbol hash code 计算
@@ -243,35 +252,23 @@ EXPORT_API uint32_t string_hash_code(context_t _context, object str);
                           todo 增加新类型重写 equals 算法
 ******************************************************************************/
 EXPORT_API int i64_equals(context_t context, object i64_a, object i64_b);
-
 EXPORT_API int d64_equals(context_t context, object d64_a, object d64_b);
-
 EXPORT_API int char_equals(context_t context, object char_a, object char_b);
-
 EXPORT_API int boolean_equals(context_t context, object boolean_a, object boolean_b);
-
 EXPORT_API int unit_equals(context_t context, object unit_a, object unit_b);
-
 EXPORT_API int eof_equals(context_t context, object eof_a, object eof_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int pair_equals(context_t context, object pair_a, object pair_b);
-
 EXPORT_API int bytes_equals(context_t context, object bytes_a, object bytes_b);
-
 EXPORT_API int string_buffer_equals(context_t context, object string_buffer_a, object string_buffer_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int vector_equals(context_t context, object vector_a, object vector_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int stack_equals(context_t context, object stack_a, object stack_b);
-
 EXPORT_API int string_port_equals(context_t context, object string_port_a, object string_port_b);
-
 EXPORT_API int stdio_port_equals(context_t context, object stdio_a, object stdio_b);
-
 EXPORT_API int hash_set_equals(context_t context, object hashset_a, object hashset_b);
-
 EXPORT_API int hash_map_equals(context_t context, object hashmap_a, object hashmap_b);
-
 EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak_ref_b);
 /**
  * symbol 比较
@@ -281,7 +278,6 @@ EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak
  * @return IMM_TRUE / IMM_FALSE
  */
 EXPORT_API int symbol_equals(context_t _context, object symbol_a, object symbol_b);
-
 /**
  * string 比较
  * @param context

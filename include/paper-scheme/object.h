@@ -56,6 +56,9 @@ typedef enum object_type_enum object_type_tag;
 #ifdef IS_32_BIT_ARCH
 compile_time_assert(sizeof(uintptr_t) == 4u);
 compile_time_assert(sizeof(void *) == 4u);
+compile_time_assert(sizeof(void *) == sizeof(uint32_t));
+compile_time_assert(sizeof(double) == 8u);
+compile_time_assert(sizeof(double) == sizeof(uint64_t));
 // 32位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
 # define ALIGN_MASK (7u)
 // 指针和内存分配大小的最低 3 bit 必须为 0
@@ -65,6 +68,9 @@ compile_time_assert(sizeof(void *) == 4u);
 #elif IS_64_BIT_ARCH
 compile_time_assert(sizeof(uintptr_t) == 8u);
 compile_time_assert(sizeof(void *) == 8u);
+compile_time_assert(sizeof(void *) == sizeof(uint64_t));
+compile_time_assert(sizeof(double) == 8u);
+compile_time_assert(sizeof(double) == sizeof(uint64_t));
 // 64位时, 指针和内存分配大小对齐到 8字节, B0111 = 7
 # define ALIGN_MASK (7u)
 // 指针和内存分配大小的最低 3 bit 必须为 0
@@ -118,19 +124,19 @@ struct object_struct_t {
 
     union object_value_u {
         /*  基本对象  */
-        //定点64位有符号整数
+        //定点64位有符号整数, 不可变
         int64_t i64;
 
-        //浮点数
+        //浮点数, 不可变
         double doublenum;
 
-        //pair
+        //pair, 可变
         struct value_pair_t {
             object car;
             object cdr;
         } pair;
 
-        // bytes
+        // bytes, 可变
         struct value_bytes_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -138,14 +144,16 @@ struct object_struct_t {
             char data[0];
         } bytes;
 
-        //字符串
+        //字符串, 不可变
         struct value_string_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // char data[] 大小, 注意是指 char 个数, 包括 '\0'
             size_t len;
             char data[0];
         } string;
 
-        // 字符串缓冲
+        // 字符串缓冲, 可变
         struct value_string_buffer_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -156,14 +164,16 @@ struct object_struct_t {
             object bytes_buffer;
         } string_buffer;
 
-        //symbol
+        //symbol, 不可变
         struct value_symbol_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // char data[] 大小, 注意是指 char 个数
             size_t len;
             char data[0];
         } symbol;
 
-        //向量
+        //向量, 可变
         struct value_vector_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -172,7 +182,7 @@ struct object_struct_t {
             object data[0];
         } vector;
 
-        //栈
+        //栈, 可变
         struct value_stack_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -183,7 +193,7 @@ struct object_struct_t {
             object data[0];
         } stack;
 
-        // 字符串类型输入输出
+        // 字符串类型输入输出, 可变
         struct value_string_port_t {
             // 用于 hash 计算, 构造后固定不变
             uint32_t hash;
@@ -193,7 +203,7 @@ struct object_struct_t {
             size_t current;
         } string_port;
 
-        // stdio 类型输入输出
+        // stdio 类型输入输出, 可变
         struct value_stdio_port_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -206,7 +216,7 @@ struct object_struct_t {
             int need_close;
         } stdio_port;
 
-        // TODO 实现 hash set
+        // TODO 实现 hash set, 可变
         // 最好只放入原子类型, 无法保证复合类型正常工作
         struct value_hashset_t {
             // 用于 hash 计算, 固定不变
@@ -215,7 +225,7 @@ struct object_struct_t {
             object map;
         } hashset;
 
-        // TODO 实现 hash map
+        // TODO 实现 hash map, 可变
         // key 最好为原子类型
         struct value_hashmap_t {
             // 用于 hash 计算, 固定不变
@@ -232,16 +242,18 @@ struct object_struct_t {
             object table;
         } hashmap;
 
-        // 弱引用
+        /*  运行时结构  */
+        // 弱引用, 可变
         // 注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的
         struct value_weak_ref_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
             // GC 时使用的内部结构
             object _internal_next_ref;
             // 弱引用
             object ref;
         } weak_ref;
 
-        /*  运行时结构  */
     } value;
     /*  对齐填充, 对齐到 ALIGN_SIZE, 即 sizeof(void *)  */
 };

@@ -98,17 +98,6 @@ pair_make_op(REF NOTNULL context_t context, REF NULLABLE object param_car, REF N
     return ret;
 }
 
-static uint32_t address_to_hash(uintptr_t ptr) {
-#ifdef IS_32_BIT_ARCH
-    assert((sizeof ptr) == 4);
-    return ptr;
-#elif IS_64_BIT_ARCH
-    assert((sizeof ptr) == 8);
-    return hash_of_hash(ptr & 0xffffffff, (ptr >> 32u) & 0xffffffff);
-#else
-# error("UNKNOWN Arch")
-#endif
-}
 
 /**
  * 构造 bytes 对象
@@ -123,7 +112,7 @@ bytes_make_op(REF NOTNULL context_t context, IN size_t capacity) {
     object ret = raw_object_make(context, OBJ_BYTES,
                                  object_sizeof_base(bytes) + capacity * sizeof(char));
     ret->value.bytes.capacity = capacity;
-    ret->value.bytes.hash = hash_of_hash(OBJ_BYTES, address_to_hash((uintptr_t) ret));
+    ret->value.bytes.hash = pointer_with_type_to_hash(ret, OBJ_BYTES);
     return ret;
 }
 
@@ -153,6 +142,8 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
         assert(ret->value.symbol.len == strlen(cstr) + 1);
         memcpy(ret->value.symbol.data, cstr, cstr_len);
     }
+
+    ret->value.symbol.hash = symbol_hash_helper(ret);
     return ret;
 }
 
@@ -183,6 +174,8 @@ string_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
         assert(ret->value.string.len == strlen(cstr) + 1);
         memcpy(ret->value.string.data, cstr, cstr_len);
     }
+
+    ret->value.string.hash = string_hash_helper(ret);
     return ret;
 }
 
@@ -207,7 +200,7 @@ string_buffer_make_op(REF NOTNULL context_t context, IN size_t char_size) {
     ret->value.string_buffer.buffer_size = buffer_size;
     // buffer 中没有 '\0' 作为结尾
     ret->value.string_buffer.buffer_length = 0;
-    ret->value.string_buffer.hash = hash_of_hash(OBJ_STRING_BUFFER, address_to_hash((uintptr_t) ret));
+    ret->value.string_buffer.hash = pointer_with_type_to_hash(ret, OBJ_STRING_BUFFER);
 
     gc_release_var(context);
     return ret;
@@ -242,7 +235,7 @@ string_buffer_make_from_string_op(REF NOTNULL context_t context, COPY object str
     ret->value.string_buffer.bytes_buffer = tmp;
     ret->value.string_buffer.buffer_size = new_buffer_size;
     ret->value.string_buffer.buffer_length = str_len;
-    ret->value.string_buffer.hash = hash_of_hash(OBJ_STRING_BUFFER, address_to_hash((uintptr_t) ret));
+    ret->value.string_buffer.hash = pointer_with_type_to_hash(ret, OBJ_STRING_BUFFER);
 
     assert(bytes_capacity(string_buffer_bytes_obj(ret)) == string_buffer_capacity(ret));
     gc_release_param(context);
@@ -265,7 +258,7 @@ vector_make_op(REF NOTNULL context_t context, IN size_t vector_len) {
     for (size_t i = 0; i < vector_len; i++) {
         ret->value.vector.data[i] = IMM_UNIT;
     }
-    ret->value.vector.hash = hash_of_hash(OBJ_VECTOR, address_to_hash((uintptr_t) ret));
+    ret->value.vector.hash = pointer_with_type_to_hash(ret, OBJ_VECTOR);
 
     return ret;
 }
@@ -288,7 +281,7 @@ stack_make_op(REF NOTNULL context_t context, IN size_t stack_size) {
         ret->value.stack.data[i] = IMM_UNIT;
     }
     ret->value.stack.length = 0;
-    ret->value.stack.hash = hash_of_hash(OBJ_STACK, address_to_hash((uintptr_t) ret));
+    ret->value.stack.hash = pointer_with_type_to_hash(ret, OBJ_STACK);
 
     return ret;
 }
@@ -313,7 +306,7 @@ string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object
     ret->value.string_port.string_buffer_data = str;
     ret->value.string_port.length = string_len(str);
     ret->value.string_port.current = 0;
-    ret->value.string_port.hash = hash_of_hash(OBJ_STRING_PORT, address_to_hash((uintptr_t) ret));
+    ret->value.string_port.hash = uint32_pair_hash(OBJ_STRING_PORT, pointer_with_type_to_hash((uintptr_t) ret));
 
     gc_release_param(context);
     return ret;
@@ -336,7 +329,7 @@ string_port_output_use_buffer(REF NOTNULL context_t context) {
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_SRFI6;
     ret->value.string_port.string_buffer_data = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
     ret->value.string_port.current = 0;
-    ret->value.string_port.hash = hash_of_hash(OBJ_STRING_PORT, address_to_hash((uintptr_t) ret));
+    ret->value.string_port.hash = uint32_pair_hash(OBJ_STRING_PORT, pointer_with_type_to_hash((uintptr_t) ret));
 
     gc_release_var(context);
     return ret;
@@ -361,7 +354,7 @@ string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, REF
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_INPUT | (unsigned) PORT_SRFI6;
     ret->value.string_port.string_buffer_data = string_buffer_make_from_string_op(context, str);
     ret->value.string_port.current = 0;
-    ret->value.string_port.hash = hash_of_hash(OBJ_STRING_PORT, address_to_hash((uintptr_t) ret));
+    ret->value.string_port.hash = uint32_pair_hash(OBJ_STRING_PORT, pointer_with_type_to_hash((uintptr_t) ret));
 
     gc_release_param(context);
     return NULL;
@@ -403,7 +396,7 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
     port->value.stdio_port.is_released = 0;
     // 打开的文件需要关闭
     port->value.stdio_port.need_close = 1;
-    port->value.stdio_port.hash = hash_of_hash(OBJ_STDIO_PORT, address_to_hash((uintptr_t) port));
+    port->value.stdio_port.hash = uint32_pair_hash(OBJ_STDIO_PORT, pointer_with_type_to_hash((uintptr_t) port));
 
     gc_release_param(context);
     return port;
@@ -430,7 +423,7 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
     port->value.stdio_port.is_released = 0;
     // 外部打开的文件外部负责关闭
     port->value.stdio_port.need_close = 0;
-    port->value.stdio_port.hash = hash_of_hash(OBJ_STDIO_PORT, address_to_hash((uintptr_t) port));
+    port->value.stdio_port.hash = uint32_pair_hash(OBJ_STDIO_PORT, pointer_with_type_to_hash((uintptr_t) port));
 
     gc_release_var(context);
     return NULL;
@@ -453,7 +446,7 @@ hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
     map = hashmap_make_op(context, init_capacity, load_factor);
     hashset = raw_object_make(context, OBJ_HASH_SET, object_sizeof_base(hashset));
     hashset->value.hashset.map = map;
-    hashset->value.stdio_port.hash = hash_of_hash(OBJ_HASH_SET, address_to_hash((uintptr_t) hashset));
+    hashset->value.stdio_port.hash = uint32_pair_hash(OBJ_HASH_SET, pointer_with_type_to_hash((uintptr_t) hashset));
 
     gc_release_var(context);
     return hashset;
@@ -479,7 +472,7 @@ hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
     hashmap->value.hashmap.size = 0;
     hashmap->value.hashmap.load_factor = load_factor;
     hashmap->value.hashmap.threshold = init_capacity;
-    hashmap->value.stdio_port.hash = hash_of_hash(OBJ_HASH_MAP, address_to_hash((uintptr_t) hashmap));
+    hashmap->value.stdio_port.hash = uint32_pair_hash(OBJ_HASH_MAP, pointer_with_type_to_hash((uintptr_t) hashmap));
 
     gc_release_var(context);
     return hashmap;
