@@ -7,4 +7,8 @@
 - 支持 int64_t, boolean, Unit 类型的标记指针
 - 
 
-下一阶段: 运行时类型; 
+TODO:
+
+- 完成 `hash_code_fn` / `equals_fn` 的测试
+- 完成 `hashset` / `hashmap` 的测试
+- 实现 `weak_ref_hashmap`

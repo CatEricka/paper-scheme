@@ -306,7 +306,7 @@ string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object
     ret->value.string_port.string_buffer_data = str;
     ret->value.string_port.length = string_len(str);
     ret->value.string_port.current = 0;
-    ret->value.string_port.hash = uint32_pair_hash(OBJ_STRING_PORT, pointer_with_type_to_hash((uintptr_t) ret));
+    ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
     gc_release_param(context);
     return ret;
@@ -329,7 +329,7 @@ string_port_output_use_buffer(REF NOTNULL context_t context) {
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_SRFI6;
     ret->value.string_port.string_buffer_data = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
     ret->value.string_port.current = 0;
-    ret->value.string_port.hash = uint32_pair_hash(OBJ_STRING_PORT, pointer_with_type_to_hash((uintptr_t) ret));
+    ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
     gc_release_var(context);
     return ret;
@@ -354,7 +354,7 @@ string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, REF
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_INPUT | (unsigned) PORT_SRFI6;
     ret->value.string_port.string_buffer_data = string_buffer_make_from_string_op(context, str);
     ret->value.string_port.current = 0;
-    ret->value.string_port.hash = uint32_pair_hash(OBJ_STRING_PORT, pointer_with_type_to_hash((uintptr_t) ret));
+    ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
     gc_release_param(context);
     return NULL;
@@ -396,7 +396,7 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
     port->value.stdio_port.is_released = 0;
     // 打开的文件需要关闭
     port->value.stdio_port.need_close = 1;
-    port->value.stdio_port.hash = uint32_pair_hash(OBJ_STDIO_PORT, pointer_with_type_to_hash((uintptr_t) port));
+    port->value.stdio_port.hash = pointer_with_type_to_hash(port, OBJ_STDIO_PORT);
 
     gc_release_param(context);
     return port;
@@ -423,7 +423,7 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
     port->value.stdio_port.is_released = 0;
     // 外部打开的文件外部负责关闭
     port->value.stdio_port.need_close = 0;
-    port->value.stdio_port.hash = uint32_pair_hash(OBJ_STDIO_PORT, pointer_with_type_to_hash((uintptr_t) port));
+    port->value.stdio_port.hash = pointer_with_type_to_hash(port, OBJ_STDIO_PORT);
 
     gc_release_var(context);
     return NULL;
@@ -446,7 +446,7 @@ hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
     map = hashmap_make_op(context, init_capacity, load_factor);
     hashset = raw_object_make(context, OBJ_HASH_SET, object_sizeof_base(hashset));
     hashset->value.hashset.map = map;
-    hashset->value.stdio_port.hash = uint32_pair_hash(OBJ_HASH_SET, pointer_with_type_to_hash((uintptr_t) hashset));
+    hashset->value.hashset.hash = pointer_with_type_to_hash(hashset, OBJ_HASH_SET);
 
     gc_release_var(context);
     return hashset;
@@ -472,7 +472,7 @@ hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
     hashmap->value.hashmap.size = 0;
     hashmap->value.hashmap.load_factor = load_factor;
     hashmap->value.hashmap.threshold = init_capacity;
-    hashmap->value.stdio_port.hash = uint32_pair_hash(OBJ_HASH_MAP, pointer_with_type_to_hash((uintptr_t) hashmap));
+    hashmap->value.hashmap.hash = pointer_with_type_to_hash(hashmap, OBJ_HASH_MAP);
 
     gc_release_var(context);
     return hashmap;
@@ -494,6 +494,7 @@ weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj) {
     weak = raw_object_make(context, OBJ_WEAK_REF, object_sizeof_base(weak_ref));
     weak->value.weak_ref._internal_next_ref = NULL;
     weak->value.weak_ref.ref = obj;
+    weak->value.weak_ref.hash = pointer_with_type_to_hash(weak, OBJ_WEAK_REF);
 
     gc_release_param(context);
     return weak;
@@ -537,6 +538,7 @@ string_append_op(REF NOTNULL context_t context, COPY NULLABLE object string_a, C
     ((char *) string_get_cstr(ret))[new_len_with_null - 1] = '\0';
     // 修正字符串长度
     ret->value.string.len = new_len_with_null;
+    ret->value.string.hash = string_hash_helper(ret);
 
     gc_release_param(context);
     return ret;
@@ -1231,6 +1233,7 @@ symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
     str = raw_object_make(context, OBJ_STRING, object_sizeof_base(string) + sizeof(char) * len);
     str->value.string.len = len;
     memcpy(string_get_cstr(str), symbol_get_cstr(symbol), len);
+    str->value.string.hash = symbol_hash_helper(str);
 
     gc_release_param(context);
     return str;
@@ -1254,6 +1257,7 @@ string_to_symbol(REF NOTNULL context_t context, COPY object str) {
     symbol = raw_object_make(context, OBJ_SYMBOL, object_sizeof_base(symbol) + sizeof(char) * len);
     symbol->value.symbol.len = len;
     memcpy(symbol_get_cstr(symbol), string_get_cstr(str), len);
+    symbol->value.symbol.hash = symbol_hash_helper(symbol);
 
     gc_release_param(context);
     return symbol;

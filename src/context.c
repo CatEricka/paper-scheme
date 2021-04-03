@@ -178,8 +178,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
-                .hash_code = NULL,
-                .equals = NULL,
+                .hash_code = string_buffer_hash_code,
+                .equals = string_buffer_equals,
         },
         {
                 .name = (object) "Symbol", .tag = OBJ_SYMBOL,
@@ -527,13 +527,15 @@ object stdio_finalizer(context_t context, object port) {
                                hash 值算法
 ******************************************************************************/
 EXPORT_API uint32_t uint32_pair_hash(uint32_t x, uint32_t y) {
-    // TODO uint32_pair_hash
-    return 0;
+    // 扰动函数
+    return x ^ y;
 }
 
 EXPORT_API uint32_t uint64_hash(uint64_t value) {
-    // TODO uint64_hash
-    return 0;
+    // 获取低 32 位
+    uint32_t hash_low = (uint32_t) (value & ((~((uint64_t) 0)) >> 32u));
+    uint32_t hash_high = ((uint32_t) (value >> 32u));
+    return hash_low ^ hash_high;
 }
 
 EXPORT_API uint32_t double_number_hash(double num) {
@@ -632,7 +634,7 @@ EXPORT_API uint32_t d64_hash_code(context_t context, object d64) {
 EXPORT_API uint32_t char_hash_code(context_t context, object imm_char) {
     assert(is_imm_char(imm_char));
     uint32_t hash = 0;
-    uint32_t seed = 131;
+    const uint32_t seed = 131;
 
     // 添加类型标记
     // 大端序, 减小 0 的影响
@@ -728,7 +730,7 @@ EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref) {
 
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
-    return symbol->value.string_buffer.hash;
+    return symbol->value.symbol.hash;
 }
 
 EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
@@ -809,70 +811,32 @@ EXPORT_API int pair_equals(context_t context, object pair_a, object pair_b) {
 EXPORT_API int bytes_equals(context_t context, object bytes_a, object bytes_b) {
     if (!is_bytes(bytes_a) || !is_bytes(bytes_b)) {
         return 0;
-    } else if (bytes_a == bytes_b) {
-        return 1;
-    } else if (bytes_capacity(bytes_a) != bytes_capacity(bytes_b)) {
-        // 容量不等
-        return 0;
     } else {
-        return 0 == memcmp(bytes_data(bytes_a), bytes_data(bytes_b), bytes_capacity(bytes_a));
+        return bytes_a == bytes_b;
     }
 }
 
 EXPORT_API int string_buffer_equals(context_t context, object string_buffer_a, object string_buffer_b) {
     if (!is_string_buffer(string_buffer_a) || !is_string_buffer(string_buffer_b)) {
         return 0;
-    } else if (string_buffer_a == string_buffer_b) {
-        return 1;
-    } else if (string_buffer_length(string_buffer_a) != string_buffer_length(string_buffer_b)) {
-        // 容量不等
-        return 0;
     } else {
-        return 0 == memcmp(string_buffer_bytes_data(string_buffer_a), string_buffer_bytes_data(string_buffer_b),
-                           string_buffer_length(string_buffer_a));
+        return string_buffer_a == string_buffer_b;
     }
 }
 
 EXPORT_API int vector_equals(context_t context, object vector_a, object vector_b) {
     if (!is_vector(vector_a) || !is_vector(vector_b)) {
         return 0;
-    } else if (vector_a == vector_b) {
-        return 1;
-    } else if (vector_len(vector_a) != vector_len(vector_b)) {
-        return 0;
     } else {
-        for (size_t i = 0; i < vector_len(vector_a); i++) {
-            object a = vector_ref(vector_a, i);
-            object b = vector_ref(vector_b, i);
-            equals_fn equals = object_equals_helper(context, a);
-            assert(equals != NULL);
-            if (!equals(context, a, b)) {
-                return 0;
-            }
-        }
-        return 1;
+        return vector_a == vector_b;
     }
 }
 
 EXPORT_API int stack_equals(context_t context, object stack_a, object stack_b) {
     if (!is_stack(stack_a) || !is_stack(stack_b)) {
         return 0;
-    } else if (stack_a == stack_b) {
-        return 1;
-    } else if (stack_len(stack_a) != stack_len(stack_b)) {
-        return 0;
     } else {
-        //TODO stack_equals 需要认真测试
-        for (size_t i = 0; i < stack_len(stack_a); i++) {
-            object a = stack_a->value.stack.data[i];
-            object b = stack_b->value.stack.data[i];
-            equals_fn equals = object_equals_helper(context, a);
-            assert(equals != NULL);
-            if (!equals(context, a, b)) {
-                return 0;
-            }
-        }
-        return 1;
+        return stack_a == stack_b;
     }
 }
 
@@ -912,22 +876,8 @@ EXPORT_API int hash_map_equals(context_t context, object hashmap_a, object hashm
 EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak_ref_b) {
     if (!is_weak_ref(weak_ref_a) || !is_weak_ref(weak_ref_b)) {
         return 0;
-    } else if (!weak_ref_is_valid(weak_ref_a) && !weak_ref_is_valid(weak_ref_b)) {
-        // 都是空的弱引用
-        return 1;
-    } else if (!weak_ref_is_valid(weak_ref_a) && weak_ref_is_valid(weak_ref_b)) {
-        // weak_ref_a 无效, weak_ref_b 有效
-        return 0;
-    } else if (weak_ref_is_valid(weak_ref_a) && !weak_ref_is_valid(weak_ref_b)) {
-        // weak_ref_a 有效, weak_ref_b 无效
-        return 10;
     } else {
-        // 二者都有效
-        object ref_a = weak_ref_get(weak_ref_a);
-        object ref_b = weak_ref_get(weak_ref_b);
-        equals_fn equals = object_equals_helper(context, ref_a);
-        assert(equals != NULL);
-        return equals(context, ref_a, ref_b);
+        return weak_ref_a == weak_ref_b;
     }
 }
 
