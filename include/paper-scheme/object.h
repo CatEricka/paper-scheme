@@ -216,7 +216,7 @@ struct object_struct_t {
             int need_close;
         } stdio_port;
 
-        // TODO 实现 hash set, 可变
+        // 实现 hash set, 可变
         // 最好只放入原子类型, 无法保证复合类型正常工作
         struct value_hashset_t {
             // 用于 hash 计算, 固定不变
@@ -225,7 +225,7 @@ struct object_struct_t {
             object map;
         } hashset;
 
-        // TODO 实现 hash map, 可变
+        // hash map, 可变
         // key 最好为原子类型
         struct value_hashmap_t {
             // 用于 hash 计算, 固定不变
