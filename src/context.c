@@ -254,8 +254,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
 
                 .member_base = object_offsetof(stdio_port, filename),
-                .member_eq_len_base = 0,
-                .member_len_base = 0,
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
                 .member_meta_len_offset = 0,
                 .member_meta_len_scale = 0,
 
@@ -305,9 +305,9 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .name = (object) "Weak-References", .tag = OBJ_WEAK_REF,
                 .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
 
-                .member_base = object_offsetof(weak_ref, ref),
-                .member_eq_len_base = 1,
-                .member_len_base = 1,
+                .member_base = 0,
+                .member_eq_len_base = 0,
+                .member_len_base = 0,
                 .member_meta_len_offset = 0,
                 .member_meta_len_scale = 0,
 

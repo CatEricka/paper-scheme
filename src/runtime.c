@@ -357,7 +357,7 @@ string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, REF
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
     gc_release_param(context);
-    return NULL;
+    return ret;
 }
 
 /**
@@ -426,7 +426,7 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
     port->value.stdio_port.hash = pointer_with_type_to_hash(port, OBJ_STDIO_PORT);
 
     gc_release_var(context);
-    return NULL;
+    return port;
 }
 
 /**

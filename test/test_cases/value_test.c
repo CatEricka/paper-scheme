@@ -7,7 +7,7 @@
  */
 
 UTEST(value_test, all_value_type_function_test) {
-    context_t context = context_make(0x100, 2, 0x100000);
+    context_t context = context_make(0x10000, 2, 0x100000);
     gc_var4(context, obj, tmp1, tmp2, tmp3);
 
     int64_t start = utest_ns();
@@ -52,6 +52,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -96,6 +99,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -139,6 +145,12 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -182,6 +194,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -227,6 +242,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -271,6 +289,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -316,6 +337,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -360,6 +384,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -402,6 +429,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -445,6 +475,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -489,6 +522,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -538,6 +574,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -590,6 +629,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -634,6 +676,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -678,6 +723,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -730,6 +778,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -774,6 +825,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -818,6 +872,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -867,6 +924,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     vector_set(obj, 0, char_imm_make('x'));
     obj = vector_capacity_increase(context, obj, 10);
@@ -907,6 +967,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -953,6 +1016,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -1000,6 +1066,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -1051,6 +1120,9 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_port_in_out_put(obj));
     ASSERT_FALSE(is_port_eof(obj));
     ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -1070,6 +1142,40 @@ UTEST(value_test, all_value_type_function_test) {
     tmp1 = string_buffer_to_string(context, obj);
     ASSERT_EQ(string_len(obj), 0);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "\0", string_len(tmp1) + 1), 0);
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_TRUE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_FALSE(is_string_port(obj));
+    ASSERT_FALSE(is_string_port_input(obj));
+    ASSERT_FALSE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_FALSE(is_port_input(obj));
+    ASSERT_FALSE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     start = utest_ns();
     gc_collect(context);
@@ -1219,38 +1325,6 @@ UTEST(value_test, all_value_type_function_test) {
                              PRId64
                              " ns\n", time);
     }
-
-    ASSERT_FALSE(is_null(obj));
-    ASSERT_FALSE(is_imm(obj));
-    ASSERT_FALSE(is_unique_imm(obj));
-    ASSERT_FALSE(is_i64_real(obj));
-    ASSERT_FALSE(is_imm_i64(obj));
-    ASSERT_FALSE(is_imm_char(obj));
-    ASSERT_TRUE(is_object(obj));
-    ASSERT_FALSE(is_i64(obj));
-    ASSERT_FALSE(is_doublenum(obj));
-    ASSERT_FALSE(is_pair(obj));
-    ASSERT_FALSE(is_string(obj));
-    ASSERT_FALSE(is_symbol(obj));
-    ASSERT_FALSE(is_vector(obj));
-    ASSERT_FALSE(is_bytes(obj));
-    ASSERT_TRUE(is_string_buffer(obj));
-    ASSERT_FALSE(is_stack(obj));
-    ASSERT_FALSE(is_string_port(obj));
-    ASSERT_FALSE(is_string_port_input(obj));
-    ASSERT_FALSE(is_string_port_output(obj));
-    ASSERT_FALSE(is_string_port_in_out_put(obj));
-    ASSERT_FALSE(is_string_port_eof(obj));
-    ASSERT_FALSE(is_stdio_port(obj));
-    ASSERT_FALSE(is_stdio_port_input(obj));
-    ASSERT_FALSE(is_stdio_port_output(obj));
-    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
-    ASSERT_FALSE(is_stdio_port_eof(obj));
-    ASSERT_FALSE(is_port_input(obj));
-    ASSERT_FALSE(is_port_output(obj));
-    ASSERT_FALSE(is_port_in_out_put(obj));
-    ASSERT_FALSE(is_port_eof(obj));
-    ASSERT_FALSE(is_srfi6_port(obj));
 
     tmp1 = string_make_from_cstr_op(context, "abc");
     obj = string_buffer_make_from_string_op(context, tmp1);
@@ -1512,6 +1586,41 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_EQ(stack_peek(obj), char_imm_make('c'));
     ASSERT_EQ(stack_capacity(obj), stack_size + 2 + 11);
 
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_TRUE(is_stack(obj));
+    ASSERT_FALSE(is_string_port(obj));
+    ASSERT_FALSE(is_string_port_input(obj));
+    ASSERT_FALSE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_FALSE(is_port_input(obj));
+    ASSERT_FALSE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+
     start = utest_ns();
     gc_collect(context);
     time = utest_ns() - start;
@@ -1521,6 +1630,252 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
+    // string_port_input_from_string
+    obj = string_make_from_cstr_op(context, "this is a string_port input only");
+    gc_collect(context);
+    obj = string_port_input_from_string(context, obj);
+    gc_collect(context);
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_TRUE(is_string_port(obj));
+    ASSERT_TRUE(is_string_port_input(obj));
+    ASSERT_FALSE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_TRUE(is_port_input(obj));
+    ASSERT_FALSE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+
+    // string_port_output_use_buffer
+    obj = string_port_output_use_buffer(context);
+    gc_collect(context);
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_TRUE(is_string_port(obj));
+    ASSERT_FALSE(is_string_port_input(obj));
+    ASSERT_TRUE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_FALSE(is_port_input(obj));
+    ASSERT_TRUE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_TRUE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+
+    // string_port_in_out_put_from_string_use_buffer
+    obj = string_make_from_cstr_op(context, "this is a string_port input output with internal string_buffer");
+    gc_collect(context);
+    obj = string_port_in_out_put_from_string_use_buffer(context, obj);
+    gc_collect(context);
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_TRUE(is_string_port(obj));
+    ASSERT_TRUE(is_string_port_input(obj));
+    ASSERT_TRUE(is_string_port_output(obj));
+    ASSERT_TRUE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_TRUE(is_port_input(obj));
+    ASSERT_TRUE(is_port_output(obj));
+    ASSERT_TRUE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_TRUE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+
+    // stdio_port_from_filename
+    obj = string_make_from_cstr_op(context, "this is a string_port input output with internal string_buffer");
+    gc_collect(context);
+    obj = string_port_in_out_put_from_string_use_buffer(context, obj);
+    gc_collect(context);
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_TRUE(is_string_port(obj));
+    ASSERT_TRUE(is_string_port_input(obj));
+    ASSERT_TRUE(is_string_port_output(obj));
+    ASSERT_TRUE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_FALSE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_TRUE(is_port_input(obj));
+    ASSERT_TRUE(is_port_output(obj));
+    ASSERT_TRUE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_TRUE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+
+    // stdio_port_from_file
+    obj = stdio_port_from_file(context, stdout, PORT_OUTPUT);
+    gc_collect(context);
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_FALSE(is_string_port(obj));
+    ASSERT_FALSE(is_string_port_input(obj));
+    ASSERT_FALSE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_TRUE(is_stdio_port(obj));
+    ASSERT_FALSE(is_stdio_port_input(obj));
+    ASSERT_TRUE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_FALSE(is_port_input(obj));
+    ASSERT_TRUE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
+
+    // stdio_port_from_filename
+    FILE *file = fopen("value_test_file.txt", "w");
+    char test_str[] = "stdio_port_from_filename test";
+    size_t data_len = sizeof(test_str) - 1;
+    fwrite(test_str, 1, data_len, file);
+    fclose(file);
+    gc_collect(context);
+    obj = string_make_from_cstr_op(context, "value_test_file.txt");
+    obj = stdio_port_from_filename(context, obj, PORT_INPUT);
+    gc_collect(context);
+    FILE *input = obj->value.stdio_port.file;
+    char buffer[sizeof(test_str)] = {0};
+    fseek(input, 0, SEEK_SET);
+    size_t read_count = fread(buffer, 1, sizeof(buffer), input);
+    ASSERT_EQ(read_count, data_len);
+    ASSERT_EQ(0, memcmp(test_str, buffer, sizeof(test_str)));
+    ASSERT_FALSE(is_null(obj));
+    ASSERT_FALSE(is_imm(obj));
+    ASSERT_FALSE(is_unique_imm(obj));
+    ASSERT_FALSE(is_i64_real(obj));
+    ASSERT_FALSE(is_imm_i64(obj));
+    ASSERT_FALSE(is_imm_char(obj));
+    ASSERT_TRUE(is_object(obj));
+    ASSERT_FALSE(is_i64(obj));
+    ASSERT_FALSE(is_doublenum(obj));
+    ASSERT_FALSE(is_pair(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_FALSE(is_vector(obj));
+    ASSERT_FALSE(is_bytes(obj));
+    ASSERT_FALSE(is_string_buffer(obj));
+    ASSERT_FALSE(is_stack(obj));
+    ASSERT_FALSE(is_string_port(obj));
+    ASSERT_FALSE(is_string_port_input(obj));
+    ASSERT_FALSE(is_string_port_output(obj));
+    ASSERT_FALSE(is_string_port_in_out_put(obj));
+    ASSERT_FALSE(is_string_port_eof(obj));
+    ASSERT_TRUE(is_stdio_port(obj));
+    ASSERT_TRUE(is_stdio_port_input(obj));
+    ASSERT_FALSE(is_stdio_port_output(obj));
+    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
+    ASSERT_FALSE(is_stdio_port_eof(obj));
+    ASSERT_TRUE(is_port_input(obj));
+    ASSERT_FALSE(is_port_output(obj));
+    ASSERT_FALSE(is_port_in_out_put(obj));
+    ASSERT_FALSE(is_port_eof(obj));
+    ASSERT_FALSE(is_srfi6_port(obj));
+    ASSERT_FALSE(is_hashset(obj));
+    ASSERT_FALSE(is_hashmap(obj));
+    ASSERT_FALSE(is_weak_ref(obj));
 
     obj = IMM_UNIT;
     tmp1 = IMM_UNIT;
@@ -1535,7 +1890,6 @@ UTEST(value_test, all_value_type_function_test) {
                          PRId64
                          " ns\n", time);
     ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
-
     ASSERT_EQ(context->saves, NULL);
     context_destroy(context);
 }

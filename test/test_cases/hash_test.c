@@ -64,6 +64,14 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_EQ(hash_fn, i64_hash_code);
     UTEST_PRINTF("i64 615171298343471923\thash: %u\n", i64_hash_code(context, obj));
 
+    obj = char_imm_make('a');
+    type = context_get_object_type(context, obj);
+    hash_fn_assert = type_info_hash_code(type);
+    hash_fn = object_hash_helper(context, obj);
+    ASSERT_EQ(hash_fn, hash_fn_assert);
+    ASSERT_EQ(hash_fn, char_hash_code);
+    UTEST_PRINTF("char %c\t\t\thash: %u\n", char_imm_getvalue(obj), char_hash_code(context, obj));
+
     gc_release_var(context);
     ASSERT_EQ(context->saves, NULL);
     context_destroy(context);

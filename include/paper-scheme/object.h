@@ -311,19 +311,21 @@ struct object_struct_t {
             - symbol:           is_symbol(obj)
             - vector:           is_vector(obj)
             - stack:            is_stack(obj)
-            - string_port:      TODO is_string_port(obj), is_string_port_input(), is_string_port_output(),
-                                TODO is_string_port_in_out_put(obj), is_string_port_eof(obj)
-            - stdio_port:       TODO is_stdio_port(obj), is_stdio_port_input(obj), is_stdio_port_output(obj),
-                                TODO is_stdio_port_in_out_put(obj), is_stdio_port_eof(obj)
+            - string_port:      is_string_port(obj), is_string_port_input(), is_string_port_output(),
+                                is_string_port_in_out_put(obj), is_string_port_eof(obj)
+            - stdio_port:       is_stdio_port(obj), is_stdio_port_input(obj), is_stdio_port_output(obj),
+                                is_stdio_port_in_out_put(obj), is_stdio_port_eof(obj)
             - string_port & stdio_port:
-                                TODO is_port_input(obj), is_port_output(obj), is_port_in_out_put(obj), is_port_eof(obj)
+                                is_port(obj), is_port_input(obj), is_port_output(obj),
+                                is_port_in_out_put(obj), is_port_eof(obj)
             - srfi6 string_port:
-                                TODO is_srfi6_port(obj)
+                                is_srfi6_port(obj)
             - hashset:          is_hashset(obj)
             - hashmap:          is_hashmap(obj)
             - weak_ref:         is_weak_ref(obj)
         构造:
-            - i64:              i64_make_op()
+            - i64:              i64_make_op(), i64_imm_make()
+            - imm_char:         char_imm_make()
             - double number:    doublenum_make_op()
             - pair:             pair_make_op()
             - bytes:            bytes_make_op()
@@ -332,15 +334,16 @@ struct object_struct_t {
             - symbol:           symbol_make_from_cstr_op()
             - vector:           vector_make_op()
             - stack:            stack_make_op()
-            - string_port:      TODO string_port_input_from_string(), string_port_output_use_buffer(),
-                                TODO string_port_in_out_put_from_string_use_buffer()
-            - stdio_port:       TODO stdio_port_from_filename(), stdio_port_from_file()
+            - string_port:      string_port_input_from_string(), string_port_output_use_buffer(),
+                                string_port_in_out_put_from_string_use_buffer()
+            - stdio_port:       stdio_port_from_filename(), stdio_port_from_file()
             - hashset:          TODO hashset_make_op()
             - hashmap:          TODO hashmap_make_op()
             - weak_ref:         TODO weak_ref_make_op()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
+            - imm_char:         char_imm_getvalue()
             - pair:             pair_getcar(), pair_getcdr()
             - bytes:            bytes_capacity(), bytes_index(), bytes_data()
             - string:           string_get_cstr(), string_len(), string_index()
@@ -352,8 +355,8 @@ struct object_struct_t {
             - stack:            stack_clean(), stack_capacity(), stack_len()
                                 stack_full(), stack_empty()
                                 stack_push, stack_pop(),  stack_peek(),
-            - string_port:      TODO string_port_kind()
-            - stdio_port:       TODO stdio_port_kind()
+            - string_port:      string_port_kind()
+            - stdio_port:       stdio_port_kind()
             - hashset:          hashset_size()
             - hashmap:          hashmap_size()
             - weak_ref:         weak_ref_is_valid()
@@ -639,18 +642,18 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 // string_port
 #define string_port_kind(obj)           ((obj)->value.string_port.kind)
 #define is_string_port(obj)             (is_port(obj) && ((obj)->type == OBJ_STRING_PORT))
-#define is_string_port_input(obj)       (is_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_INPUT))
-#define is_string_port_output(obj)      (is_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_OUTPUT))
-#define is_string_port_in_out_put(obj)  (is_port(obj) && ((unsigned)string_port_kind(obj) & ((unsigned)PORT_INPUT | (unsigned)PORT_OUTPUT)))
-#define is_string_port_eof(obj)         (is_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_EOF))
+#define is_string_port_input(obj)       (is_string_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_INPUT))
+#define is_string_port_output(obj)      (is_string_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_OUTPUT))
+#define is_string_port_in_out_put(obj)  (is_string_port(obj) && is_string_port_input(obj) && is_string_port_output(obj))
+#define is_string_port_eof(obj)         (is_string_port(obj) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_EOF))
 
 // stdio_port
 #define stdio_port_kind(obj)            ((obj)->value.stdio_port.kind)
 #define is_stdio_port(obj)              (is_port(obj) && ((obj)->type == OBJ_STDIO_PORT))
-#define is_stdio_port_input(obj)        (is_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_INPUT))
-#define is_stdio_port_output(obj)       (is_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_OUTPUT))
-#define is_stdio_port_in_out_put(obj)   (is_port(obj) && ((unsigned)stdio_port_kind(obj) & ((unsigned)PORT_INPUT | (unsigned)PORT_OUTPUT)))
-#define is_stdio_port_eof(obj)          (is_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_EOF))
+#define is_stdio_port_input(obj)        (is_stdio_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_INPUT))
+#define is_stdio_port_output(obj)       (is_stdio_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_OUTPUT))
+#define is_stdio_port_in_out_put(obj)   (is_stdio_port(obj) && is_stdio_port_input(obj) && is_stdio_port_output(obj))
+#define is_stdio_port_eof(obj)          (is_stdio_port(obj) && ((unsigned)stdio_port_kind(obj) & (unsigned)PORT_EOF))
 
 // srfi6
 #define is_srfi6_port(obj)              ((is_string_port(obj)) && ((unsigned)string_port_kind(obj) & (unsigned)PORT_SRFI6))
