@@ -143,7 +143,7 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
                              基础对象特征
 ******************************************************************************/
 #define DEFAULT_HASH_SET_MAP_LOAD_FACTOR 0.75
-#define DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY 16
+#define DEFAULT_HASH_SET_MAP_INIT_CAPACITY 16
 
 /**
                                 其它定义

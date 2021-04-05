@@ -18,7 +18,7 @@ static int interpreter_default_env_init(context_t context) {
     context->args = IMM_UNIT;
     context->code = IMM_UNIT;
     // TODO current_env hash map
-    context->current_env = hashmap_make_op(context, DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY,
+    context->current_env = hashmap_make_op(context, DEFAULT_HASH_SET_MAP_INIT_CAPACITY,
                                            DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
     tmp = stack_make_op(context, MAX_STACK_BLOCK_DEEP);
     tmp = pair_make_op(context, tmp, IMM_UNIT);

@@ -172,7 +172,7 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
 /**
  * 构造 hashset
  * @param context
- * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_CAPACITY)
  * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
  * @return
  */
@@ -182,7 +182,7 @@ hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
 /**
  * 构造 hashmap
  * @param context
- * @param init_capacity hashmap 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param init_capacity hashmap 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_CAPACITY)
  * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
  * @return
  */

@@ -377,9 +377,9 @@ struct object_struct_t {
         类型转换:
             - char (立即数):     imm_char_to_string()
             - char (C 原始类型): char_to_string()
-            - symbol:           TODO symbol_to_string()
-            - string:           TODO string_to_symbol()
-            - string_buffer:    string_buffer_to_string(), TODO string_buffer_to_symbol()
+            - symbol:           symbol_to_string()
+            - string:           string_to_symbol()
+            - string_buffer:    string_buffer_to_string(), string_buffer_to_symbol()
         哈希算法 & equals 算法:
             - i64:
             - double number:

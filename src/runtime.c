@@ -432,7 +432,7 @@ stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum
 /**
  * 构造 hashset
  * @param context
- * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_CAPACITY)
  * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
  * @return
  */
@@ -455,7 +455,7 @@ hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
 /**
  * 构造 hashmap
  * @param context
- * @param init_capacity hashmap 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_init_CAPACITY)
+ * @param init_capacity hashmap 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_CAPACITY)
  * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
  * @return
  */
@@ -747,7 +747,7 @@ hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashma
     gc_set_flag(context);
 
     if (hashmap->value.hashmap.size == 0) {
-        return IMM_UNIT;
+        return IMM_FALSE;
     }
 
     size_t map_vector_len = vector_len(hashmap->value.hashmap.table);
@@ -859,6 +859,7 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
                 vector_ref(new_vector, new_index) = old_entry;
             }
         }
+        // 修改 vector
 
         // 转移结束, 重新计算 hash 值
         hash = 0;
@@ -866,14 +867,21 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
             hash = hash_fn(context, k);
         }
         index = hash % new_len;
+
+        // 最后插入新节点
+        new_entry = pair_make_op(context, k, v);
+        entry_list = pair_make_op(context, new_entry, vector_ref(new_vector, index));
+        vector_set(new_vector, index, entry_list);
+        hashmap->value.hashmap.table = new_vector;
+        hashmap->value.hashmap.threshold = (size_t) (vector_len(new_vector) * hashmap->value.hashmap.load_factor);
+        hashmap->value.hashmap.size++;
     }
 
-    // 5. 最后插入新节点
+    // 5. 不需要扩容, 插入新节点
+    vector = hashmap->value.hashmap.table;
     new_entry = pair_make_op(context, k, v);
-    entry_list = pair_make_op(context, new_entry, vector_ref(new_vector, index));
-    vector_set(new_vector, index, entry_list);
-    hashmap->value.hashmap.table = new_vector;
-    hashmap->value.hashmap.threshold = (size_t) (vector_len(new_vector) * hashmap->value.hashmap.load_factor);
+    entry_list = pair_make_op(context, new_entry, vector_ref(vector, index));
+    vector_set(vector, index, entry_list);
     hashmap->value.hashmap.size++;
 
     gc_release_param(context);
@@ -1051,7 +1059,7 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
  * @param context
  * @param bytes
  * @param add_size 增加的大小
- * @return
+ * @return 会返回新对象
  */
 EXPORT_API OUT NOTNULL GC object
 bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t add_size) {
@@ -1075,7 +1083,7 @@ bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t a
  * @param context
  * @param str_buffer
  * @param add_size 新增大小
- * @return
+ * @return 返回原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
 string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buffer, size_t add_size) {
@@ -1100,7 +1108,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buf
  * @param context
  * @param vec
  * @param add_size
- * @return
+ * @return 会返回新 vector
  */
 EXPORT_API OUT NOTNULL GC object
 vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t add_size) {
@@ -1129,7 +1137,7 @@ vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t ad
  * @param context
  * @param stack
  * @param add_size
- * @return
+ * @return 会返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
 stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t add_size) {
@@ -1161,7 +1169,7 @@ stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t a
  * @param stack
  * @param element
  * @param extern_growth_size 如果栈满, 会自动增长 extern_growth_size + 1 (填 0 则自动增长 1)
- * @return
+ * @return 可能返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
 stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF object element,
@@ -1233,7 +1241,7 @@ symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
     str = raw_object_make(context, OBJ_STRING, object_sizeof_base(string) + sizeof(char) * len);
     str->value.string.len = len;
     memcpy(string_get_cstr(str), symbol_get_cstr(symbol), len);
-    str->value.string.hash = symbol_hash_helper(str);
+    str->value.string.hash = string_hash_helper(str);
 
     gc_release_param(context);
     return str;
@@ -1286,6 +1294,7 @@ string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer) {
     // string_buffer 末尾没有 '\0', 需要手动添加
     memcpy(string_get_cstr(str), string_buffer_bytes_data(str_buffer), char_length);
     string_get_cstr(str)[char_length] = '\0';
+    str->value.string.hash = string_hash_helper(str);
 
     gc_release_param(context);
     return str;
@@ -1314,6 +1323,7 @@ string_buffer_to_symbol(REF NOTNULL context_t context, COPY object str_buffer) {
     // string_buffer 末尾没有 '\0', 需要手动添加
     memcpy(symbol_get_cstr(symbol), string_buffer_bytes_data(str_buffer), char_length);
     string_get_cstr(symbol)[char_length] = '\0';
+    symbol->value.symbol.hash = symbol_hash_helper(symbol);
 
     gc_release_param(context);
     return symbol;

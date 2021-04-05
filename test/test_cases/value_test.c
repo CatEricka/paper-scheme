@@ -1877,6 +1877,52 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_hashmap(obj));
     ASSERT_FALSE(is_weak_ref(obj));
 
+    gc_collect(context);
+
+    char symbol_cstr[] = "this_is_a_symbol";
+    obj = symbol_make_from_cstr_op(context, symbol_cstr);
+    hash_code_fn hash_fn = object_hash_helper(context, obj);
+    uint32_t hash1 = hash_fn(context, obj);
+    obj = symbol_to_string(context, obj);
+    hash_fn = object_hash_helper(context, obj);
+    uint32_t hash2 = hash_fn(context, obj);
+    UTEST_PRINTF("%s symbol hash: %u\n", symbol_cstr, hash1);
+    UTEST_PRINTF("%s string hash: %u\n", symbol_cstr, hash2);
+    ASSERT_FALSE(is_symbol(obj));
+    ASSERT_TRUE(is_string(obj));
+    ASSERT_EQ(strlen(symbol_cstr), string_len(obj));
+    ASSERT_EQ(0, memcmp(string_get_cstr(obj), symbol_cstr, string_len(obj)));
+
+    char string_cstr[] = "this_is_a_string";
+    obj = string_make_from_cstr_op(context, string_cstr);
+    hash_fn = object_hash_helper(context, obj);
+    hash1 = hash_fn(context, obj);
+    obj = string_to_symbol(context, obj);
+    hash_fn = object_hash_helper(context, obj);
+    hash2 = hash_fn(context, obj);
+    UTEST_PRINTF("%s string hash: %u\n", string_cstr, hash1);
+    UTEST_PRINTF("%s symbol hash: %u\n", string_cstr, hash2);
+    ASSERT_TRUE(is_symbol(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_EQ(strlen(string_cstr), symbol_len(obj));
+    ASSERT_EQ(0, memcmp(symbol_get_cstr(obj), string_cstr, symbol_len(obj)));
+
+    char string_buffer_cstr[] = "this_is_a_string_buffer_to_symbol";
+    obj = string_make_from_cstr_op(context, string_buffer_cstr);
+    obj = string_buffer_make_from_string_op(context, obj);
+    hash_fn = object_hash_helper(context, obj);
+    hash1 = hash_fn(context, obj);
+    obj = string_buffer_to_symbol(context, obj);
+    hash_fn = object_hash_helper(context, obj);
+    hash2 = hash_fn(context, obj);
+    UTEST_PRINTF("%s string_buffer hash: %u\n", string_buffer_cstr, hash1);
+    UTEST_PRINTF("%s symbol hash: %u\n", string_buffer_cstr, hash2);
+    ASSERT_TRUE(is_symbol(obj));
+    ASSERT_FALSE(is_string(obj));
+    ASSERT_EQ(strlen(string_buffer_cstr), symbol_len(obj));
+    ASSERT_EQ(0, memcmp(symbol_get_cstr(obj), string_buffer_cstr, symbol_len(obj)));
+
+
     obj = IMM_UNIT;
     tmp1 = IMM_UNIT;
     tmp2 = IMM_UNIT;
