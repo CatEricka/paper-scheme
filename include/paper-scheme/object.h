@@ -905,14 +905,15 @@ CHECKED OUT int stack_pop(REF object stack);
 #define stdio_port_is_released(obj) ((obj)->value.stdio_port.is_released)
 
 /**
- * hashset 元素数量
- */
-#define hashset_size(obj)   ((obj)->value.hashset.map.size)
-
-/**
  *  hashmap 元素数量
  */
 #define hashmap_size(obj)   ((obj)->value.hashmap.size)
+
+/**
+ * hashset 元素数量
+ */
+#define hashset_size(obj)   (hashmap_size((obj)->value.hashset.map))
+
 
 /**
  * 弱引用是否可用

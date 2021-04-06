@@ -856,7 +856,8 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
                 }
                 size_t new_index = tmp_hash % new_len;
 
-                vector_ref(new_vector, new_index) = old_entry;
+                // 旧的 entry_list 的 hash 值应该都是相同的
+                vector_ref(new_vector, new_index) = entry_list;
             }
         }
         // 修改 vector
@@ -874,7 +875,6 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
         vector_set(new_vector, index, entry_list);
         hashmap->value.hashmap.table = new_vector;
         hashmap->value.hashmap.threshold = (size_t) (vector_len(new_vector) * hashmap->value.hashmap.load_factor);
-        hashmap->value.hashmap.size++;
     } else {
         // 5. 否则不需要扩容, 插入新节点
         vector = hashmap->value.hashmap.table;
