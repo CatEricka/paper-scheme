@@ -113,7 +113,7 @@ typedef struct scheme_context_t {
     // 标记栈顶
     gc_mark_stack_ptr mark_stack_top;
 
-    // 解释器输入输出
+    // TODO 修改为内部 port 实现; 解释器输入输出
     FILE *in_port;
     FILE *out_port;
     FILE *err_out_port;
