@@ -22,6 +22,17 @@
 #include <assert.h>
 
 
+
+/**
+                                调试定义
+******************************************************************************/
+// 使用带有 debug 信息的 gc
+// DEBUG_ONLY 宏, 见 CMakeLists.txt 定义
+#ifdef DEBUG_ONLY
+# define USE_DEBUG_GC 1
+#endif
+
+
 /**
                                 静态断言
 ******************************************************************************/
@@ -124,8 +135,6 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 ******************************************************************************/
 // 初始标记栈深度
 #define GC_MAX_MARK_STACK_DEEP 1024u
-// 使用带有 debug 信息的 gc
-#define USE_DEBUG_GC 1
 
 /**
                                解释器特征
@@ -151,7 +160,7 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n);
 // string_buffer 默认初始大小
 #define STRING_BUFFER_DEFAULT_INIT_SIZE 16
 // string_buffer 默认增长大小
-#define STRING_BUFFER_DEFAULT_GROWTH_SIZE 16
+#define STRING_BUFFER_DEFAULT_GROWTH_SIZE 1024
 
 // stack push 自动增长 默认增长大小
 #define STACK_DEFAULT_GROWTH_SIZE 16

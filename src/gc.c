@@ -336,6 +336,40 @@ static void gc_adjust_ref(context_t context) {
                 // 对于存活的对象, 检查所有成员引用
                 object_type_info_ptr t = context_get_object_type(context, obj);
                 size_t field_len = object_type_info_member_slots_of(t, obj);
+
+#if USE_DEBUG_GC
+                // todo 添加新基本类型修改: 调试 object_type_info_member_slots_of() 功能是否正确
+                if (is_i64_real(obj)) {
+                    assert(field_len == 0);
+                } else if (is_doublenum(obj)) {
+                    assert(field_len == 0);
+                } else if (is_bytes(obj)) {
+                    assert(field_len == 0);
+                } else if (is_string(obj)) {
+                    assert(field_len == 0);
+                } else if (is_symbol(obj)) {
+                    assert(field_len == 0);
+                } else if (is_pair(obj)) {
+                    assert(field_len == 2);
+                } else if (is_vector(obj)) {
+                    assert(field_len == obj->value.vector.len);
+                } else if (is_string_buffer(obj)) {
+                    assert(field_len == 1);
+                } else if (is_stack(obj)) {
+                    assert(field_len == obj->value.stack.length);
+                } else if (is_string_port(obj)) {
+                    assert(field_len == 1);
+                } else if (is_stdio_port(obj)) {
+                    assert(field_len == 1);
+                } else if (is_hashset(obj)) {
+                    assert(field_len == 1);
+                } else if (is_hashmap(obj)) {
+                    assert(field_len == 1);
+                } else if (is_weak_ref(obj)) {
+                    assert(field_len == 1);
+                }
+#endif
+
                 if (field_len > 0) {
                     object *field_start_ptr = type_info_get_object_ptr_of_first_member(t, obj);
                     object *field_end_ptr = field_start_ptr + (field_len - 1);

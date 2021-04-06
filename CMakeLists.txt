@@ -19,6 +19,7 @@ add_executable(paper-scheme-exec src/paper-scheme.c)
 target_link_libraries(paper-scheme-exec paper-scheme-lib)
 
 # DEBUG 构建宏
+# 当 Debug 构建模式时会开启一些调试信息和断言
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(paper-scheme-lib PUBLIC "DEBUG_ONLY")
     target_compile_definitions(paper-scheme-exec PUBLIC "DEBUG_ONLY")
