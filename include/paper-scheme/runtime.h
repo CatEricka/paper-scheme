@@ -86,7 +86,7 @@ string_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr);
 /**
  * 构造 string_buffer 对象
  * @param context
- * @param char_size char 容量, 实际 string_buffer 要多用一个 char 存储 '\0\
+ * @param char_size char 容量, 注意 string_buffer 不以 '\0' 结束
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
@@ -102,9 +102,9 @@ EXPORT_API OUT NOTNULL GC object
 string_buffer_make_from_string_op(REF NOTNULL context_t context, COPY object str);
 
 /**
- * 构造 vector 类型对象, 填充 Unit, 即 '()
+ * 构造 vector 类型对象, 初始化填充 Unit, 即 '()
  * @param context
- * @param vector_len vector 大小
+ * @param vector_len vector 容量
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
@@ -121,7 +121,7 @@ stack_make_op(REF NOTNULL context_t context, IN size_t stack_size);
 
 /**
  * 从输入字符串打开 input port, 传入的 string 应当是不可变对象
- * <p>obj->value.string_port.length 长度包含 '\0'</p>
+ * <p>obj->value.string_port.length 长度 不包含 '\0'</p>
  * <p>(open-input-string "string here")</p>
  * @param context
  * @param str
@@ -164,7 +164,7 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
  * @param context
  * @param file
  * @param kind PORT_INPUT / PORT_OUTPUT / PORT_INPUT & PORT_OUTPUT
- * @return 打开失败返回 IMM_UNIT
+ * @return
  */
 EXPORT_API OUT NOTNULL GC object
 stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind);
@@ -366,7 +366,7 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
  * @param context
  * @param bytes
  * @param add_size 增加的大小
- * @return
+ * @return 会返回新对象
  */
 EXPORT_API OUT NOTNULL GC object
 bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t add_size);
@@ -376,7 +376,7 @@ bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t a
  * @param context
  * @param str_buffer
  * @param add_size 新增大小
- * @return
+ * @return 返回原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
 string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buffer, size_t add_size);
@@ -386,7 +386,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buf
  * @param context
  * @param vec
  * @param add_size
- * @return
+ * @return 会返回新 vector
  */
 EXPORT_API OUT NOTNULL GC object
 vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t add_size);
@@ -396,7 +396,7 @@ vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t ad
  * @param context
  * @param stack
  * @param add_size
- * @return
+ * @return 会返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
 stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t add_size);
@@ -408,7 +408,7 @@ stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t a
  * @param stack
  * @param element
  * @param extern_growth_size 如果栈满, 会自动增长 extern_growth_size + 1 (填 0 则自动增长 1)
- * @return
+ * @return 可能返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
 stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF object element,

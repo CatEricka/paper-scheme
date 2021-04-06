@@ -364,6 +364,7 @@ UTEST(hash_test, value_hash_test) {
     obj = weak_ref_make_op(context, tmp1);
     gc_collect(context);
     ASSERT_TRUE(weak_ref_is_valid(obj));
+    ASSERT_EQ(weak_ref_get(obj), tmp1);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
@@ -387,7 +388,13 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_EQ(hash1, hash2);
 
 
+    obj1 = IMM_UNIT;
+    tmp1 = IMM_UNIT;
+    tmp2 = IMM_UNIT;
+    obj = IMM_UNIT;
     gc_release_var(context);
+    gc_collect(context);
+    ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
     ASSERT_EQ(context->saves, NULL);
     context_destroy(context);
 }

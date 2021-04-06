@@ -305,9 +305,9 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .name = (object) "Weak-References", .tag = OBJ_WEAK_REF,
                 .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
 
-                .member_base = 0,
-                .member_eq_len_base = 0,
-                .member_len_base = 0,
+                .member_base = object_offsetof(weak_ref, ref),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
                 .member_meta_len_offset = 0,
                 .member_meta_len_scale = 0,
 
@@ -791,7 +791,7 @@ EXPORT_API int pair_equals(context_t context, object pair_a, object pair_b) {
     if (!is_pair(pair_a) || !is_pair(pair_b)) {
         return 0;
     } else if (pair_a == pair_b) {
-        return 0;
+        return 1;
     } else {
         object pair_a_car = pair_car(pair_a);
         object pair_a_cdr = pair_cdr(pair_a);
