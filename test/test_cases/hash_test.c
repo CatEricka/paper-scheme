@@ -48,8 +48,8 @@ UTEST(hash_test, value_hash_test) {
     hash_code_fn hash_fn, hash_fn_assert;
     object_type_info_ptr type;
 
-#define ASSERT_FUNC_EQ(x, y) ASSERT_EQ((void*)(x), (void*)(y))
-
+//#define ASSERT_FUNC_EQ(x, y) ASSERT_EQ((void*)(x), (void*)(y))
+#define ASSERT_FUNC_EQ(x, y) ASSERT_EQ(x, y)
     // i64
     obj = i64_imm_make(123);
     type = context_get_object_type(context, obj);
