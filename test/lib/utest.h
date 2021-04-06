@@ -345,11 +345,6 @@ UTEST_WEAK UTEST_OVERLOADABLE void utest_type_printer(const void *p) {
   UTEST_PRINTF("%p", p);
 }
 
-UTEST_WEAK UTEST_OVERLOADABLE void utest_type_printer(const void (*p)());
-UTEST_WEAK UTEST_OVERLOADABLE void utest_type_printer(const void (*p)()) {
-  UTEST_PRINTF("%p", p);
-}
-
 /*
    long long is a c++11 extension
 */
