@@ -1748,46 +1748,6 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_hashmap(obj));
     ASSERT_FALSE(is_weak_ref(obj));
 
-    // stdio_port_from_filename
-    obj = string_make_from_cstr_op(context, "this is a string_port input output with internal string_buffer");
-    gc_collect(context);
-    obj = string_port_in_out_put_from_string_use_buffer(context, obj);
-    gc_collect(context);
-    ASSERT_FALSE(is_null(obj));
-    ASSERT_FALSE(is_imm(obj));
-    ASSERT_FALSE(is_unique_imm(obj));
-    ASSERT_FALSE(is_i64_real(obj));
-    ASSERT_FALSE(is_imm_i64(obj));
-    ASSERT_FALSE(is_imm_char(obj));
-    ASSERT_TRUE(is_object(obj));
-    ASSERT_FALSE(is_i64(obj));
-    ASSERT_FALSE(is_doublenum(obj));
-    ASSERT_FALSE(is_pair(obj));
-    ASSERT_FALSE(is_string(obj));
-    ASSERT_FALSE(is_symbol(obj));
-    ASSERT_FALSE(is_vector(obj));
-    ASSERT_FALSE(is_bytes(obj));
-    ASSERT_FALSE(is_string_buffer(obj));
-    ASSERT_FALSE(is_stack(obj));
-    ASSERT_TRUE(is_string_port(obj));
-    ASSERT_TRUE(is_string_port_input(obj));
-    ASSERT_TRUE(is_string_port_output(obj));
-    ASSERT_TRUE(is_string_port_in_out_put(obj));
-    ASSERT_FALSE(is_string_port_eof(obj));
-    ASSERT_FALSE(is_stdio_port(obj));
-    ASSERT_FALSE(is_stdio_port_input(obj));
-    ASSERT_FALSE(is_stdio_port_output(obj));
-    ASSERT_FALSE(is_stdio_port_in_out_put(obj));
-    ASSERT_FALSE(is_stdio_port_eof(obj));
-    ASSERT_TRUE(is_port_input(obj));
-    ASSERT_TRUE(is_port_output(obj));
-    ASSERT_TRUE(is_port_in_out_put(obj));
-    ASSERT_FALSE(is_port_eof(obj));
-    ASSERT_TRUE(is_srfi6_port(obj));
-    ASSERT_FALSE(is_hashset(obj));
-    ASSERT_FALSE(is_hashmap(obj));
-    ASSERT_FALSE(is_weak_ref(obj));
-
     // stdio_port_from_file
     obj = stdio_port_from_file(context, stdout, PORT_OUTPUT);
     gc_collect(context);

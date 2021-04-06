@@ -3,7 +3,7 @@
 
 UTEST(hashset_test, hashset_test) {
     context_t context = context_make(0x10000, 2, 0x100000);
-    gc_var4(context, obj, set, tmp1, tmp2);
+    gc_var4(context, obj, set, k1, k2);
     uint64_t start, time;
 
     set = hashset_make_op(context, DEFAULT_HASH_SET_MAP_INIT_CAPACITY, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
@@ -19,8 +19,8 @@ UTEST(hashset_test, hashset_test) {
 
     obj = IMM_UNIT;
     set = IMM_UNIT;
-    tmp1 = IMM_UNIT;
-    tmp2 = IMM_UNIT;
+    k1 = IMM_UNIT;
+    k2 = IMM_UNIT;
     gc_release_var(context);
 
     start = utest_ns();

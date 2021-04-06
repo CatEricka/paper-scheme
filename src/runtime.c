@@ -829,7 +829,7 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
     }
 
 
-    // 4. 没有找到旧值, 说明要创建新的 entry
+    // 4. 没有找到旧值, 说明要创建新的 entry, 检查是否需要扩容
     if (hashmap->value.hashmap.size >= hashmap->value.hashmap.threshold &&
         (vector_ref(vector, index) != IMM_UNIT)) {
         // 此时容量大于等于扩容阈值, 且 index 位置不为 IMM_UNIT
@@ -875,17 +875,17 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
         hashmap->value.hashmap.table = new_vector;
         hashmap->value.hashmap.threshold = (size_t) (vector_len(new_vector) * hashmap->value.hashmap.load_factor);
         hashmap->value.hashmap.size++;
+    } else {
+        // 5. 否则不需要扩容, 插入新节点
+        vector = hashmap->value.hashmap.table;
+        new_entry = pair_make_op(context, k, v);
+        entry_list = pair_make_op(context, new_entry, vector_ref(vector, index));
+        vector_set(vector, index, entry_list);
     }
 
-    // 5. 不需要扩容, 插入新节点
-    vector = hashmap->value.hashmap.table;
-    new_entry = pair_make_op(context, k, v);
-    entry_list = pair_make_op(context, new_entry, vector_ref(vector, index));
-    vector_set(vector, index, entry_list);
-    hashmap->value.hashmap.size++;
-
-    gc_release_param(context);
     // 此时插入过新的键值对, 返回 IMM_UNIT
+    hashmap->value.hashmap.size++;
+    gc_release_param(context);
     return IMM_UNIT;
 }
 

@@ -339,7 +339,7 @@ struct object_struct_t {
             - stdio_port:       stdio_port_from_filename(), stdio_port_from_file()
             - hashset:          TODO hashset_make_op()
             - hashmap:          TODO hashmap_make_op()
-            - weak_ref:         TODO weak_ref_make_op()
+            - weak_ref:         weak_ref_make_op()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -381,22 +381,20 @@ struct object_struct_t {
             - string:           string_to_symbol()
             - string_buffer:    string_buffer_to_string(), string_buffer_to_symbol()
         哈希算法 & equals 算法:
-            - i64:
-            - double number:
-            - pair:
-            - bytes:
+            - i64:              i64_hash_code(), i64_equals()
+            - double number:    d64_hash_code(), i64_equals()
+            - pair:             pair_hash_code(), i64_equals()
+            - bytes:            bytes_hash_code(), bytes_equals()
             - string:           string_hash_code(), string_equals()
-            - string_buffer:
+            - string_buffer:    string_buffer_hash_code(), string_buffer_equals()
             - symbol:           symbol_hash_code(), symbol_equals()
-            - vector:
-            - stack:
-            - string_port:
-            - stdio_port:
-            - string_port & stdio_port:
-            - srfi6 string_port:
-            - hashset:
-            - hashmap:
-            - weak_ref:
+            - vector:           vector_hash_code(), vector_equals()
+            - stack:            stack_hash_code(), stack_equals()
+            - string_port:      string_port_hash_code(), string_port_equals()
+            - stdio_port:       stdio_port_hash_code(), stdio_port_equals()
+            - hashset:          hashset_hash_code(), hashset_equals()
+            - hashmap:          hashmap_hash_code(), hashmap_equals()
+            - weak_ref:         weak_ref_hash_code(), weak_ref_hash_code()
 ******************************************************************************/
 
 
@@ -909,7 +907,7 @@ CHECKED OUT int stack_pop(REF object stack);
 /**
  * hashset 元素数量
  */
-#define hashset_size(obj)   ((obj)->value.hashset.size)
+#define hashset_size(obj)   ((obj)->value.hashset.map.size)
 
 /**
  *  hashmap 元素数量
@@ -924,8 +922,8 @@ CHECKED OUT int stack_pop(REF object stack);
 
 /**
  * 获取弱引用对应的引用
- * 如果不可用, 返回 NULL
- * 注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的
+ * <p>如果不可用, 返回 NULL</p>
+ * <p>注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的</p>
  */
 #define weak_ref_get(obj)   ((obj)->value.weak_ref.ref)
 
