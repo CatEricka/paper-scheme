@@ -48,14 +48,15 @@ UTEST(hash_test, value_hash_test) {
     hash_code_fn hash_fn, hash_fn_assert;
     object_type_info_ptr type;
 
+#define ASSERT_FUNC_EQ(x, y) ASSERT_EQ((void*)(x), (void*)(y))
 
     // i64
     obj = i64_imm_make(123);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, i64_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, i64_hash_code);
     UTEST_PRINTF("i64 123\t\t\thash: %u\n", i64_hash_code(context, obj));
 
 
@@ -64,8 +65,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, i64_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, i64_hash_code);
     UTEST_PRINTF("i64 615171298343471923\thash: %u\n", i64_hash_code(context, obj));
 
 
@@ -74,8 +75,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, char_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, char_hash_code);
     UTEST_PRINTF("char %c\t\t\thash: %u\n", char_imm_getvalue(obj), char_hash_code(context, obj));
 
 
@@ -84,8 +85,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, d64_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, d64_hash_code);
     UTEST_PRINTF("double %f\t\thash: %u\n", doublenum_getvalue(obj), d64_hash_code(context, obj));
 
 
@@ -94,8 +95,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, d64_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, d64_hash_code);
     UTEST_PRINTF("double %f\t\thash: %u\n", doublenum_getvalue(obj), d64_hash_code(context, obj));
 
 
@@ -106,8 +107,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, pair_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, pair_hash_code);
     UTEST_PRINTF("pair1\t\t\thash: %u\n", pair_hash_code(context, obj));
 
 
@@ -119,8 +120,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, pair_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, pair_hash_code);
     UTEST_PRINTF("pair2\t\t\thash: %u\n", pair_hash_code(context, obj));
 
 
@@ -131,8 +132,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, pair_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, pair_hash_code);
     UTEST_PRINTF("pair3\t\t\thash: %u\n", pair_hash_code(context, obj));
 
 
@@ -141,8 +142,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, bytes_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, bytes_hash_code);
     UTEST_PRINTF("bytes1\t\t\thash: %u\n", bytes_hash_code(context, obj));
 
 
@@ -152,8 +153,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_hash_code);
     UTEST_PRINTF("\"%s\"\thash: %u\n", string_obj, string_hash_code(context, obj));
 
 
@@ -164,8 +165,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_buffer_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_buffer_hash_code);
     uint32_t hash1 = hash_fn(context, obj);
     tmp1 = string_buffer_to_string(context, obj);
     UTEST_PRINTF("\"%s\"\thash: %u\n", string_get_cstr(tmp1), string_buffer_hash_code(context, obj));
@@ -176,8 +177,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_buffer_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_buffer_hash_code);
     uint32_t hash2 = hash_fn(context, obj);
     tmp1 = string_buffer_to_string(context, obj);
     UTEST_PRINTF("\"%s\"\n\t\t\thash: %u\n", string_get_cstr(tmp1), string_buffer_hash_code(context, obj));
@@ -187,8 +188,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_hash_code);
     UTEST_PRINTF("string_buffer->string: \"%s\"\n\t\t\thash: %u\n", string_get_cstr(tmp1),
                  string_hash_code(context, tmp1));
 
@@ -196,8 +197,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, symbol_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, symbol_hash_code);
     UTEST_PRINTF("string_buffer->symbol: \"%s\"\n\t\t\thash: %u\n", symbol_get_cstr(tmp1),
                  symbol_hash_code(context, tmp1));
 
@@ -208,8 +209,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_hash_code);
     hash1 = hash_fn(context, obj);
     UTEST_PRINTF("\"%s\"\thash: %u\n", string_get_cstr(obj), string_hash_code(context, obj));
 
@@ -218,8 +219,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_hash_code);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("\"%s\"\thash: %u\n", string_get_cstr(obj), string_hash_code(context, obj));
     ASSERT_EQ(hash1, hash2);
@@ -229,8 +230,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_hash_code);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("\"%s\"\n\t\t\thash: %u\n", string_get_cstr(obj), string_hash_code(context, obj));
     EXPECT_NE(hash1, hash2);
@@ -242,8 +243,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, symbol_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, symbol_hash_code);
     UTEST_PRINTF("\"%s\"\thash: %u\n", symbol_obj, symbol_hash_code(context, obj));
 
 
@@ -252,8 +253,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, vector_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, vector_hash_code);
     hash1 = hash_fn(context, obj);
     UTEST_PRINTF("vector\t\t\thash: %u\n", vector_hash_code(context, obj));
 
@@ -261,8 +262,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, vector_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, vector_hash_code);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("vector\t\t\thash: %u\n", vector_hash_code(context, obj));
     ASSERT_EQ(hash1, hash2);
@@ -271,8 +272,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, vector_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, vector_hash_code);
     hash2 = hash_fn(context, tmp1);
     UTEST_PRINTF("vector\t\t\thash: %u\n", vector_hash_code(context, tmp1));
     EXPECT_NE(hash1, hash2);
@@ -283,8 +284,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, stack_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, stack_hash_code);
     hash1 = hash_fn(context, obj);
     UTEST_PRINTF("stack\t\t\thash: %u\n", stack_hash_code(context, obj));
 
@@ -292,8 +293,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, stack_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, stack_hash_code);
     hash2 = hash_fn(context, tmp1);
     UTEST_PRINTF("stack\t\t\thash: %u\n", stack_hash_code(context, tmp1));
     EXPECT_NE(hash1, hash2);
@@ -305,8 +306,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_port_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_port_hash_code);
     UTEST_PRINTF("string_port_input\thash: %u\n", string_port_hash_code(context, obj));
 
 
@@ -315,8 +316,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_port_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_port_hash_code);
     UTEST_PRINTF("string_port_output\thash: %u\n", string_port_hash_code(context, obj));
 
     // string_port_in_out_put_from_string_use_buffer
@@ -326,8 +327,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, string_port_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, string_port_hash_code);
     UTEST_PRINTF("string_port_output from string\n\t\t\thash: %u\n", string_port_hash_code(context, obj));
 
     // stdio_port_from_file
@@ -335,8 +336,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, stdio_port_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, stdio_port_hash_code);
     UTEST_PRINTF("stdio_port output\thash: %u\n", stdio_port_hash_code(context, obj));
 
     // stdio_port_from_filename
@@ -350,8 +351,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, stdio_port_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, stdio_port_hash_code);
     UTEST_PRINTF("stdio_port by filename\thash: %u\n", stdio_port_hash_code(context, obj));
     obj = IMM_UNIT;
     gc_collect(context);
@@ -366,8 +367,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, weak_ref_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, weak_ref_hash_code);
     hash1 = weak_ref_hash_code(context, obj);
     UTEST_PRINTF("weak-ref\t\thash: %u\n", weak_ref_hash_code(context, obj));
 
@@ -378,8 +379,8 @@ UTEST(hash_test, value_hash_test) {
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
-    ASSERT_EQ(hash_fn, hash_fn_assert);
-    ASSERT_EQ(hash_fn, weak_ref_hash_code);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, weak_ref_hash_code);
     hash2 = weak_ref_hash_code(context, obj);
     UTEST_PRINTF("weak-ref\t\thash: %u\n", weak_ref_hash_code(context, obj));
 
