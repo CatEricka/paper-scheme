@@ -369,7 +369,8 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
  * @return 会返回新对象
  */
 EXPORT_API OUT NOTNULL GC object
-bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t add_size);
+bytes_capacity_increase(REF NOTNULL context_t context,
+                        NOTNULL IN object bytes, size_t add_size);
 
 /**
  * string_buffer 扩容, 深拷贝
@@ -379,7 +380,8 @@ bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t a
  * @return 返回原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buffer, size_t add_size);
+string_buffer_capacity_increase(REF NOTNULL context_t context,
+                                NOTNULL IN object str_buffer, size_t add_size);
 
 /**
  * vector 扩容, 深拷贝
@@ -389,7 +391,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buf
  * @return 会返回新 vector
  */
 EXPORT_API OUT NOTNULL GC object
-vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t add_size);
+vector_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object vec, size_t add_size);
 
 /**
  * stack 扩容, 深拷贝
@@ -399,7 +401,7 @@ vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t ad
  * @return 会返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t add_size);
+stack_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object stack, size_t add_size);
 
 /**
  * stack 自动增长的入栈
@@ -411,7 +413,8 @@ stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t a
  * @return 可能返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF object element,
+stack_push_auto_increase(REF NOTNULL context_t context,
+                         NOTNULL REF object stack, NOTNULL REF object element,
                          size_t extern_growth_size);
 
 
@@ -426,7 +429,7 @@ stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF ob
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-imm_char_to_string(REF NOTNULL context_t context, COPY object imm_char);
+imm_char_to_string(REF NOTNULL context_t context, NOTNULL COPY object imm_char);
 
 /**
  * char 转 string
@@ -444,7 +447,7 @@ char_to_string(REF NOTNULL context_t context, COPY char ch);
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-symbol_to_string(REF NOTNULL context_t context, COPY object symbol);
+symbol_to_string(REF NOTNULL context_t context, NOTNULL COPY object symbol);
 
 /**
  * string 转 symbol
@@ -453,7 +456,7 @@ symbol_to_string(REF NOTNULL context_t context, COPY object symbol);
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_to_symbol(REF NOTNULL context_t context, COPY object str);
+string_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str);
 
 /**
  * string_buffer 转换为 string, 深拷贝
@@ -462,7 +465,7 @@ string_to_symbol(REF NOTNULL context_t context, COPY object str);
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer);
+string_buffer_to_string(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
 
 /**
  * string_buffer 转换为 symbol, 深拷贝
@@ -471,6 +474,24 @@ string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer);
  * @return symbol
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_symbol(REF NOTNULL context_t context, COPY object str_buffer);
+string_buffer_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
+
+/**
+ * hashset 转为 vector, 无序
+ * @param context
+ * @param hashset
+ * @return vector: #(key1, key2, ...)
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashset);
+
+/**
+ * hashmap 转为 vector, 无序
+ * @param context
+ * @param hashmap
+ * @return vector: #((k1, v1), (k2, v2), ...)
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashmap);
 
 #endif //BASE_SCHEME_RUNTIME_H

@@ -380,6 +380,8 @@ struct object_struct_t {
             - symbol:           symbol_to_string()
             - string:           string_to_symbol()
             - string_buffer:    string_buffer_to_string(), string_buffer_to_symbol()
+            - hashset:          hashset_to_vector()
+            - hashmap:          hashmap_to_vector()
         π˛œ£À„∑® & equals À„∑®:
             - i64:              i64_hash_code(), i64_equals()
             - double number:    d64_hash_code(), i64_equals()

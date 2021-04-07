@@ -686,6 +686,7 @@ hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NO
 EXPORT_API GC void
 hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, REF NOTNULL object hashset_b) {
     assert(context != NULL);
+    assert(hashset_a != hashset_b);
     assert(is_hashset(hashset_a));
     assert(is_hashset(hashset_b));
 
@@ -942,6 +943,7 @@ hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
 EXPORT_API void
 hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, REF NOTNULL object hashmap_b) {
     assert(context != NULL);
+    assert(hashmap_a != hashmap_b);
     assert(is_hashmap(hashmap_a));
     assert(is_hashmap(hashmap_b));
 
@@ -1063,7 +1065,8 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
  * @return 会返回新对象
  */
 EXPORT_API OUT NOTNULL GC object
-bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t add_size) {
+bytes_capacity_increase(REF NOTNULL context_t context,
+                        NOTNULL IN object bytes, size_t add_size) {
     assert(context != NULL);
     assert(is_bytes(bytes));
 
@@ -1087,7 +1090,8 @@ bytes_capacity_increase(REF NOTNULL context_t context, IN object bytes, size_t a
  * @return 返回原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buffer, size_t add_size) {
+string_buffer_capacity_increase(REF NOTNULL context_t context,
+                                NOTNULL IN object str_buffer, size_t add_size) {
     assert(context != NULL);
     assert(is_string_buffer(str_buffer));
 
@@ -1112,7 +1116,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context, IN object str_buf
  * @return 会返回新 vector
  */
 EXPORT_API OUT NOTNULL GC object
-vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t add_size) {
+vector_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object vec, size_t add_size) {
     assert(context != NULL);
     assert(is_vector(vec));
 
@@ -1141,7 +1145,7 @@ vector_capacity_increase(REF NOTNULL context_t context, IN object vec, size_t ad
  * @return 会返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t add_size) {
+stack_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object stack, size_t add_size) {
     assert(context != NULL);
     assert(is_stack(stack));
 
@@ -1173,7 +1177,8 @@ stack_capacity_increase(REF NOTNULL context_t context, IN object stack, size_t a
  * @return 可能返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF object element,
+stack_push_auto_increase(REF NOTNULL context_t context,
+                         NOTNULL REF object stack, NOTNULL REF object element,
                          size_t extern_growth_size) {
     assert(context != NULL);
     assert(is_stack(stack));
@@ -1202,7 +1207,7 @@ stack_push_auto_increase(REF NOTNULL context_t context, REF object stack, REF ob
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-imm_char_to_string(REF NOTNULL context_t context, COPY object imm_char) {
+imm_char_to_string(REF NOTNULL context_t context, NOTNULL COPY object imm_char) {
     assert(context != NULL);
     assert(is_imm_char(imm_char));
 
@@ -1231,7 +1236,7 @@ char_to_string(REF NOTNULL context_t context, COPY char ch) {
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
+symbol_to_string(REF NOTNULL context_t context, NOTNULL COPY object symbol) {
     assert(context != NULL);
     assert(is_symbol(symbol));
 
@@ -1255,7 +1260,7 @@ symbol_to_string(REF NOTNULL context_t context, COPY object symbol) {
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_to_symbol(REF NOTNULL context_t context, COPY object str) {
+string_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str) {
     assert(context != NULL);
     assert(is_string(str));
 
@@ -1279,7 +1284,7 @@ string_to_symbol(REF NOTNULL context_t context, COPY object str) {
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer) {
+string_buffer_to_string(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
     assert(context != 0);
     assert(is_string_buffer(str_buffer));
 
@@ -1308,7 +1313,7 @@ string_buffer_to_string(REF NOTNULL context_t context, COPY object str_buffer) {
  * @return symbol
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_symbol(REF NOTNULL context_t context, COPY object str_buffer) {
+string_buffer_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
     assert(context != 0);
     assert(is_string_buffer(str_buffer));
 
@@ -1328,4 +1333,81 @@ string_buffer_to_symbol(REF NOTNULL context_t context, COPY object str_buffer) {
 
     gc_release_param(context);
     return symbol;
+}
+
+/**
+ * hashset 转为 vector, 无序
+ * @param context
+ * @param hashset
+ * @return vector: #(key1, key2, ...)
+ */
+EXPORT_API OUT NOTNULL GC object
+hashset_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashset) {
+    assert(context != NULL);
+    assert(is_hashset(hashset));
+
+    gc_param1(context, hashset);
+    gc_var2(context, vector, entry);
+
+    vector = hashmap_to_vector(context, hashset->value.hashset.map);
+    for (size_t i = 0; i < vector_len(vector); i++) {
+        entry = vector_ref(vector, i);
+        assert(is_pair(entry));
+        // entry: (k, v)
+        vector_ref(vector, i) = pair_car(entry);
+    }
+
+    gc_release_param(context);
+    return vector;
+}
+
+/**
+ * hashmap 转为 vector, 无序
+ * @param context
+ * @param hashmap
+ * @return vector: #((k1, v1), (k2, v2), ...)
+ */
+EXPORT_API OUT NOTNULL GC object
+hashmap_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashmap) {
+    assert(context != NULL);
+    assert(is_hashmap(hashmap));
+
+    gc_param1(context, hashmap);
+    gc_var5(context, vector, entry_list, entry, key, value);
+
+    // map 中对象数量
+    size_t map_size = hashmap_size(hashmap);
+    if (map_size == 0) {
+        // hashmap 大小为 0, 直接返回不再遍历
+        return vector_make_op(context, 0);
+    } else {
+        vector = vector_make_op(context, map_size);
+    }
+
+    // vector 索引
+    size_t vector_index = 0;
+    size_t map_table_vector_len = vector_len(hashmap->value.hashmap.table);
+    for (size_t i = 0; i < map_table_vector_len; i++) {
+
+        entry_list = vector_ref(hashmap->value.hashmap.table, i);
+        for (; entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+
+            // 获取 hashmap 中的 entry
+            entry = pair_car(entry_list);
+            key = pair_car(entry);
+            assert(is_symbol(key));
+            value = pair_cdr(entry);
+
+            // 填充 vector
+            entry = pair_make_op(context, key, value);
+            vector_ref(vector, vector_index) = entry;
+
+            // 每找到一个 (k, v), 游标向后移动
+            vector_index++;
+        }
+    }
+    assert(map_size == vector_index);
+
+    gc_release_param(context);
+    return vector;
 }

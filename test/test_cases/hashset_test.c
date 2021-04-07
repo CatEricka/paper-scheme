@@ -68,14 +68,19 @@ UTEST(hashset_test, hashset_test) {
     for (size_t i = 0; i < vector_len(vector); i++) {
         hashset_remove_op(context, set, vector_ref(vector, i));
     }
+    for (size_t i = 0; i < vector_len(vector); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector, i)), IMM_FALSE);
+    }
     ASSERT_EQ(hashset_size(set), 0);
 
-    // put symbol
+    // put symbol 2
     for (size_t i = 0; i < vector_len(vector); i++) {
         hashset_put_op(context, set, vector_ref(vector, i));
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector, i)), IMM_TRUE);
     }
     for (size_t i = 0; i < vector_len(vector2); i++) {
         hashset_put_op(context, set2, vector_ref(vector2, i));
+        ASSERT_EQ(hashset_contains_op(context, set2, vector_ref(vector2, i)), IMM_TRUE);
     }
 
     // test contains 2
@@ -88,27 +93,51 @@ UTEST(hashset_test, hashset_test) {
     ASSERT_EQ(hashset_size(set), symbols_len);
     ASSERT_EQ(hashset_size(set2), other_symbol_len);
 
-    // put all test
+    // put all test 2
     hashset_put_all_op(context, set, set2);
+    for (size_t i = 0; i < vector_len(vector); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector, i)), IMM_TRUE);
+    }
+    for (size_t i = 0; i < vector_len(vector2); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector2, i)), IMM_TRUE);
+    }
     ASSERT_EQ(hashset_size(set), symbols_len + other_symbol_len);
     ASSERT_EQ(hashset_size(set2), other_symbol_len);
 
-    // dup put test
+    // dup put test 2
     hashset_put_op(context, set, vector_ref(vector, 0));
     ASSERT_EQ(hashset_size(set), symbols_len + other_symbol_len);
 
-    // self put all test
-    hashset_put_all_op(context, set, set);
-    ASSERT_EQ(hashset_size(set), symbols_len + other_symbol_len);
-
-    // clear test
+    // clear test 2
     hashset_clear_op(context, set);
+    for (size_t i = 0; i < vector_len(vector); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector, i)), IMM_FALSE);
+    }
+    for (size_t i = 0; i < vector_len(vector2); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector2, i)), IMM_FALSE);
+    }
     ASSERT_EQ(hashset_size(set), 0);
 
-    // re put test
+    // re put test 2
     hashset_put_all_op(context, set, set2);
+    for (size_t i = 0; i < vector_len(vector); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector, i)), IMM_FALSE);
+    }
+    for (size_t i = 0; i < vector_len(vector2); i++) {
+        ASSERT_EQ(hashset_contains_op(context, set, vector_ref(vector2, i)), IMM_TRUE);
+    }
     ASSERT_EQ(hashset_size(set), hashset_size(set2));
     ASSERT_EQ(hashset_size(set), other_symbol_len);
+
+    // hashset->vector test
+    obj = hashset_to_vector(context, set2);
+    ASSERT_EQ(vector_len(obj), hashset_size(set2));
+    UTEST_PRINTF("hashset->vector:\n");
+    for (size_t i = 0; i < vector_len(obj); i++) {
+        ASSERT_TRUE(is_symbol(vector_ref(obj, i)));
+        UTEST_PRINTF("key: %s\n", symbol_get_cstr(vector_ref(obj, i)));
+        ASSERT_EQ(hashset_contains_op(context, set2, vector_ref(obj, i)), IMM_TRUE);
+    }
 
     obj = IMM_UNIT;
     set = IMM_UNIT;

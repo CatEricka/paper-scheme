@@ -28,7 +28,7 @@ TODO:
 - [x] 实现各种类型的 hash 算法 和 equals 函数, 并注册到全局类型信息表
 - [x] 实现 `hashmap` 和 `hashset`
 - [x] 进行各种基础类型反射, `hash` 和 `equals` 函数的测试
-- [ ] 完成 `hashset` / `hashmap` 的测试
+- [x] 完成 `hashset` / `hashmap` 的测试
 - [ ] 实现 `weak_ref_hashmap`
 - [ ] 实现运行时类型与解释器结构
 - [ ] 实现 `stdio_port` / `string_port` 相关操作
