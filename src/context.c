@@ -608,10 +608,18 @@ EXPORT_API uint32_t string_hash_helper(object str_obj) {
  */
 EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum type_enum) {
     uint32_t type = (uint32_t) type_enum;
+    uint32_t rand_sand = rand_helper();
+    uint32_t hash = 0;
 #ifdef IS_32_BIT_ARCH
-    return uint32_pair_hash((uint32_t) ptr, type);
+    hash = (uint32_t)ptr;
+    hash = uint32_pair_hash(hash, rand_sand);
+    hash = uint32_pair_hash(hash, type);
+    return hash;
 #elif IS_64_BIT_ARCH
-    return uint32_pair_hash(uint64_hash((uint64_t) ptr), type);
+    hash = uint64_hash((uint64_t) ptr);
+    hash = uint32_pair_hash(hash, rand_sand);
+    hash = uint32_pair_hash(hash, type);
+    return hash;
 #else
 # error("UNKNOWN Arch")
 #endif

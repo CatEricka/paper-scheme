@@ -235,6 +235,9 @@ UTEST(hash_test, value_hash_test) {
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("\"%s\"\n\t\t\thash: %u\n", string_get_cstr(obj), string_hash_code(context, obj));
     EXPECT_NE(hash1, hash2);
+    if (hash1 == hash2) {
+        UTEST_PRINTF("hash clash: %d, not test failed", hash1);
+    }
 
 
     // symbol
@@ -277,6 +280,9 @@ UTEST(hash_test, value_hash_test) {
     hash2 = hash_fn(context, tmp1);
     UTEST_PRINTF("vector\t\t\thash: %u\n", vector_hash_code(context, tmp1));
     EXPECT_NE(hash1, hash2);
+    if (hash1 == hash2) {
+        UTEST_PRINTF("hash clash: %d, not test failed", hash1);
+    }
 
 
     // stack
@@ -298,6 +304,9 @@ UTEST(hash_test, value_hash_test) {
     hash2 = hash_fn(context, tmp1);
     UTEST_PRINTF("stack\t\t\thash: %u\n", stack_hash_code(context, tmp1));
     EXPECT_NE(hash1, hash2);
+    if (hash1 == hash2) {
+        UTEST_PRINTF("hash clash: %d, not test failed", hash1);
+    }
 
 
     // string_port_input_from_string
