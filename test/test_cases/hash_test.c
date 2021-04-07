@@ -398,6 +398,33 @@ UTEST(hash_test, all_value_hash_test) {
 
     ASSERT_EQ(hash1, hash2);
 
+    // hashset
+    obj = hashset_make_op(context, 2, 0.75);
+    type = context_get_object_type(context, obj);
+    hash_fn_assert = type_info_hash_code(type);
+    hash_fn = object_hash_helper(context, obj);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, hash_set_hash_code);
+    UTEST_PRINTF("hashset\t\t\thash: %u\n", hash_set_hash_code(context, obj));
+
+    // hashmap
+    obj = hashmap_make_op(context, 2, 0.75);
+    type = context_get_object_type(context, obj);
+    hash_fn_assert = type_info_hash_code(type);
+    hash_fn = object_hash_helper(context, obj);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, hash_map_hash_code);
+    UTEST_PRINTF("hashmap\t\t\thash: %u\n", hash_map_hash_code(context, obj));
+
+    // weak_hashset
+    obj = weak_hashset_make_op(context, 2, 0.75);
+    type = context_get_object_type(context, obj);
+    hash_fn_assert = type_info_hash_code(type);
+    hash_fn = object_hash_helper(context, obj);
+    ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
+    ASSERT_FUNC_EQ(hash_fn, weak_hashset_hash_code);
+    UTEST_PRINTF("weak_hashset\t\thash: %u\n", weak_hashset_hash_code(context, obj));
+
 
     obj1 = IMM_UNIT;
     tmp1 = IMM_UNIT;
