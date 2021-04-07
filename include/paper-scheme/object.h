@@ -337,7 +337,7 @@ struct object_struct_t {
             - hashset:          is_hashset(obj)
             - hashmap:          is_hashmap(obj)
             - weak_ref:         is_weak_ref(obj)
-            - weak_hashset:     TODO is_weak_hashset(obj)
+            - weak_hashset:     is_weak_hashset(obj)
         构造:
             - i64:              i64_make_op(), i64_imm_make()
             - imm_char:         char_imm_make()
@@ -355,7 +355,7 @@ struct object_struct_t {
             - hashset:          hashset_make_op()
             - hashmap:          hashmap_make_op()
             - weak_ref:         weak_ref_make_op()
-            - weak_hashset:     TODO weak_hashset_make_op()
+            - weak_hashset:     weak_hashset_make_op()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()

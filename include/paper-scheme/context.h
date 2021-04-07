@@ -79,8 +79,8 @@ typedef struct scheme_context_t {
     /**
      *                   全局信息表
      ****************************************************/
-    // TODO 实现 weak-ref hash set 全局符号表
-    // (make-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)
+    // 全局符号表 弱引用 hashset
+    // (make-weak-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)
     // symbol
     GC object global_symbol_table;
     // 全局 environment, (make-hashmap)

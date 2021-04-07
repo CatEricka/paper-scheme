@@ -972,7 +972,7 @@ EXPORT_API int string_equals(context_t context, object str_a, object str_b) {
 object_type_info_ptr context_get_object_type(NOTNULL context_t context, NOTNULL object obj) {
     assert(context != NULL);
 
-    // todo 增加新类型重写运行时类型 context_get_object_type
+    // todo 增加新 立即数 类型重写运行时类型 context_get_object_type
     if (is_object(obj)) {
         return &context->global_type_table[(obj)->type];
     } else {

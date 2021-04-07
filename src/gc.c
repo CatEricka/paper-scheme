@@ -382,10 +382,11 @@ static void gc_adjust_ref(context_t context) {
                         }
                     }
                 }
-            }
+
+            } // if (is_marked(obj))
 
             ptr += size;
-        }
+        } // while (ptr < node->free_ptr)
 
         assert(ptr == node->free_ptr);
     }

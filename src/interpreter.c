@@ -29,9 +29,9 @@ static int interpreter_default_env_init(context_t context) {
 
     context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
 
-    // TODO 弱引用 全局符号表 global_symbol_table
+    // 全局符号表 global_symbol_table 弱引用 hashset
     context->global_symbol_table =
-            hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+            weak_hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
 
     // 全局 environment
     context->global_environment =
