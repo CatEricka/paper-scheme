@@ -946,7 +946,7 @@ hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, 
     assert(is_hashmap(hashmap_b));
 
     gc_param2(context, hashmap_a, hashmap_b);
-    gc_var3(context, entry_list, key, value);
+    gc_var4(context, entry_list, entry, key, value);
 
     size_t map_b_vector_len = vector_len(hashmap_b->value.hashmap.table);
     for (size_t i = 0; i < map_b_vector_len; i++) {
@@ -954,8 +954,9 @@ hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, 
         entry_list = vector_ref(hashmap_b->value.hashmap.table, i);
         for (; entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
 
-            key = pair_car(entry_list);
-            value = pair_cdr(entry_list);
+            entry = pair_car(entry_list);
+            key = pair_car(entry);
+            value = pair_cdr(entry);
 
             hashmap_put_op(context, hashmap_a, key, value);
         }
