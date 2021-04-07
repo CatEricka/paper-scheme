@@ -143,6 +143,7 @@ UTEST(hashset_test, test) {
     set = IMM_UNIT;
     set2 = IMM_UNIT;
     vector = IMM_UNIT;
+    ASSERT_EQ(context->saves, &__gc_var_dream5__);
     gc_release_var(context);
     start = utest_ns();
     gc_collect(context);

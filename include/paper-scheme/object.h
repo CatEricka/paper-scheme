@@ -376,7 +376,7 @@ struct object_struct_t {
             - hashset:          hashset_size()
             - hashmap:          hashmap_size()
             - weak_ref:         weak_ref_is_valid()
-            - weak_hashset:     TODO weak_hashset_size_op()
+            - weak_hashset:     weak_hashset_size_op()
         ²Ù×÷:
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
@@ -386,8 +386,8 @@ struct object_struct_t {
             - hashmap:          hashmap_contains_key_op(), hashmap_put_op(), hashmap_get_op()
                                 hashmap_put_all_op(), hashmap_clear_op(), hashmap_remove_op()
             - weak_ref:         weak_ref_get()
-            - weak_hashset:     TODO weak_hashset_contains_op(), weak_hashset_put_op()
-                                TODO weak_hashset_clear_op(), weak_hashset_remove_op()
+            - weak_hashset:     weak_hashset_contains_op(), weak_hashset_put_op()
+                                weak_hashset_clear_op(), weak_hashset_remove_op()
         À©ÈÝ:
             - bytes:            bytes_capacity_increase_op()
             - string_buffer:    string_buffer_capacity_increase_op()
@@ -417,7 +417,7 @@ struct object_struct_t {
             - hashset:          hashset_hash_code(), hashset_equals()
             - hashmap:          hashmap_hash_code(), hashmap_equals()
             - weak_ref:         weak_ref_hash_code(), weak_ref_hash_code()
-            - weak_hashset:     TODO weak_hashset_hash_code()
+            - weak_hashset:     weak_hashset_hash_code()
 ******************************************************************************/
 
 

@@ -318,6 +318,7 @@ UTEST(gc_test, gc_saves_list_test) {
     ASSERT_FALSE(g->marked);
     ASSERT_FALSE(h->marked);
 
+    ASSERT_EQ(context->saves, &__gc_var_dream7__);
     gc_release_param(context);
 
     ASSERT_EQ(context->saves, NULL);
@@ -382,6 +383,7 @@ UTEST(gc_test, mark_test1) {
                              "\n", i64_getvalue(vector_ref(root3, i)), is_marked(vector_ref(root3, i)));
     }
 
+    ASSERT_EQ(context->saves, &__gc_var_dream3__);
     gc_release_var(context);
     ASSERT_TRUE(context->saves == NULL);
     context_destroy(context);
@@ -418,6 +420,7 @@ UTEST(gc_test, mark_test2) {
                          PRId64
                          " ns\n", time);
 
+    ASSERT_EQ(context->saves, &__gc_var_dream2__);
     gc_release_var(context);
     ASSERT_TRUE(context->saves == NULL);
     context_destroy(context);
@@ -450,6 +453,7 @@ UTEST(gc_test, gc_collect_move_test) {
     ASSERT_TRUE(is_i64(j));
     ASSERT_EQ(2, i64_getvalue(j));
 
+    ASSERT_EQ(context->saves, &__gc_var_dream9__);
     gc_release_var(context);
     context_destroy(context);
 }
@@ -475,6 +479,7 @@ UTEST(gc_test, weak_ref_test) {
     ASSERT_FALSE(weak_ref_is_valid(weak2));
     ASSERT_TRUE(weak2->value.weak_ref._internal_next_ref == NULL);
 
+    ASSERT_EQ(context->saves, &__gc_var_dream3__);
     gc_release_var(context);
     context_destroy(context);
 }

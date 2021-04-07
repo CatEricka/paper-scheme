@@ -368,6 +368,7 @@ UTEST(equals_test, value_equals_test) {
     obj2 = IMM_UNIT;
     tmp1 = IMM_UNIT;
     tmp2 = IMM_UNIT;
+    ASSERT_EQ(context->saves, &__gc_var_dream4__);
     gc_release_var(context);
     gc_collect(context);
     ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);

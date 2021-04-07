@@ -1887,6 +1887,7 @@ UTEST(value_test, all_value_type_function_test) {
     tmp1 = IMM_UNIT;
     tmp2 = IMM_UNIT;
     tmp3 = IMM_UNIT;
+    ASSERT_EQ(context->saves, &__gc_var_dream4__);
     gc_release_var(context);
 
     start = utest_ns();

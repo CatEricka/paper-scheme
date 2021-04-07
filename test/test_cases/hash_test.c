@@ -16,6 +16,7 @@ UTEST(hash_test, string_hash_test) {
     str = string_make_from_cstr_op(context, cstr);
     UTEST_PRINTF("%s hash: %u\n", cstr, hash(context, str));
 
+    ASSERT_EQ(context->saves, &__gc_var_dream1__);
     gc_release_var(context);
     ASSERT_EQ(context->saves, NULL);
     context_destroy(context);
@@ -36,6 +37,7 @@ UTEST(hash_test, symbol_hash_test) {
     str = symbol_make_from_cstr_op(context, cstr);
     UTEST_PRINTF("%s hash: %u\n", cstr, hash(context, str));
 
+    ASSERT_EQ(context->saves, &__gc_var_dream1__);
     gc_release_var(context);
     ASSERT_EQ(context->saves, NULL);
     context_destroy(context);
@@ -401,6 +403,7 @@ UTEST(hash_test, all_value_hash_test) {
     tmp1 = IMM_UNIT;
     tmp2 = IMM_UNIT;
     obj = IMM_UNIT;
+    ASSERT_EQ(context->saves, &__gc_var_dream4__);
     gc_release_var(context);
     gc_collect(context);
     ASSERT_TRUE(context->heap->first_node->data == context->heap->first_node->free_ptr);
