@@ -178,8 +178,8 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_FALSE(equals(context, obj1, obj2));
     ASSERT_TRUE(equals(context, obj1, obj1));
 
-    tmp1 = string_buffer_to_string(context, obj1);
-    tmp2 = string_buffer_to_string(context, obj2);
+    tmp1 = string_buffer_to_string_op(context, obj1);
+    tmp2 = string_buffer_to_string_op(context, obj2);
     type = context_get_object_type(context, tmp1);
     ASSERT_TRUE(is_string(tmp1) && is_string(tmp2));
     equals_assert = type_info_equals(type);
@@ -189,8 +189,8 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_TRUE(equals(context, tmp1, tmp2));
     ASSERT_TRUE(equals(context, tmp1, tmp1));
 
-    tmp1 = string_buffer_to_symbol(context, obj1);
-    tmp2 = string_buffer_to_symbol(context, obj2);
+    tmp1 = string_buffer_to_symbol_op(context, obj1);
+    tmp2 = string_buffer_to_symbol_op(context, obj2);
     type = context_get_object_type(context, tmp1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, tmp1);
@@ -241,7 +241,7 @@ UTEST(equals_test, value_equals_test) {
 
     // vector
     obj1 = vector_make_op(context, 20);
-    obj2 = vector_capacity_increase(context, obj1, 20);
+    obj2 = vector_capacity_increase_op(context, obj1, 20);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);
@@ -254,7 +254,7 @@ UTEST(equals_test, value_equals_test) {
 
     // stack
     obj1 = stack_make_op(context, 10);
-    obj2 = stack_capacity_increase(context, obj1, 10);
+    obj2 = stack_capacity_increase_op(context, obj1, 10);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);
@@ -265,9 +265,9 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_TRUE(equals(context, obj2, obj2));
 
 
-    // string_port_input_from_string
+    // string_port_input_from_string_op
     obj1 = string_make_from_cstr_op(context, "this is a string_port input only");
-    obj1 = string_port_input_from_string(context, obj1);
+    obj1 = string_port_input_from_string_op(context, obj1);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);
@@ -276,8 +276,8 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_TRUE(equals(context, obj1, obj1));
 
 
-    // string_port_output_use_buffer
-    obj1 = string_port_output_use_buffer(context);
+    // string_port_output_use_buffer_op
+    obj1 = string_port_output_use_buffer_op(context);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);
@@ -285,10 +285,10 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_FUNC_EQ(equals, string_port_equals);
     ASSERT_TRUE(equals(context, obj1, obj1));
 
-    // string_port_in_out_put_from_string_use_buffer
+    // string_port_in_out_put_from_string_use_buffer_op
     obj1 = string_make_from_cstr_op(context, "this is a string_port input output with internal string_buffer");
     gc_collect(context);
-    obj1 = string_port_in_out_put_from_string_use_buffer(context, obj1);
+    obj1 = string_port_in_out_put_from_string_use_buffer_op(context, obj1);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);
@@ -296,8 +296,8 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_FUNC_EQ(equals, string_port_equals);
     ASSERT_TRUE(equals(context, obj1, obj1));
 
-    // stdio_port_from_file
-    obj1 = stdio_port_from_file(context, stdout, PORT_OUTPUT);
+    // stdio_port_from_file_op
+    obj1 = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);
@@ -305,14 +305,14 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_FUNC_EQ(equals, stdio_port_equals);
     ASSERT_TRUE(equals(context, obj1, obj1));
 
-    // stdio_port_from_filename
+    // stdio_port_from_filename_op
     FILE *file = fopen("stdio_port_equals_test_file.txt", "w");
     char test_str[] = "stdio_port_equals_test_file from filename test";
     size_t data_len = sizeof(test_str) - 1;
     fwrite(test_str, 1, data_len, file);
     fclose(file);
     obj1 = string_make_from_cstr_op(context, "stdio_port_equals_test_file.txt");
-    obj1 = stdio_port_from_filename(context, obj1, PORT_INPUT);
+    obj1 = stdio_port_from_filename_op(context, obj1, PORT_INPUT);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);

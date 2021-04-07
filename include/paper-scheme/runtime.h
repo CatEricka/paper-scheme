@@ -128,7 +128,7 @@ stack_make_op(REF NOTNULL context_t context, IN size_t stack_size);
  * @return 打开失败返回 IMM_UNIT
  */
 EXPORT_API OUT NOTNULL GC object
-string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object str);
+string_port_input_from_string_op(REF NOTNULL context_t context, REF NULLABLE object str);
 
 /**
  * 打开 output port, 具有内部缓冲
@@ -137,7 +137,7 @@ string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object
  * @return 打开失败返回 IMM_UNIT, 否则返回值满足 is_srfi6_port(obj),
  */
 EXPORT_API OUT NOTNULL GC object
-string_port_output_use_buffer(REF NOTNULL context_t context);
+string_port_output_use_buffer_op(REF NOTNULL context_t context);
 
 /**
  * 从输入字符串打开 input-output port, 深拷贝, 具有内部缓冲
@@ -147,7 +147,7 @@ string_port_output_use_buffer(REF NOTNULL context_t context);
  * @return 打开失败返回 IMM_UNIT, 否则返回值满足 is_srfi6_port(obj), is_string_port_in_out_put(obj)
  */
 EXPORT_API OUT NOTNULL GC object
-string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, COPY NULLABLE object str);
+string_port_in_out_put_from_string_use_buffer_op(REF NOTNULL context_t context, COPY NULLABLE object str);
 
 /**
  * 从文件名打开 file port
@@ -157,7 +157,7 @@ string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, COP
  * @return 打开失败返回 IMM_UNIT
  */
 EXPORT_API OUT NOTNULL GC object
-stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object filename, IN enum port_kind kind);
+stdio_port_from_filename_op(REF NOTNULL context_t context, REF NULLABLE object filename, IN enum port_kind kind);
 
 /**
  * 从 FILE * 打开 file port
@@ -167,7 +167,7 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind);
+stdio_port_from_file_op(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind);
 
 /**
  * 构造 hashset
@@ -369,8 +369,8 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
  * @return 会返回新对象
  */
 EXPORT_API OUT NOTNULL GC object
-bytes_capacity_increase(REF NOTNULL context_t context,
-                        NOTNULL IN object bytes, size_t add_size);
+bytes_capacity_increase_op(REF NOTNULL context_t context,
+                           NOTNULL IN object bytes, size_t add_size);
 
 /**
  * string_buffer 扩容, 深拷贝
@@ -380,8 +380,8 @@ bytes_capacity_increase(REF NOTNULL context_t context,
  * @return 返回原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_capacity_increase(REF NOTNULL context_t context,
-                                NOTNULL IN object str_buffer, size_t add_size);
+string_buffer_capacity_increase_op(REF NOTNULL context_t context,
+                                   NOTNULL IN object str_buffer, size_t add_size);
 
 /**
  * vector 扩容, 深拷贝
@@ -391,7 +391,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context,
  * @return 会返回新 vector
  */
 EXPORT_API OUT NOTNULL GC object
-vector_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object vec, size_t add_size);
+vector_capacity_increase_op(REF NOTNULL context_t context, NOTNULL IN object vec, size_t add_size);
 
 /**
  * stack 扩容, 深拷贝
@@ -401,7 +401,7 @@ vector_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object vec, s
  * @return 会返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object stack, size_t add_size);
+stack_capacity_increase_op(REF NOTNULL context_t context, NOTNULL IN object stack, size_t add_size);
 
 /**
  * stack 自动增长的入栈
@@ -413,9 +413,9 @@ stack_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object stack, 
  * @return 可能返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_push_auto_increase(REF NOTNULL context_t context,
-                         NOTNULL REF object stack, NOTNULL REF object element,
-                         size_t extern_growth_size);
+stack_push_auto_increase_op(REF NOTNULL context_t context,
+                            NOTNULL REF object stack, NOTNULL REF object element,
+                            size_t extern_growth_size);
 
 
 /******************************************************************************
@@ -429,7 +429,7 @@ stack_push_auto_increase(REF NOTNULL context_t context,
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-imm_char_to_string(REF NOTNULL context_t context, NOTNULL COPY object imm_char);
+imm_char_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object imm_char);
 
 /**
  * char 转 string
@@ -438,7 +438,7 @@ imm_char_to_string(REF NOTNULL context_t context, NOTNULL COPY object imm_char);
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-char_to_string(REF NOTNULL context_t context, COPY char ch);
+char_to_string_op(REF NOTNULL context_t context, COPY char ch);
 
 /**
  * symbol 转 string
@@ -447,7 +447,7 @@ char_to_string(REF NOTNULL context_t context, COPY char ch);
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-symbol_to_string(REF NOTNULL context_t context, NOTNULL COPY object symbol);
+symbol_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object symbol);
 
 /**
  * string 转 symbol
@@ -456,7 +456,7 @@ symbol_to_string(REF NOTNULL context_t context, NOTNULL COPY object symbol);
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str);
+string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str);
 
 /**
  * string_buffer 转换为 string, 深拷贝
@@ -465,7 +465,7 @@ string_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str);
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_string(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
+string_buffer_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
 
 /**
  * string_buffer 转换为 symbol, 深拷贝
@@ -474,7 +474,7 @@ string_buffer_to_string(REF NOTNULL context_t context, NOTNULL COPY object str_b
  * @return symbol
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
+string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
 
 /**
  * hashset 转为 vector, 无序
@@ -483,7 +483,7 @@ string_buffer_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str_b
  * @return vector: #(key1, key2, ...)
  */
 EXPORT_API OUT NOTNULL GC object
-hashset_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashset);
+hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashset);
 
 /**
  * hashmap 转为 vector, 无序
@@ -492,6 +492,6 @@ hashset_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashset);
  * @return vector: #((k1, v1), (k2, v2), ...)
  */
 EXPORT_API OUT NOTNULL GC object
-hashmap_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashmap);
+hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap);
 
 #endif //BASE_SCHEME_RUNTIME_H

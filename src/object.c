@@ -9,7 +9,7 @@
  * @param stack
  * @return object 如果栈为空, 返回 NULL
  */
-NULLABLE CHECKED REF object stack_peek(object stack) {
+NULLABLE CHECKED REF object stack_peek_op(object stack) {
     assert(is_object(stack));
     assert(is_stack(stack));
 
@@ -25,7 +25,7 @@ NULLABLE CHECKED REF object stack_peek(object stack) {
  * @param obj
  * @return 如果栈满, 返回 0, 否则返回 1
  */
-NULLABLE OUT int stack_push(REF object stack, REF object obj) {
+NULLABLE OUT int stack_push_op(REF object stack, REF object obj) {
     assert(is_object(stack));
     assert(is_stack(stack));
 
@@ -44,7 +44,7 @@ NULLABLE OUT int stack_push(REF object stack, REF object obj) {
  * @param stack
  * @return 如果栈空, 返回 0; 否则返回 1
  */
-CHECKED OUT int stack_pop(REF object stack) {
+CHECKED OUT int stack_pop_op(REF object stack) {
     assert(is_object(stack));
     assert(is_stack(stack));
 
@@ -137,6 +137,8 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
         return size_helper(hashmap, 0);
     } else if (is_weak_ref(obj)) {
         return size_helper(weak_ref, 0);
+    } else if (is_weak_hashset(obj)) {
+        return size_helper(weak_hashset, 0);
     }
     // todo 新实现的类型记得修改 object_bootstrap_sizeof
 

@@ -227,7 +227,7 @@ string_buffer_make_from_string_op(REF NOTNULL context_t context, COPY object str
     // 不包括结束的 '\0'
     size_t str_len = string_len(str);
     // 实际 buffer 大小要加上 STRING_BUFFER_DEFAULT_INIT_SIZE, 因为 buffer 常常继续增长
-    // todo string_buffer 增长策略也许需要修改
+    // string_buffer 增长策略也许需要修改
     size_t new_buffer_size = str_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE;
     tmp = bytes_make_op(context, new_buffer_size);
     memcpy(bytes_data(tmp), string_get_cstr(str), str_len);
@@ -295,7 +295,7 @@ stack_make_op(REF NOTNULL context_t context, IN size_t stack_size) {
  * @return 打开失败返回 IMM_UNIT
  */
 EXPORT_API OUT NOTNULL GC object
-string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object str) {
+string_port_input_from_string_op(REF NOTNULL context_t context, REF NULLABLE object str) {
     assert(context != NULL);
     assert(is_string(str));
 
@@ -319,7 +319,7 @@ string_port_input_from_string(REF NOTNULL context_t context, REF NULLABLE object
  * @return 打开失败返回 IMM_UNIT, 否则返回值满足 is_srfi6_port(obj),
  */
 EXPORT_API OUT NOTNULL GC object
-string_port_output_use_buffer(REF NOTNULL context_t context) {
+string_port_output_use_buffer_op(REF NOTNULL context_t context) {
     assert(context != NULL);
 
     gc_var1(context, str_buffer);
@@ -343,7 +343,7 @@ string_port_output_use_buffer(REF NOTNULL context_t context) {
  * @return 打开失败返回 IMM_UNIT, 否则返回值满足 is_srfi6_port(obj), is_string_port_in_out_put(obj)
  */
 EXPORT_API OUT NOTNULL GC object
-string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, REF NULLABLE object str) {
+string_port_in_out_put_from_string_use_buffer_op(REF NOTNULL context_t context, REF NULLABLE object str) {
     assert(context != NULL);
 
     gc_param1(context, str);
@@ -368,7 +368,7 @@ string_port_in_out_put_from_string_use_buffer(REF NOTNULL context_t context, REF
  * @return 打开失败返回 IMM_UNIT
  */
 EXPORT_API OUT NOTNULL GC object
-stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object filename, IN enum port_kind kind) {
+stdio_port_from_filename_op(REF NOTNULL context_t context, REF NULLABLE object filename, IN enum port_kind kind) {
     assert(context != NULL);
     assert(is_string(filename));
 
@@ -410,7 +410,7 @@ stdio_port_from_filename(REF NOTNULL context_t context, REF NULLABLE object file
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-stdio_port_from_file(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind) {
+stdio_port_from_file_op(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind) {
     assert(context != NULL);
 
     gc_var1(context, port);
@@ -572,7 +572,7 @@ string_buffer_append_string_op(
     if (str_len + str_buffer_len > buffer_size) {
         // 容量不足
         size_t add_size = (str_len + str_buffer_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE) - buffer_size;
-        str_buffer = string_buffer_capacity_increase(context, str_buffer, add_size);
+        str_buffer = string_buffer_capacity_increase_op(context, str_buffer, add_size);
 
         assert(add_size + buffer_size == string_buffer_capacity(str_buffer));
     }
@@ -624,7 +624,7 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object s
     size_t buffer_len = string_buffer_length(str_buffer);
     if (buffer_len + 1 > string_buffer_capacity(str_buffer)) {
         // 当前 string_buffer_length(str_buffer) + 1, 其中 '+1' 为 新增加的 char
-        str_buffer = string_buffer_capacity_increase(context, str_buffer, STRING_BUFFER_DEFAULT_GROWTH_SIZE + 1);
+        str_buffer = string_buffer_capacity_increase_op(context, str_buffer, STRING_BUFFER_DEFAULT_GROWTH_SIZE + 1);
     }
 
     // char 拼接
@@ -1065,8 +1065,8 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
  * @return 会返回新对象
  */
 EXPORT_API OUT NOTNULL GC object
-bytes_capacity_increase(REF NOTNULL context_t context,
-                        NOTNULL IN object bytes, size_t add_size) {
+bytes_capacity_increase_op(REF NOTNULL context_t context,
+                           NOTNULL IN object bytes, size_t add_size) {
     assert(context != NULL);
     assert(is_bytes(bytes));
 
@@ -1090,8 +1090,8 @@ bytes_capacity_increase(REF NOTNULL context_t context,
  * @return 返回原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_capacity_increase(REF NOTNULL context_t context,
-                                NOTNULL IN object str_buffer, size_t add_size) {
+string_buffer_capacity_increase_op(REF NOTNULL context_t context,
+                                   NOTNULL IN object str_buffer, size_t add_size) {
     assert(context != NULL);
     assert(is_string_buffer(str_buffer));
 
@@ -1099,7 +1099,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context,
     gc_var1(context, new_buffer);
 
     // 内部 bytes 对象扩容, 自动复制旧内容
-    new_buffer = bytes_capacity_increase(context, string_buffer_bytes_obj(str_buffer), add_size);
+    new_buffer = bytes_capacity_increase_op(context, string_buffer_bytes_obj(str_buffer), add_size);
     string_buffer_bytes_obj(str_buffer) = new_buffer;
     // 修正容量
     string_buffer_capacity(str_buffer) = bytes_capacity(new_buffer);
@@ -1116,7 +1116,7 @@ string_buffer_capacity_increase(REF NOTNULL context_t context,
  * @return 会返回新 vector
  */
 EXPORT_API OUT NOTNULL GC object
-vector_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object vec, size_t add_size) {
+vector_capacity_increase_op(REF NOTNULL context_t context, NOTNULL IN object vec, size_t add_size) {
     assert(context != NULL);
     assert(is_vector(vec));
 
@@ -1145,7 +1145,7 @@ vector_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object vec, s
  * @return 会返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object stack, size_t add_size) {
+stack_capacity_increase_op(REF NOTNULL context_t context, NOTNULL IN object stack, size_t add_size) {
     assert(context != NULL);
     assert(is_stack(stack));
 
@@ -1177,18 +1177,18 @@ stack_capacity_increase(REF NOTNULL context_t context, NOTNULL IN object stack, 
  * @return 可能返回新 stack
  */
 EXPORT_API OUT NOTNULL GC object
-stack_push_auto_increase(REF NOTNULL context_t context,
-                         NOTNULL REF object stack, NOTNULL REF object element,
-                         size_t extern_growth_size) {
+stack_push_auto_increase_op(REF NOTNULL context_t context,
+                            NOTNULL REF object stack, NOTNULL REF object element,
+                            size_t extern_growth_size) {
     assert(context != NULL);
     assert(is_stack(stack));
 
     gc_param2(context, stack, element);
 
     if (stack_full(stack)) {
-        stack = stack_capacity_increase(context, stack, extern_growth_size + 1);
+        stack = stack_capacity_increase_op(context, stack, extern_growth_size + 1);
     }
-    int push_result = stack_push(stack, element);
+    int push_result = stack_push_op(stack, element);
     assert(push_result == 1);
 
     gc_release_param(context);
@@ -1207,7 +1207,7 @@ stack_push_auto_increase(REF NOTNULL context_t context,
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-imm_char_to_string(REF NOTNULL context_t context, NOTNULL COPY object imm_char) {
+imm_char_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object imm_char) {
     assert(context != NULL);
     assert(is_imm_char(imm_char));
 
@@ -1222,7 +1222,7 @@ imm_char_to_string(REF NOTNULL context_t context, NOTNULL COPY object imm_char) 
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-char_to_string(REF NOTNULL context_t context, COPY char ch) {
+char_to_string_op(REF NOTNULL context_t context, COPY char ch) {
     assert(context != NULL);
 
     char buffer[2] = {ch, '\0'};
@@ -1236,7 +1236,7 @@ char_to_string(REF NOTNULL context_t context, COPY char ch) {
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-symbol_to_string(REF NOTNULL context_t context, NOTNULL COPY object symbol) {
+symbol_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object symbol) {
     assert(context != NULL);
     assert(is_symbol(symbol));
 
@@ -1260,7 +1260,7 @@ symbol_to_string(REF NOTNULL context_t context, NOTNULL COPY object symbol) {
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str) {
+string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str) {
     assert(context != NULL);
     assert(is_string(str));
 
@@ -1284,7 +1284,7 @@ string_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str) {
  * @return string
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_string(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
+string_buffer_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
     assert(context != 0);
     assert(is_string_buffer(str_buffer));
 
@@ -1313,7 +1313,7 @@ string_buffer_to_string(REF NOTNULL context_t context, NOTNULL COPY object str_b
  * @return symbol
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
+string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
     assert(context != 0);
     assert(is_string_buffer(str_buffer));
 
@@ -1342,14 +1342,14 @@ string_buffer_to_symbol(REF NOTNULL context_t context, NOTNULL COPY object str_b
  * @return vector: #(key1, key2, ...)
  */
 EXPORT_API OUT NOTNULL GC object
-hashset_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashset) {
+hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashset) {
     assert(context != NULL);
     assert(is_hashset(hashset));
 
     gc_param1(context, hashset);
     gc_var2(context, vector, entry);
 
-    vector = hashmap_to_vector(context, hashset->value.hashset.map);
+    vector = hashmap_to_vector_op(context, hashset->value.hashset.map);
     for (size_t i = 0; i < vector_len(vector); i++) {
         entry = vector_ref(vector, i);
         assert(is_pair(entry));
@@ -1368,7 +1368,7 @@ hashset_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashset) {
  * @return vector: #((k1, v1), (k2, v2), ...)
  */
 EXPORT_API OUT NOTNULL GC object
-hashmap_to_vector(REF NOTNULL context_t context, NOTNULL COPY object hashmap) {
+hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap) {
     assert(context != NULL);
     assert(is_hashmap(hashmap));
 

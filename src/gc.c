@@ -27,7 +27,7 @@ static void gc_mark_stack_push(context_t context, object *start, object *end) {
         // 默认栈深度不足, 额外分配内存, 分配失败则停机
         gc_mark_stack_ptr new_mark_stack_node = (gc_mark_stack_ptr) raw_alloc(sizeof(struct gc_mark_stack_node_t));
         if (new_mark_stack_node == NULL) {
-            fprintf(context->err_out_port, "gc stack too deep.\n");
+            fprintf(stderr, "gc stack too deep.\n");
             exit(EXIT_FAILURE_MALLOC_FAILED);
         }
         new_mark_stack_node->prev = context->mark_stack_top;
@@ -367,6 +367,8 @@ static void gc_adjust_ref(context_t context) {
                     assert(field_len == 1);
                 } else if (is_weak_ref(obj)) {
                     assert(field_len == 1);
+                } else if (is_weak_hashset(obj)) {
+                    assert(field_len == 1);
                 }
 #endif
 
@@ -544,14 +546,14 @@ EXPORT_API OUT GC object gc_alloc(REF NOTNULL context_t context, IN size_t size)
     // 6. 永远不会分配失败. 失败时结束运行
     heap_t heap = context->heap;
     if (heap_grow_result == IMM_FALSE) {
-        fprintf(context->err_out_port, "[ERROR] Out of Memory:");
-        fprintf(context->err_out_port, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+        fprintf(stderr, "[ERROR] Out of Memory:");
+        fprintf(stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_OUT_OF_MEMORY);
         //return IMM_FALSE;
     } else {
-        fprintf(context->err_out_port, "[ERROR] malloc() failed:");
-        fprintf(context->err_out_port, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
+        fprintf(stderr, "[ERROR] malloc() failed:");
+        fprintf(stderr, " heap total size 0x%zx, try to growth to 0x%zx, max heap size 0x%zx\n",
                 heap->total_size, heap->last_node->chunk_size * heap->growth_scale + heap->total_size, heap->max_size);
         exit(EXIT_FAILURE_MALLOC_FAILED);
         //return IMM_UNIT;

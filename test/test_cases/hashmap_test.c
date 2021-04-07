@@ -195,7 +195,7 @@ UTEST(hashmap_test, hashmap_test) {
     ASSERT_EQ(hashmap_size(map), other_symbol_len);
 
     // hashmap->vector test
-    obj = hashmap_to_vector(context, map2);
+    obj = hashmap_to_vector_op(context, map2);
     ASSERT_EQ(vector_len(obj), hashmap_size(map2));
     UTEST_PRINTF("hashmap->vector:\n");
     for (size_t i = 0; i < vector_len(obj); i++) {
@@ -223,7 +223,7 @@ UTEST(hashmap_test, hashmap_test) {
     }
     ASSERT_NE(hashmap_size(map), hashmap_size(map2));
     ASSERT_EQ(hashmap_size(map), 0);
-    obj = hashmap_to_vector(context, map);
+    obj = hashmap_to_vector_op(context, map);
     ASSERT_EQ(vector_len(obj), 0);
 
     obj = IMM_UNIT;

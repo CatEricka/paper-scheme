@@ -17,9 +17,8 @@ static int interpreter_default_env_init(context_t context) {
 
     context->args = IMM_UNIT;
     context->code = IMM_UNIT;
-    // TODO current_env hash map
-    context->current_env = hashmap_make_op(context, DEFAULT_HASH_SET_MAP_INIT_CAPACITY,
-                                           DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+    // current_env (hashmap next_env)
+    context->current_env = IMM_UNIT;
     tmp = stack_make_op(context, MAX_STACK_BLOCK_DEEP);
     tmp = pair_make_op(context, tmp, IMM_UNIT);
     context->scheme_stack = tmp;
@@ -30,11 +29,13 @@ static int interpreter_default_env_init(context_t context) {
 
     context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
 
-    // TODO 弱引用 global_symbol_table
-    context->global_symbol_table = hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE,
-                                                   DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
-    context->global_environment = hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE,
-                                                  DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+    // TODO 弱引用 全局符号表 global_symbol_table
+    context->global_symbol_table =
+            hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+
+    // 全局 environment
+    context->global_environment =
+            hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
 
     gc_release_var(context);
     return 1;

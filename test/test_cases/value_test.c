@@ -929,7 +929,7 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_weak_ref(obj));
 
     vector_set(obj, 0, char_imm_make('x'));
-    obj = vector_capacity_increase(context, obj, 10);
+    obj = vector_capacity_increase_op(context, obj, 10);
     ASSERT_EQ(vector_ref(obj, 0), char_imm_make('x'));
     ASSERT_EQ(vector_ref(obj, 1), imm_i64);
     for (size_t i = 2; i < vector_len(obj); i++) {
@@ -1139,7 +1139,7 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
     ASSERT_TRUE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(obj), 0);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "\0", string_len(tmp1) + 1), 0);
     ASSERT_FALSE(is_null(obj));
@@ -1193,7 +1193,7 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_EQ(1, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_TRUE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 1);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "a\0", string_len(tmp1) + 1), 0);
 
@@ -1213,7 +1213,7 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_EQ(2, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 2);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "ab\0", string_len(tmp1) + 1), 0);
 
@@ -1233,7 +1233,7 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_EQ(7, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 7);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefg\0", string_len(tmp1) + 1), 0);
 
@@ -1246,14 +1246,14 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
-    tmp1 = char_to_string(context, 'h');
+    tmp1 = char_to_string_op(context, 'h');
     string_buffer_append_string_op(context, obj, tmp1);
     ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
     ASSERT_TRUE(memcmp(string_buffer_bytes_data(obj), "abcdefgh", 8) == 0);
     ASSERT_EQ(8, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 8);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefgh\0", string_len(tmp1) + 1), 0);
 
@@ -1266,14 +1266,14 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
-    tmp1 = imm_char_to_string(context, char_imm_make('i'));
+    tmp1 = imm_char_to_string_op(context, char_imm_make('i'));
     string_buffer_append_string_op(context, obj, tmp1);
     ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
     ASSERT_TRUE(memcmp(string_buffer_bytes_data(obj), "abcdefghi", 9) == 0);
     ASSERT_EQ(9, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 9);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefghi\0", string_len(tmp1) + 1), 0);
 
@@ -1286,14 +1286,14 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
-    tmp1 = imm_char_to_string(context, char_imm_make('\0'));
+    tmp1 = imm_char_to_string_op(context, char_imm_make('\0'));
     string_buffer_append_string_op(context, obj, tmp1);
     ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
     ASSERT_TRUE(memcmp(string_buffer_bytes_data(obj), "abcdefghi", 9) == 0);
     ASSERT_EQ(9, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 9);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefghi\0", string_len(tmp1) + 1), 0);
 
@@ -1313,7 +1313,7 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_EQ(9, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 9);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abcdefghi\0", string_len(tmp1) + 1), 0);
 
@@ -1328,14 +1328,14 @@ UTEST(value_test, all_value_type_function_test) {
 
     tmp1 = string_make_from_cstr_op(context, "abc");
     obj = string_buffer_make_from_string_op(context, tmp1);
-    tmp1 = imm_char_to_string(context, char_imm_make('i'));
+    tmp1 = imm_char_to_string_op(context, char_imm_make('i'));
     string_buffer_append_string_op(context, obj, tmp1);
     ASSERT_GE(string_buffer_capacity(obj), string_buffer_length(obj));
     ASSERT_TRUE(memcmp(string_buffer_bytes_data(obj), "abci", 4) == 0);
     ASSERT_EQ(4, string_buffer_length(obj));
     ASSERT_FALSE(string_buffer_empty(obj));
     ASSERT_FALSE(string_buffer_full(obj));
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     ASSERT_EQ(string_len(tmp1), 4);
     ASSERT_EQ(memcmp(string_get_cstr(tmp1), "abci\0", string_len(tmp1) + 1), 0);
 
@@ -1371,12 +1371,12 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_TRUE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 0);
-    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_peek_op(obj), NULL);
     ASSERT_EQ(stack_capacity(obj), stack_size);
     stack_clean(obj);
     ASSERT_TRUE(stack_empty(obj));
     ASSERT_EQ(stack_len(obj), 0);
-    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_peek_op(obj), NULL);
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1389,11 +1389,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { a, }
-    ASSERT_TRUE(stack_push(obj, char_imm_make('a')));
+    ASSERT_TRUE(stack_push_op(obj, char_imm_make('a')));
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 1);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('a'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('a'));
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1406,11 +1406,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { a, b }
-    ASSERT_TRUE(stack_push(obj, char_imm_make('b')));
+    ASSERT_TRUE(stack_push_op(obj, char_imm_make('b')));
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_TRUE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 2);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('b'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('b'));
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1423,11 +1423,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { a, b }
-    ASSERT_FALSE(stack_push(obj, char_imm_make('b')));
+    ASSERT_FALSE(stack_push_op(obj, char_imm_make('b')));
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_TRUE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 2);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('b'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('b'));
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1440,11 +1440,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { a, }
-    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_pop_op(obj));
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 1);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('a'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('a'));
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1457,11 +1457,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { }
-    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_pop_op(obj));
     ASSERT_TRUE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 0);
-    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_peek_op(obj), NULL);
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1474,11 +1474,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { }
-    ASSERT_FALSE(stack_pop(obj));
+    ASSERT_FALSE(stack_pop_op(obj));
     ASSERT_TRUE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 0);
-    ASSERT_EQ(stack_peek(obj), NULL);
+    ASSERT_EQ(stack_peek_op(obj), NULL);
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1491,11 +1491,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
     // { c }
-    obj = stack_push_auto_increase(context, obj, char_imm_make('c'), 0);
+    obj = stack_push_auto_increase_op(context, obj, char_imm_make('c'), 0);
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 1);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('c'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('c'));
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1508,11 +1508,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
     // { c, d }
-    obj = stack_push_auto_increase(context, obj, char_imm_make('d'), 0);
+    obj = stack_push_auto_increase_op(context, obj, char_imm_make('d'), 0);
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_TRUE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 2);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('d'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('d'));
     ASSERT_EQ(stack_capacity(obj), stack_size);
 
     start = utest_ns();
@@ -1525,11 +1525,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
     // { c, d, e }
-    obj = stack_push_auto_increase(context, obj, char_imm_make('e'), 1);
+    obj = stack_push_auto_increase_op(context, obj, char_imm_make('e'), 1);
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 3);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('e'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('e'));
     ASSERT_EQ(stack_capacity(obj), stack_size + 2);
 
     start = utest_ns();
@@ -1542,11 +1542,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
     // { c, d, e, f }
-    obj = stack_push_auto_increase(context, obj, char_imm_make('f'), 0);
+    obj = stack_push_auto_increase_op(context, obj, char_imm_make('f'), 0);
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_TRUE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 4);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('f'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('f'));
     ASSERT_EQ(stack_capacity(obj), stack_size + 2);
 
     start = utest_ns();
@@ -1559,11 +1559,11 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
     // { c, d, e, f, g }
-    obj = stack_push_auto_increase(context, obj, char_imm_make('g'), 10);
+    obj = stack_push_auto_increase_op(context, obj, char_imm_make('g'), 10);
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 5);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('g'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('g'));
     ASSERT_EQ(stack_capacity(obj), stack_size + 2 + 11);
 
     start = utest_ns();
@@ -1576,14 +1576,14 @@ UTEST(value_test, all_value_type_function_test) {
     }
 
         // { c }
-    ASSERT_TRUE(stack_pop(obj));
-    ASSERT_TRUE(stack_pop(obj));
-    ASSERT_TRUE(stack_pop(obj));
-    ASSERT_TRUE(stack_pop(obj));
+    ASSERT_TRUE(stack_pop_op(obj));
+    ASSERT_TRUE(stack_pop_op(obj));
+    ASSERT_TRUE(stack_pop_op(obj));
+    ASSERT_TRUE(stack_pop_op(obj));
     ASSERT_FALSE(stack_empty(obj));
     ASSERT_FALSE(stack_full(obj));
     ASSERT_EQ(stack_len(obj), 1);
-    ASSERT_EQ(stack_peek(obj), char_imm_make('c'));
+    ASSERT_EQ(stack_peek_op(obj), char_imm_make('c'));
     ASSERT_EQ(stack_capacity(obj), stack_size + 2 + 11);
 
     ASSERT_FALSE(is_null(obj));
@@ -1630,10 +1630,10 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
-    // string_port_input_from_string
+    // string_port_input_from_string_op
     obj = string_make_from_cstr_op(context, "this is a string_port input only");
     gc_collect(context);
-    obj = string_port_input_from_string(context, obj);
+    obj = string_port_input_from_string_op(context, obj);
     gc_collect(context);
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
@@ -1670,8 +1670,8 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_hashmap(obj));
     ASSERT_FALSE(is_weak_ref(obj));
 
-    // string_port_output_use_buffer
-    obj = string_port_output_use_buffer(context);
+    // string_port_output_use_buffer_op
+    obj = string_port_output_use_buffer_op(context);
     gc_collect(context);
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
@@ -1708,10 +1708,10 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_hashmap(obj));
     ASSERT_FALSE(is_weak_ref(obj));
 
-    // string_port_in_out_put_from_string_use_buffer
+    // string_port_in_out_put_from_string_use_buffer_op
     obj = string_make_from_cstr_op(context, "this is a string_port input output with internal string_buffer");
     gc_collect(context);
-    obj = string_port_in_out_put_from_string_use_buffer(context, obj);
+    obj = string_port_in_out_put_from_string_use_buffer_op(context, obj);
     gc_collect(context);
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
@@ -1748,8 +1748,8 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_hashmap(obj));
     ASSERT_FALSE(is_weak_ref(obj));
 
-    // stdio_port_from_file
-    obj = stdio_port_from_file(context, stdout, PORT_OUTPUT);
+    // stdio_port_from_file_op
+    obj = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     gc_collect(context);
     ASSERT_FALSE(is_null(obj));
     ASSERT_FALSE(is_imm(obj));
@@ -1786,15 +1786,15 @@ UTEST(value_test, all_value_type_function_test) {
     ASSERT_FALSE(is_hashmap(obj));
     ASSERT_FALSE(is_weak_ref(obj));
 
-    // stdio_port_from_filename
+    // stdio_port_from_filename_op
     FILE *file = fopen("value_test_file.txt", "w");
-    char test_str[] = "stdio_port_from_filename test";
+    char test_str[] = "stdio_port_from_filename_op test";
     size_t data_len = sizeof(test_str) - 1;
     fwrite(test_str, 1, data_len, file);
     fclose(file);
     gc_collect(context);
     obj = string_make_from_cstr_op(context, "value_test_file.txt");
-    obj = stdio_port_from_filename(context, obj, PORT_INPUT);
+    obj = stdio_port_from_filename_op(context, obj, PORT_INPUT);
     gc_collect(context);
     FILE *input = obj->value.stdio_port.file;
     char buffer[sizeof(test_str)] = {0};
@@ -1843,7 +1843,7 @@ UTEST(value_test, all_value_type_function_test) {
     obj = symbol_make_from_cstr_op(context, symbol_cstr);
     hash_code_fn hash_fn = object_hash_helper(context, obj);
     uint32_t hash1 = hash_fn(context, obj);
-    obj = symbol_to_string(context, obj);
+    obj = symbol_to_string_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     uint32_t hash2 = hash_fn(context, obj);
     UTEST_PRINTF("%s symbol hash: %u\n", symbol_cstr, hash1);
@@ -1857,7 +1857,7 @@ UTEST(value_test, all_value_type_function_test) {
     obj = string_make_from_cstr_op(context, string_cstr);
     hash_fn = object_hash_helper(context, obj);
     hash1 = hash_fn(context, obj);
-    obj = string_to_symbol(context, obj);
+    obj = string_to_symbol_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("%s string hash: %u\n", string_cstr, hash1);
@@ -1872,7 +1872,7 @@ UTEST(value_test, all_value_type_function_test) {
     obj = string_buffer_make_from_string_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     hash1 = hash_fn(context, obj);
-    obj = string_buffer_to_symbol(context, obj);
+    obj = string_buffer_to_symbol_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("%s string_buffer hash: %u\n", string_buffer_cstr, hash1);

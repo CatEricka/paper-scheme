@@ -62,7 +62,7 @@ typedef struct scheme_context_t {
     // s-exp 寄存器, pair / IMM_UNIT
     GC object code;
     // 当前 environment 指针, (const (make-hashmap GLOBAL_SYMBOL_TABLE_INIT_SIZE) '())
-    // TODO hashmap symbol->object
+    // hashmap symbol->object
     GC object current_env;
     // 栈记录, (cons (stack MAX_STACK_BLOCK_DEEP) '())
     GC object scheme_stack;
@@ -83,7 +83,7 @@ typedef struct scheme_context_t {
     // (make-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)
     // symbol
     GC object global_symbol_table;
-    // TODO 实现全局 environment, (make-hashmap)
+    // 全局 environment, (make-hashmap)
     // symbol->any
     GC object global_environment;
 
@@ -113,7 +113,7 @@ typedef struct scheme_context_t {
     // 标记栈顶
     gc_mark_stack_ptr mark_stack_top;
 
-    // TODO 修改为内部 port 实现; 解释器输入输出
+    // TODO 修改为内部 port 实现, 决定构造时机; 解释器输入输出
     FILE *in_port;
     FILE *out_port;
     FILE *err_out_port;
@@ -184,7 +184,6 @@ object stdio_finalizer(context_t _context, object port);
 
 /**
                                hash 值算法
-                       todo 增加新类型重写 hash 算法
 ******************************************************************************/
 // 辅助函数
 EXPORT_API uint32_t uint32_pair_hash(uint32_t x, uint32_t y);
@@ -219,16 +218,28 @@ EXPORT_API uint32_t boolean_hash_code(context_t context, object imm_bool);
 EXPORT_API uint32_t unit_hash_code(context_t context, object unit_obj);
 
 EXPORT_API uint32_t eof_hash_code(context_t context, object eof_obj);
+
 EXPORT_API uint32_t pair_hash_code(context_t context, object pair);
+
 EXPORT_API uint32_t bytes_hash_code(context_t context, object bytes);
+
 EXPORT_API uint32_t string_buffer_hash_code(context_t context, object string_buffer);
+
 EXPORT_API uint32_t vector_hash_code(context_t context, object vector);
+
 EXPORT_API uint32_t stack_hash_code(context_t context, object stack);
+
 EXPORT_API uint32_t string_port_hash_code(context_t context, object string_port);
+
 EXPORT_API uint32_t stdio_port_hash_code(context_t context, object stdio_port);
+
 EXPORT_API uint32_t hash_set_hash_code(context_t context, object hashset);
+
 EXPORT_API uint32_t hash_map_hash_code(context_t context, object hashmap);
+
 EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref);
+
+EXPORT_API uint32_t weak_hashset_hash_code(context_t context, object weak_hashset);
 /**
  * symbol hash code 计算
  * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
@@ -260,16 +271,24 @@ EXPORT_API int eof_equals(context_t context, object eof_a, object eof_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int pair_equals(context_t context, object pair_a, object pair_b);
 EXPORT_API int bytes_equals(context_t context, object bytes_a, object bytes_b);
+
 EXPORT_API int string_buffer_equals(context_t context, object string_buffer_a, object string_buffer_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int vector_equals(context_t context, object vector_a, object vector_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int stack_equals(context_t context, object stack_a, object stack_b);
+
 EXPORT_API int string_port_equals(context_t context, object string_port_a, object string_port_b);
+
 EXPORT_API int stdio_port_equals(context_t context, object stdio_a, object stdio_b);
+
 EXPORT_API int hash_set_equals(context_t context, object hashset_a, object hashset_b);
+
 EXPORT_API int hash_map_equals(context_t context, object hashmap_a, object hashmap_b);
+
 EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak_ref_b);
+
+EXPORT_API int weak_hashset_equals(context_t context, object weak_hashset_a, object weak_hashset_b);
 /**
  * symbol 比较
  * @param context

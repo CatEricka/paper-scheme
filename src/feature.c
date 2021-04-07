@@ -25,7 +25,7 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n) {
  * @return uint32_t
  */
 uint32_t rand_helper() {
-    // todo 也许需要更好的随机数生成
+    // 也许需要更好的随机数生成
     // 但是考虑到实际上字符串已经有良好的 hash 算法,
     // 其他类型的 hash 值并不是很常用, 因此此处的随机数
     // 质量也并不是很重要

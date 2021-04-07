@@ -168,7 +168,7 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
     ASSERT_FUNC_EQ(hash_fn, string_buffer_hash_code);
     uint32_t hash1 = hash_fn(context, obj);
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     UTEST_PRINTF("\"%s\"\thash: %u\n", string_get_cstr(tmp1), string_buffer_hash_code(context, obj));
 
     char string_buffer_append_obj[] = "this is a string buffer";
@@ -180,11 +180,11 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_FUNC_EQ(hash_fn, hash_fn_assert);
     ASSERT_FUNC_EQ(hash_fn, string_buffer_hash_code);
     uint32_t hash2 = hash_fn(context, obj);
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     UTEST_PRINTF("\"%s\"\n\t\t\thash: %u\n", string_get_cstr(tmp1), string_buffer_hash_code(context, obj));
     ASSERT_EQ(hash1, hash2);
 
-    tmp1 = string_buffer_to_string(context, obj);
+    tmp1 = string_buffer_to_string_op(context, obj);
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
@@ -193,7 +193,7 @@ UTEST(hash_test, value_hash_test) {
     UTEST_PRINTF("string_buffer->string: \"%s\"\n\t\t\thash: %u\n", string_get_cstr(tmp1),
                  string_hash_code(context, tmp1));
 
-    tmp1 = string_buffer_to_symbol(context, obj);
+    tmp1 = string_buffer_to_symbol_op(context, obj);
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
@@ -271,7 +271,7 @@ UTEST(hash_test, value_hash_test) {
     UTEST_PRINTF("vector\t\t\thash: %u\n", vector_hash_code(context, obj));
     ASSERT_EQ(hash1, hash2);
 
-    tmp1 = vector_capacity_increase(context, obj, 20);
+    tmp1 = vector_capacity_increase_op(context, obj, 20);
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
@@ -295,7 +295,7 @@ UTEST(hash_test, value_hash_test) {
     hash1 = hash_fn(context, obj);
     UTEST_PRINTF("stack\t\t\thash: %u\n", stack_hash_code(context, obj));
 
-    tmp1 = stack_capacity_increase(context, obj, 10);
+    tmp1 = stack_capacity_increase_op(context, obj, 10);
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
@@ -309,9 +309,9 @@ UTEST(hash_test, value_hash_test) {
     }
 
 
-    // string_port_input_from_string
+    // string_port_input_from_string_op
     obj = string_make_from_cstr_op(context, "this is a string_port input only");
-    obj = string_port_input_from_string(context, obj);
+    obj = string_port_input_from_string_op(context, obj);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
@@ -320,8 +320,8 @@ UTEST(hash_test, value_hash_test) {
     UTEST_PRINTF("string_port_input\thash: %u\n", string_port_hash_code(context, obj));
 
 
-    // string_port_output_use_buffer
-    obj = string_port_output_use_buffer(context);
+    // string_port_output_use_buffer_op
+    obj = string_port_output_use_buffer_op(context);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
@@ -329,10 +329,10 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_FUNC_EQ(hash_fn, string_port_hash_code);
     UTEST_PRINTF("string_port_output\thash: %u\n", string_port_hash_code(context, obj));
 
-    // string_port_in_out_put_from_string_use_buffer
+    // string_port_in_out_put_from_string_use_buffer_op
     obj = string_make_from_cstr_op(context, "this is a string_port input output with internal string_buffer");
     gc_collect(context);
-    obj = string_port_in_out_put_from_string_use_buffer(context, obj);
+    obj = string_port_in_out_put_from_string_use_buffer_op(context, obj);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
@@ -340,8 +340,8 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_FUNC_EQ(hash_fn, string_port_hash_code);
     UTEST_PRINTF("string_port_output from string\n\t\t\thash: %u\n", string_port_hash_code(context, obj));
 
-    // stdio_port_from_file
-    obj = stdio_port_from_file(context, stdout, PORT_OUTPUT);
+    // stdio_port_from_file_op
+    obj = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);
@@ -349,14 +349,14 @@ UTEST(hash_test, value_hash_test) {
     ASSERT_FUNC_EQ(hash_fn, stdio_port_hash_code);
     UTEST_PRINTF("stdio_port output\thash: %u\n", stdio_port_hash_code(context, obj));
 
-    // stdio_port_from_filename
+    // stdio_port_from_filename_op
     FILE *file = fopen("stdio_port_hash_test_file.txt", "w");
     char test_str[] = "stdio_port_hash_test_file from filename test";
     size_t data_len = sizeof(test_str) - 1;
     fwrite(test_str, 1, data_len, file);
     fclose(file);
     obj = string_make_from_cstr_op(context, "stdio_port_hash_test_file.txt");
-    obj = stdio_port_from_filename(context, obj, PORT_INPUT);
+    obj = stdio_port_from_filename_op(context, obj, PORT_INPUT);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);

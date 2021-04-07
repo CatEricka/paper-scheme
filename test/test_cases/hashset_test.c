@@ -130,7 +130,7 @@ UTEST(hashset_test, hashset_test) {
     ASSERT_EQ(hashset_size(set), other_symbol_len);
 
     // hashset->vector test
-    obj = hashset_to_vector(context, set2);
+    obj = hashset_to_vector_op(context, set2);
     ASSERT_EQ(vector_len(obj), hashset_size(set2));
     UTEST_PRINTF("hashset->vector:\n");
     for (size_t i = 0; i < vector_len(obj); i++) {

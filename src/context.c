@@ -7,7 +7,7 @@
 /**
  * 基础类型定义
  * 这部分赋值在 context 中此时无法自举, 应当后期再处理, .name 定义应当仅用于备忘
- * todo  增加新类型重写 scheme_type_specs
+ * todo 增加新类型重写 scheme_type_specs
  */
 static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX] = {
         {
@@ -300,7 +300,6 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .hash_code = hash_map_hash_code,
                 .equals = hash_map_equals,
         },
-
         {
                 .name = (object) "Weak-References", .tag = OBJ_WEAK_REF,
                 .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
@@ -312,6 +311,23 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .member_meta_len_scale = 0,
 
                 .size_base = object_sizeof_base(weak_ref),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = weak_ref_hash_code,
+                .equals = weak_ref_equals,
+        },
+        {
+                .name = (object) "Weak-Hash-Set", .tag = OBJ_WEAK_HASH_SET,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(weak_hashset, table),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(weak_hashset),
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
@@ -448,6 +464,7 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
     context->mark_stack_top = NULL;
     context->saves = NULL;
 
+    // TODO 修改为内部 port 实现; 解释器输入输出
     context->in_port = stdin;
     context->out_port = stdout;
     context->err_out_port = stderr;
@@ -736,6 +753,11 @@ EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref) {
     return weak_ref->value.weak_ref.hash;
 }
 
+EXPORT_API uint32_t weak_hashset_hash_code(context_t context, object weak_hashset) {
+    assert(is_weak_hashset(weak_hashset));
+    return weak_hashset->value.weak_hashset.hash;
+}
+
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
     return symbol->value.symbol.hash;
@@ -886,6 +908,14 @@ EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak
         return 0;
     } else {
         return weak_ref_a == weak_ref_b;
+    }
+}
+
+EXPORT_API int weak_hashset_equals(context_t context, object weak_hashset_a, object weak_hashset_b) {
+    if (!is_weak_hashset(weak_hashset_a) || !is_weak_hashset(weak_hashset_b)) {
+        return 0;
+    } else {
+        return weak_hashset_a == weak_hashset_b;
     }
 }
 
