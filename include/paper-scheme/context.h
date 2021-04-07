@@ -294,7 +294,7 @@ EXPORT_API int weak_hashset_equals(context_t context, object weak_hashset_a, obj
  * @param context
  * @param symbol_a
  * @param symbol_b
- * @return IMM_TRUE / IMM_FALSE
+ * @return 1: 相等; 0: 不相等
  */
 EXPORT_API int symbol_equals(context_t _context, object symbol_a, object symbol_b);
 /**
@@ -302,7 +302,7 @@ EXPORT_API int symbol_equals(context_t _context, object symbol_a, object symbol_
  * @param context
  * @param str_a
  * @param str_b
- * @return IMM_TRUE / IMM_FALSE
+ * @return 1: 相等; 0: 不相等
  */
 EXPORT_API int string_equals(context_t _context, object str_a, object str_b);
 

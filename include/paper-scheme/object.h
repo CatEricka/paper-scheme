@@ -401,6 +401,7 @@ struct object_struct_t {
             - string_buffer:    string_buffer_to_string_op(), string_buffer_to_symbol_op()
             - hashset:          hashset_to_vector_op()
             - hashmap:          hashmap_to_vector_op()
+            - weak_hashset:     weak_hashset_to_vector_op()
         ¹þÏ£Ëã·¨ & equals Ëã·¨:
             - i64:              i64_hash_code(), i64_equals()
             - double number:    d64_hash_code(), i64_equals()

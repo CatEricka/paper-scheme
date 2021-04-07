@@ -42,7 +42,7 @@ UTEST(hash_test, symbol_hash_test) {
 }
 
 
-UTEST(hash_test, value_hash_test) {
+UTEST(hash_test, all_value_hash_test) {
     context_t context = context_make(16, 2, 0x10000);;
     gc_var4(context, obj, obj1, tmp1, tmp2);
     hash_code_fn hash_fn, hash_fn_assert;

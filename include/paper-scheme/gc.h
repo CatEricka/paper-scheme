@@ -157,7 +157,7 @@ EXPORT_API OUT GC object gc_alloc(REF NOTNULL context_t context, IN size_t size)
 /**
  * 设置 context->gc_happened 位
  */
-#define gc_set_flag(context) ((context)->gc_happened = 0)
+#define gc_set_no_gc_assert_flag(context) ((context)->gc_happened = 0)
 /**
  * 断言: gc 并未发生
  */

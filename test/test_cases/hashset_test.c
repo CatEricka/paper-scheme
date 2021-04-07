@@ -1,7 +1,7 @@
 #include "lib/utest.h"
 #include <paper-scheme/runtime.h>
 
-UTEST(hashset_test, hashset_test) {
+UTEST(hashset_test, test) {
     context_t context = context_make(0x10000, 2, 0x100000);
     gc_var5(context, obj, set, set2, vector, vector2);
     uint64_t start, time;

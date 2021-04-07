@@ -1,7 +1,7 @@
 #include "lib/utest.h"
 #include <paper-scheme/runtime.h>
 
-UTEST(hashmap_test, hashmap_test) {
+UTEST(hashmap_test, test) {
     context_t context = context_make(0x10000, 2, 0x100000);
     gc_var7(context, obj, map, map2, vector, vector2, k, v);
     uint64_t start, time;
@@ -230,6 +230,7 @@ UTEST(hashmap_test, hashmap_test) {
     map = IMM_UNIT;
     map2 = IMM_UNIT;
     vector = IMM_UNIT;
+    ASSERT_EQ(context->saves, &__gc_var_dream7__);
     gc_release_var(context);
     start = utest_ns();
     gc_collect(context);

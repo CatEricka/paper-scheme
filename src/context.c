@@ -331,8 +331,8 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .size_meta_size_offset = 0,
                 .size_meta_size_scale = 0,
                 .finalizer = NULL,
-                .hash_code = weak_ref_hash_code,
-                .equals = weak_ref_equals,
+                .hash_code = weak_hashset_hash_code,
+                .equals = weak_hashset_equals,
         },
 };
 
@@ -944,7 +944,7 @@ EXPORT_API int symbol_equals(context_t context, object symbol_a, object symbol_b
  * @param context
  * @param str_a
  * @param str_b
- * @return IMM_TRUE / IMM_FALSE
+ * @return 1: 相等; 0: 不相等
  */
 EXPORT_API int string_equals(context_t context, object str_a, object str_b) {
     if (!is_string(str_a) || !is_string(str_b)) {

@@ -386,6 +386,8 @@ stdio_port_from_filename_op(REF NOTNULL context_t context, REF NULLABLE object f
 
     FILE *file = fopen(string_get_cstr(filename), mode);
     if (file == NULL) {
+        // 注意释放
+        gc_release_param(context);
         return IMM_UNIT;
     }
     port = raw_object_make(context, OBJ_STDIO_PORT, object_sizeof_base(stdio_port));
@@ -439,7 +441,8 @@ stdio_port_from_file_op(REF NOTNULL context_t context, REF NOTNULL FILE *file, e
 EXPORT_API OUT NOTNULL GC object
 hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor) {
     assert(context != NULL);
-    assert(load_factor >= 0);
+    assert(load_factor > 0);
+    assert(load_factor < 1);
 
     gc_var2(context, hashset, map);
 
@@ -462,7 +465,8 @@ hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
 EXPORT_API OUT NOTNULL GC object
 hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor) {
     assert(context != NULL);
-    assert(load_factor >= 0);
+    assert(load_factor > 0);
+    assert(load_factor < 1);
 
     gc_var2(context, hashmap, table);
 
@@ -498,6 +502,33 @@ weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj) {
 
     gc_release_param(context);
     return weak;
+}
+
+/**
+ * 构造 weak_hashset
+ * <p>弱引用 hashset</p>
+ * @param context
+ * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_CAPACITY)
+ * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+weak_hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor) {
+    assert(context != NULL);
+    assert(load_factor > 0);
+
+    gc_var2(context, weak_hashset, table);
+
+    table = vector_make_op(context, init_capacity);
+    weak_hashset = raw_object_make(context, OBJ_WEAK_HASH_SET, object_sizeof_base(weak_hashset));
+    weak_hashset->value.weak_hashset.table = table;
+    weak_hashset->value.weak_hashset.size = 0;
+    weak_hashset->value.weak_hashset.load_factor = load_factor;
+    weak_hashset->value.weak_hashset.threshold = init_capacity;
+    weak_hashset->value.weak_hashset.hash = pointer_with_type_to_hash(weak_hashset, OBJ_WEAK_HASH_SET);
+
+    gc_release_var(context);
+    return weak_hashset;
 }
 
 /******************************************************************************
@@ -615,7 +646,7 @@ string_buffer_append_imm_char_op(
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object str_buffer, COPY char ch) {
+string_buffer_append_char_op(REF NOTNULL context_t context, IN NOTNULL object str_buffer, COPY char ch) {
     assert(context != NULL);
     assert(ch != '\0');
 
@@ -650,7 +681,7 @@ hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, R
     assert(context != NULL);
     assert(is_hashset(hashset));
     assert(!is_null(obj));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     object ret = hashmap_contains_key_op(context, hashset->value.hashset.map, obj);
 
@@ -705,7 +736,7 @@ hashset_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashset_a, 
 EXPORT_API void hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashset) {
     assert(context != NULL);
     assert(is_hashset(hashset));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     hashmap_clear_op(context, hashset->value.hashset.map);
 
@@ -724,7 +755,7 @@ hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF
     assert(context != NULL);
     assert(is_hashset(hashset));
     assert(!is_null(obj));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     hashmap_remove_op(context, hashset->value.hashset.map, obj);
 
@@ -745,7 +776,7 @@ hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashma
     assert(context != NULL);
     assert(is_hashmap(hashmap));
     assert(!is_null(key));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     if (hashmap->value.hashmap.size == 0) {
         return IMM_FALSE;
@@ -786,7 +817,7 @@ hashmap_contains_key_op(REF NOTNULL context_t context, REF NOTNULL object hashma
 EXPORT_API OUT NOTNULL GC object
 hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object k, REF NOTNULL object v) {
     assert(context != NULL);
-    assert(hashmap != NULL);
+    assert(is_hashmap(hashmap));
     assert(!is_null(k));
     assert(!is_null(v));
 
@@ -825,6 +856,8 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
             new_entry = pair_make_op(context, k, v);
             pair_car(entry_list) = new_entry;
 
+            // 注意释放 C 调用栈保护链
+            gc_release_param(context);
             return old_value;
         }
     }
@@ -903,7 +936,7 @@ hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
     assert(context != NULL);
     assert(is_hashmap(hashmap));
     assert(!is_null(key));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     if (hashmap->value.hashmap.size == 0) {
         return IMM_UNIT;
@@ -940,7 +973,7 @@ hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
  * @param hashmap_a
  * @param hashmap_b
  */
-EXPORT_API void
+EXPORT_API GC void
 hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, REF NOTNULL object hashmap_b) {
     assert(context != NULL);
     assert(hashmap_a != hashmap_b);
@@ -976,7 +1009,7 @@ hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, 
 EXPORT_API void hashmap_clear_op(REF NOTNULL context_t context, REF NOTNULL object hashmap) {
     assert(context != NULL);
     assert(is_hashmap(hashmap));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     object vector = hashmap->value.hashmap.table;
     size_t len = vector_len(vector);
@@ -1002,7 +1035,7 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
     assert(context != NULL);
     assert(is_hashmap(hashmap));
     assert(!is_null(key));
-    gc_set_flag(context);
+    gc_set_no_gc_assert_flag(context);
 
     // 空表
     if (hashmap->value.hashmap.size == 0) {
@@ -1052,6 +1085,373 @@ hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF
     return IMM_UNIT;
 }
 
+
+/**
+ * 清除 weak_hashset 中指定 table[index] 中失效的弱引用对象
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ */
+static void weak_hashset_expunge_stale_ref(context_t context, object weak_hashset, size_t index) {
+    assert(context != NULL);
+    assert(is_weak_hashset(weak_hashset));
+    gc_set_no_gc_assert_flag(context);
+
+    object table = weak_hashset->value.weak_hashset.table;
+    assert(index < vector_len(table));
+
+    if (vector_ref(table, index) == IMM_UNIT) {
+        return;
+    }
+
+    object pre, next;
+    pre = IMM_UNIT;
+    next = vector_ref(table, index);
+
+    while (next != IMM_UNIT) {
+        assert(is_pair(next));
+        object value = pair_car(next);
+        assert(is_weak_ref(value));
+
+        if (!weak_ref_is_valid(value)) {
+            if (pre == IMM_UNIT) {
+                vector_ref(table, index) = pair_cdr(next);
+                next = pair_cdr(next);
+            } else {
+                pair_cdr(pre) = pair_cdr(next);
+                next = pair_cdr(next);
+            }
+
+            // 移除失效对象
+            weak_hashset->value.weak_hashset.size--;
+        } else {
+            pre = next;
+            next = pair_cdr(next);
+        }
+    }
+
+    gc_assert_no_gc(context);
+}
+
+/**
+ * weak_hashset 是否包含指定的对象
+ * <p>清除部分无效引用</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ * @param obj object 不能为 NULL
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API OUT NOTNULL object
+weak_hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj) {
+    assert(context != NULL);
+    assert(is_weak_hashset(weak_hashset));
+    assert(!is_null(obj));
+    gc_set_no_gc_assert_flag(context);
+
+    size_t hash = 0;
+    size_t index = 0;
+    size_t length = vector_len(weak_hashset->value.weak_hashset.table);
+
+    equals_fn equals = object_equals_helper(context, obj);
+    hash_code_fn hash_fn = object_hash_helper(context, obj);
+
+    assert(equals != NULL);
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, obj);
+    }
+
+    index = hash % length;
+    weak_hashset_expunge_stale_ref(context, weak_hashset, index);
+
+    object table = weak_hashset->value.weak_hashset.table;
+    for (object entry_list = vector_ref(table, index);
+         entry_list != IMM_UNIT;
+         entry_list = pair_cdr(entry_list)) {
+
+        assert(is_pair(entry_list));
+        object ref = pair_car(entry_list);
+        assert(is_weak_ref(ref));
+
+        if (weak_ref_is_valid(ref)) {
+            return equals(context, obj, weak_ref_get(ref)) ? IMM_TRUE : IMM_FALSE;
+        }
+    }
+
+    // 找不到值
+    gc_assert_no_gc(context);
+    return IMM_FALSE;
+}
+
+/**
+ * obj 放入 weak_hashset
+ * <p>清除部分无效引用</p>
+ * @param context
+ * @param obj
+ */
+EXPORT_API GC void
+weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj) {
+    assert(context != NULL);
+    assert(is_weak_hashset(weak_hashset));
+    assert(!is_null(obj));
+
+    gc_param2(context, weak_hashset, obj);
+    gc_var7(context, table, new_table, entry_list, new_entry, new_weak_ref, ref, old_object);
+
+    hash_code_fn hash_fn = object_hash_helper(context, obj);
+    equals_fn equals = object_equals_helper(context, obj);
+    assert(equals != NULL);
+
+    // 预先构造 可能插入的弱引用
+    // GC point
+    new_weak_ref = weak_ref_make_op(context, IMM_UNIT);
+    new_entry = pair_make_op(context, IMM_UNIT, IMM_UNIT);
+
+    // 1. 计算 hash 值
+    uint32_t hash = 0;
+
+    // hash 函数为空, hash 值为 0
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, obj);
+    }
+
+    // 2. 根据 hash 值计算索引位置
+    table = weak_hashset->value.hashmap.table;
+    size_t vector_length = vector_len(table);
+    size_t index = hash % vector_length;
+    //  清理 index 位置的空值, 不考虑其他位置, contains() 函数自然会清理
+    weak_hashset_expunge_stale_ref(context, weak_hashset, index);
+
+    // 3. 检查索引位置是否有旧值, 如果存在则替换, 返回旧值
+    for (entry_list = vector_ref(table, index);
+         entry_list != IMM_UNIT;
+         entry_list = pair_cdr(entry_list)) {
+
+        assert(is_pair(entry_list));
+        ref = pair_car(entry_list);
+        assert(is_weak_ref(ref));
+
+        // 检查是否存在
+        if (weak_ref_is_valid(ref)) {
+            old_object = weak_ref_get(ref);
+            assert(!is_null(old_object));
+
+            if (equals(context, obj, old_object)) {
+                // 找到已经存在的对象, 替换掉旧值
+                weak_ref_get(ref) = obj;
+
+                // 注意释放 C 调用栈保护链
+                gc_release_param(context);
+                return;
+            }
+        }
+    }
+
+
+    // 4. 没有找到旧值, 说明要创建新的 entry, 检查是否需要扩容
+    //  超过临界容量且遇到 hash 冲突时进行扩容
+    if (weak_hashset->value.weak_hashset.size >= weak_hashset->value.weak_hashset.threshold &&
+        (vector_ref(table, index) != IMM_UNIT)) {
+
+        // 此时容量大于等于扩容阈值, 且 index 位置不为 IMM_UNIT
+        // 则需要扩容
+        size_t new_length = vector_length * 2;
+        // GC point
+        new_table = vector_make_op(context, new_length);
+
+        // 清理 GC 后可能出现的无效值
+        for (size_t i = 0; i < vector_length; i++) {
+            weak_hashset_expunge_stale_ref(context, weak_hashset, i);
+        }
+
+        // 转移旧的内容, 需要重新计算 index
+        for (size_t i = 0; i < vector_length; i++) {
+
+            // 取出旧的 entry
+            entry_list = vector_ref(table, i);
+
+            if (entry_list != IMM_UNIT) {
+                assert(is_pair(entry_list));
+                // 不为空的时候需要进行 entry 重新 hash 并转移
+                // 否则不需要处理, 因为 vector 默认初始化为 IMM_UNIT
+                ref = pair_car(entry_list);
+                assert(weak_ref_is_valid(ref));
+                old_object = weak_ref_get(ref);
+                assert(!is_null(old_object));
+
+                size_t tmp_hash = 0;
+                hash_code_fn tmp_hash_fn = object_hash_helper(context, old_object);
+                if (tmp_hash_fn != NULL) {
+                    tmp_hash = tmp_hash_fn(context, old_object);
+                }
+                size_t new_index = tmp_hash % new_length;
+
+                // 旧的 entry_list 的 hash 值应该都是相同的
+                vector_ref(new_table, new_index) = entry_list;
+            }
+        } // 扩容结束
+
+        // 修改 table
+        weak_hashset->value.weak_hashset.table = new_table;
+        weak_hashset->value.weak_hashset.threshold =
+                (size_t) (vector_len(new_table) * weak_hashset->value.weak_hashset.load_factor);
+
+        // 重新计算 hash 值
+        hash = 0;
+        if (hash_fn != NULL) {
+            hash = hash_fn(context, obj);
+        }
+        index = hash % new_length;
+
+        // 最后插入新节点
+        entry_list = vector_ref(new_table, index);
+        weak_ref_get(new_weak_ref) = obj;
+
+        pair_car(new_entry) = new_weak_ref;
+        pair_cdr(new_entry) = entry_list;
+        vector_set(new_table, index, new_entry);
+
+    } else {
+
+        // 5. 否则不需要扩容, 插入新节点
+        entry_list = vector_ref(table, index);
+        weak_ref_get(new_weak_ref) = obj;
+
+        pair_car(new_entry) = new_weak_ref;
+        pair_cdr(new_entry) = entry_list;
+        vector_set(table, index, new_entry);
+    }
+
+    // 此时插入过新的键值对, 返回 IMM_UNIT
+    weak_hashset->value.weak_hashset.size++;
+    gc_release_param(context);
+}
+
+/**
+ * 清空 weak_hashset
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset 不能为空
+ * @return
+ */
+EXPORT_API void weak_hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset) {
+    assert(context != NULL);
+    assert(is_weak_hashset(weak_hashset));
+    gc_set_no_gc_assert_flag(context);
+
+    object vector = weak_hashset->value.weak_hashset.table;
+    size_t len = vector_len(vector);
+
+    for (size_t i = 0; i < len; i++) {
+        vector_set(vector, i, IMM_UNIT);
+    }
+
+    gc_assert_no_gc(context);
+    weak_hashset->value.weak_hashset.size = 0;
+
+    gc_assert_no_gc(context);
+}
+
+/**
+ * 从 weak_hashset 中移除 object
+ * <p>清除部分无效引用</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ * @param obj 不能为空, 可以为 IMM_UNIT
+ */
+EXPORT_API void
+weak_hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj) {
+    assert(context != NULL);
+    assert(is_weak_hashset(weak_hashset));
+    assert(!is_null(obj));
+    gc_set_no_gc_assert_flag(context);
+
+    // 空表
+    if (weak_hashset->value.weak_hashset.size == 0) {
+        return;
+    }
+
+    object table = weak_hashset->value.weak_hashset.table;
+    size_t vector_length = vector_len(table);
+    size_t hash = 0;
+    size_t index = 0;
+    hash_code_fn hash_fn = object_hash_helper(context, obj);
+    equals_fn equals = object_equals_helper(context, obj);
+    assert(equals != NULL);
+    if (hash_fn != NULL) {
+        hash = hash_fn(context, obj);
+    }
+    index = hash % vector_length;
+
+    if (vector_ref(table, index) == IMM_UNIT) {
+        return;
+    }
+
+    // 此时至少有一个 entry
+    object pre, next;
+    pre = IMM_UNIT;
+    next = vector_ref(table, index);
+
+    while (next != IMM_UNIT) {
+        assert(is_pair(next));
+        object ref = pair_car(next);
+        assert(is_weak_ref(ref));
+
+        if (!weak_ref_is_valid(ref)) {
+            // 移除无效弱引用
+            if (pre == IMM_UNIT) {
+                vector_ref(table, index) = pair_cdr(next);
+            } else {
+                pair_cdr(pre) = pair_cdr(next);
+            }
+            next = pair_cdr(next);
+            weak_hashset->value.weak_hashset.size--;
+        } else {
+            // 有效弱引用, 检查是否是需要被移除的对象
+            assert(weak_ref_is_valid(ref));
+            object old_object = weak_ref_get(ref);
+
+            if (equals(context, obj, old_object)) {
+                // 找到对象则删除并返回
+                if (pre == IMM_UNIT) {
+                    vector_ref(table, index) = pair_cdr(next);
+                } else {
+                    pair_cdr(pre) = pair_cdr(next);
+                }
+                weak_hashset->value.weak_hashset.size--;
+                // 查找结束
+                return;
+            } else {
+                // 没找到, 跳到下一个对象
+                pre = next;
+                next = pair_cdr(next);
+            }
+        } // 无效弱引用判断
+    }
+
+    gc_assert_no_gc(context);
+}
+
+/**
+ * 返回 weak_hashset 元素数量
+ * <p>自动清除全部无效引用</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ * @return 元素数量
+ */
+EXPORT_API size_t
+weak_hashset_size_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset) {
+    gc_set_no_gc_assert_flag(context);
+
+    for (size_t i = 0; i < vector_len(weak_hashset->value.weak_hashset.table); i++) {
+        weak_hashset_expunge_stale_ref(context, weak_hashset, i);
+    }
+
+    gc_assert_no_gc(context);
+    return weak_hashset->value.weak_hashset.size;
+}
 
 /******************************************************************************
                                 对象扩容 API
@@ -1379,6 +1779,8 @@ hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap)
     size_t map_size = hashmap_size(hashmap);
     if (map_size == 0) {
         // hashmap 大小为 0, 直接返回不再遍历
+        // 注意释放
+        gc_release_param(context);
         return vector_make_op(context, 0);
     } else {
         vector = vector_make_op(context, map_size);
@@ -1407,6 +1809,59 @@ hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap)
         }
     }
     assert(map_size == vector_index);
+
+    gc_release_param(context);
+    return vector;
+}
+
+
+/**
+ * weak_hashset 转为 vector, 无序
+ * <p>返回的 vector 中可能包含 IMM_UNIT</p>
+ * @param context
+ * @param weak_hashset
+ * @return vector: #(v1, v2, ... IMM_UNIT, ...)
+ */
+EXPORT_API OUT NOTNULL GC object
+weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object weak_hashset) {
+    assert(context != NULL);
+    assert(is_weak_hashset(weak_hashset));
+
+    gc_param1(context, weak_hashset);
+    gc_var5(context, vector, entry_list, entry, ref, obj);
+
+    // map 中对象数量
+    size_t set_size = weak_hashset_size_op(context, weak_hashset);
+    if (set_size == 0) {
+        // hashmap 大小为 0, 直接返回不再遍历
+        // 注意释放
+        gc_release_param(context);
+        return vector_make_op(context, 0);
+    } else {
+        vector = vector_make_op(context, set_size);
+    }
+
+    // vector 索引
+    size_t vector_index = 0;
+    size_t map_table_vector_len = vector_len(weak_hashset->value.weak_hashset.table);
+    for (size_t i = 0; i < map_table_vector_len; i++) {
+
+        entry_list = vector_ref(weak_hashset->value.weak_hashset.table, i);
+        for (; entry_list != IMM_UNIT; entry_list = pair_cdr(entry_list)) {
+
+            // 获取 hashmap 中的 entry
+            ref = pair_car(entry_list);
+            assert(is_weak_ref(ref));
+
+            if (weak_ref_is_valid(ref)) {
+                obj = weak_ref_get(ref);
+                vector_set(vector, vector_index, obj);
+                // 每找到一个有效对象, 游标向后移动
+                vector_index++;
+            }
+        }
+    }
+    assert(vector_index <= set_size);
 
     gc_release_param(context);
     return vector;

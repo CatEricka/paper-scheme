@@ -198,6 +198,17 @@ hashmap_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN doubl
 EXPORT_API OUT NOTNULL GC object
 weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj);
 
+/**
+ * 构造 weak_hashset
+ * <p>弱引用 hashset</p>
+ * @param context
+ * @param init_capacity hashset 初始大小 (默认 DEFAULT_HASH_SET_MAP_INIT_CAPACITY)
+ * @param load_factor 负载因子 (默认大小 DEFAULT_HASH_SET_MAP_LOAD_FACTOR)
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+weak_hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor);
+
 /******************************************************************************
                                 对象操作 API
 ******************************************************************************/
@@ -244,7 +255,7 @@ string_buffer_append_imm_char_op(
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_append_char_op(REF NOTNULL context_t context, IN NULLABLE object str_buffer, COPY char ch);
+string_buffer_append_char_op(REF NOTNULL context_t context, IN NOTNULL object str_buffer, COPY char ch);
 
 
 /**
@@ -334,7 +345,7 @@ hashmap_get_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
  * @param hashmap_a
  * @param hashmap_b
  */
-EXPORT_API void
+EXPORT_API GC void
 hashmap_put_all_op(REF NOTNULL context_t context, REF NOTNULL object hashmap_a, REF NOTNULL object hashmap_b);
 
 /**
@@ -356,6 +367,58 @@ EXPORT_API void hashmap_clear_op(REF NOTNULL context_t context, REF NOTNULL obje
 EXPORT_API OUT NOTNULL object
 hashmap_remove_op(REF NOTNULL context_t context, REF NOTNULL object hashmap, REF NOTNULL object key);
 
+
+/**
+ * weak_hashset 是否包含指定的对象
+ * <p>清除部分无效引用</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ * @param obj object 不能为 NULL
+ * @return IMM_TRUE / IMM_FALSE
+ */
+EXPORT_API OUT NOTNULL object
+weak_hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj);
+
+/**
+ * obj 放入 weak_hashset
+ * <p>清除部分无效引用</p>
+ * @param context
+ * @param obj
+ */
+EXPORT_API GC void
+weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj);
+
+/**
+ * 清空 weak_hashset
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset 不能为空
+ * @return
+ */
+EXPORT_API void weak_hashset_clear_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset);
+
+/**
+ * 从 weak_hashset 中移除 object
+ * <p>清除部分无效引用</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ * @param obj 不能为空, 可以为 IMM_UNIT
+ */
+EXPORT_API void
+weak_hashset_remove_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj);
+
+/**
+ * 返回 weak_hashset 元素数量
+ * <p>自动清除全部无效引用</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param weak_hashset
+ * @return 元素数量
+ */
+EXPORT_API size_t
+weak_hashset_size_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset);
 
 /******************************************************************************
                                 对象扩容 API
@@ -493,5 +556,15 @@ hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashset)
  */
 EXPORT_API OUT NOTNULL GC object
 hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap);
+
+/**
+ * weak_hashset 转为 vector, 无序
+ * <p>返回的 vector 中可能包含 IMM_UNIT</p>
+ * @param context
+ * @param weak_hashset
+ * @return vector: #(v1, v2, ... IMM_UNIT, ...)
+ */
+EXPORT_API OUT NOTNULL GC object
+weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object weak_hashset);
 
 #endif //BASE_SCHEME_RUNTIME_H
