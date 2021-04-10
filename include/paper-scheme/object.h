@@ -11,6 +11,7 @@
 
 
 #include <paper-scheme/feature.h>
+#include <paper-scheme/opcodes.h>
 
 
 /**
@@ -18,7 +19,8 @@
 ******************************************************************************/
 // todo  增加新类型重写 object_type_enum 枚举
 enum object_type_enum {
-    OBJ_I64 = 0,
+    // 基础类型
+            OBJ_I64 = 0,
     OBJ_D64,
     OBJ_CHAR,
     OBJ_BOOLEAN,
@@ -35,10 +37,15 @@ enum object_type_enum {
     OBJ_STDIO_PORT,
     OBJ_HASH_SET,
     OBJ_HASH_MAP,
-    OBJ_WEAK_REF,
-    OBJ_WEAK_HASH_SET,
 
-    OBJECT_TYPE_ENUM_MAX, // 标记枚举最大值
+    // 运行时
+            OBJ_WEAK_REF,
+    OBJ_WEAK_HASH_SET,
+    OBJ_STACK_FRAME,
+    OBJ_ENV_SLOT,
+
+    // 标记枚举最大值
+            OBJECT_TYPE_ENUM_MAX,
 };
 typedef enum object_type_enum object_type_tag;
 //compile_time_assert(((size_t) OBJECT_TYPE_ENUM_MAX) <= SIZE_MAX);
@@ -267,6 +274,25 @@ struct object_struct_t {
             object table;
         } weak_hashset;
 
+        // TODO 栈帧结构
+        struct value_scheme_stack_frame_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
+            enum opcode_e op;
+            object args;
+            object env;
+            object code;
+        } stack_frame;
+
+        // TODO environment 槽
+        struct value_environment_slot_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
+            object var_name;
+            object value;
+            object next_env_slot;
+        } env_slot;
+
     } value;
     /*  对齐填充, 对齐到 ALIGN_SIZE, 即 sizeof(void *)  */
 };
@@ -335,8 +361,11 @@ struct object_struct_t {
                                 is_srfi6_port(obj)
             - hashset:          is_hashset(obj)
             - hashmap:          is_hashmap(obj)
+
             - weak_ref:         is_weak_ref(obj)
             - weak_hashset:     is_weak_hashset(obj)
+            - stack_frame:      TODO is_stack_frame
+            - env_slot:         TODO is_env_slot()
         构造:
             - i64:              i64_make_op(), i64_imm_make()
             - imm_char:         char_imm_make()
@@ -354,8 +383,11 @@ struct object_struct_t {
             - stdio_port:       stdio_port_from_filename_op(), stdio_port_from_file_op()
             - hashset:          hashset_make_op()
             - hashmap:          hashmap_make_op()
+
             - weak_ref:         weak_ref_make_op()
             - weak_hashset:     weak_hashset_make_op()
+            - stack_frame:      TODO stack_frame_make_op()
+            - env_stack:        TODO env_slot_make_op()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -375,8 +407,12 @@ struct object_struct_t {
             - stdio_port:       stdio_port_kind()
             - hashset:          hashset_size()
             - hashmap:          hashmap_size()
+
             - weak_ref:         weak_ref_is_valid()
             - weak_hashset:     weak_hashset_size_op()
+            - stack_frame:      TODO stack_frame_op(), stack_frame_args(),
+                                TODO stack_frame_env(), stack_frame_code()
+            - env_stack:        TODO env_slot_var(), env_slot_value(), env_slot_next()
         操作:
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
@@ -385,6 +421,7 @@ struct object_struct_t {
                                 hashset_clear_op(), hashset_remove_op()
             - hashmap:          hashmap_contains_key_op(), hashmap_put_op(), hashmap_get_op()
                                 hashmap_put_all_op(), hashmap_clear_op(), hashmap_remove_op()
+
             - weak_ref:         weak_ref_get()
             - weak_hashset:     weak_hashset_contains_op(), weak_hashset_put_op()
                                 weak_hashset_clear_op(), weak_hashset_remove_op()
@@ -403,6 +440,7 @@ struct object_struct_t {
                                 string_buffer_to_symbol_op()
             - hashset:          hashset_to_vector_op()
             - hashmap:          hashmap_to_vector_op()
+
             - weak_hashset:     weak_hashset_to_vector_op()
         哈希算法 & equals 算法:
             - i64:              i64_hash_code(), i64_equals()
@@ -418,6 +456,7 @@ struct object_struct_t {
             - stdio_port:       stdio_port_hash_code(), stdio_port_equals()
             - hashset:          hashset_hash_code(), hashset_equals()
             - hashmap:          hashmap_hash_code(), hashmap_equals()
+
             - weak_ref:         weak_ref_hash_code(), weak_ref_hash_code()
             - weak_hashset:     weak_hashset_hash_code()
 ******************************************************************************/
@@ -564,6 +603,10 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size);
  */
 EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 
+#define is_immutable(obj) ((obj)->immutable)
+#define set_immutable(obj) ((obj)->immutable = 1)
+#define set_mutable(obj) ((obj)->immutable = 0)
+
 
 /**
                            对象值操作: is_a
@@ -698,6 +741,11 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 
 // 弱引用 hashset
 #define is_weak_hashset(obj)            (is_object(obj) && ((obj)->type == OBJ_WEAK_HASH_SET))
+
+// 栈帧
+#define is_stack_frame(obj)             (is_object(obj) && ((obj)->type == OBJ_STACK_FRAME))
+// env 帧
+#define is_env_slot(obj)                (is_object(obj) && ((obj)->type == OBJ_ENV_SLOT))
 /**
                                 对象值操作
 ******************************************************************************/
@@ -956,6 +1004,14 @@ CHECKED OUT int stack_pop_op(REF object stack);
  */
 #define weak_ref_get(obj)   ((obj)->value.weak_ref.ref)
 
+#define stack_frame_op(obj)         ((obj)->value.stack_frame.op)
+#define stack_frame_args(obj)       ((obj)->value.stack_frame.args)
+#define stack_frame_env(obj)        ((obj)->value.stack_frame.env)
+#define stack_frame_code(obj)       ((obj)->value.stack_frame.code)
+
+#define env_slot_var(obj)           ((obj)->value.env_slot.var_name)
+#define env_slot_value(obj)         ((obj)->value.env_slot.value)
+#define env_slot_next(obj)           ((obj)->value.env_slot.next_env_slot)
 /**
                            对象值操作: compare
 ******************************************************************************/

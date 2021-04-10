@@ -15,31 +15,27 @@ static int interpreter_default_env_init(context_t context) {
     context->debug = 0;
     context->repl_mode = 0;
 
-    context->args = IMM_UNIT;
-    context->code = IMM_UNIT;
-    // current_env (hashmap next_env)
-    context->current_env = IMM_UNIT;
-    tmp = stack_make_op(context, MAX_STACK_BLOCK_DEEP);
-    tmp = pair_make_op(context, tmp, IMM_UNIT);
-    context->scheme_stack = tmp;
+    // 全局符号表 global_symbol_table 弱引用 hashset
+    context->global_symbol_table =
+            weak_hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+    // 全局 environment
+    tmp = pair_make_op(context, IMM_UNIT, IMM_UNIT);
+    pair_car(tmp) = hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+    context->global_environment = tmp;
+
+    context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
 
     // TODO op_code 初始化
     context->op_code = OP_TOP_LEVEL;
     context->value = IMM_UNIT;
+    context->args = IMM_UNIT;
+    context->code = IMM_UNIT;
 
-    context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
-
-    // 全局符号表 global_symbol_table 弱引用 hashset
-    context->global_symbol_table =
-            weak_hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
-
-    // 全局 environment
-    context->global_environment =
-            hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+    context->current_env = context->global_environment;
+    context->scheme_stack = IMM_UNIT;
 
     // 环境初始化结束
     context->init_done = 1;
-
     gc_release_var(context);
     return 1;
 }
@@ -198,15 +194,156 @@ string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object st
 }
 
 
-
 /******************************************************************************
-                          global_environment 操作
+                             scheme_stack 操作
 ******************************************************************************/
+EXPORT_API void scheme_stack_reset(context_t context) {
+    assert(context != NULL);
+    context->scheme_stack = IMM_UNIT;
+}
 
+EXPORT_API GC void scheme_stack_save(context_t context, enum opcode_e op, object args, object code) {
+    assert(context != NULL);
+    assert(is_pair(args) || args == IMM_UNIT);
+    assert(is_pair(code) || code == IMM_UNIT);
+
+    gc_param2(context, args, code);
+    gc_var1(context, tmp);
+
+    // 填充 stack_frame
+    tmp = stack_frame_make_op(context, op, args, code, context->current_env);
+    // push 栈
+    context->scheme_stack = pair_make_op(context, tmp, context->scheme_stack);
+
+    gc_release_param(context);
+}
+
+EXPORT_API object scheme_stack_return(context_t context, object value) {
+    assert(context != NULL);
+    assert(is_pair(context->scheme_stack) || context->scheme_stack == IMM_UNIT);
+
+    context->value = value;
+
+    if (context->scheme_stack == IMM_UNIT) {
+        // 栈空
+        // TODO 这是个错误, 应该由元循环处理
+        return IMM_UNIT;
+    }
+
+    object stack_frame = pair_car(context->scheme_stack);
+    // 恢复环境
+    context->op_code = stack_frame_op(stack_frame);
+    context->args = stack_frame_args(stack_frame);
+    context->code = stack_frame_code(stack_frame);
+    context->current_env = stack_frame_env(stack_frame);
+
+    context->scheme_stack = pair_cdr(context->scheme_stack);
+    return IMM_TRUE;
+}
+
+/******************************************************************************
+                           TODO   environment 操作
+******************************************************************************/
+/**
+ * 从 context->current_env 向上查找 env_slot
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param symbol
+ * @param all 1: 持续查找到全局 env; 0: 只查找当前 environment
+ * @return env_slot / IMM_UNIT (未找到)
+ */
+EXPORT_API object find_slot_in_env(REF NOTNULL context_t context, object env, object symbol, int all) {
+    assert(context != NULL);
+
+    int first_env = 1;
+    int found = 0;
+    object ret_slot = IMM_UNIT;
+
+    for (object cur = env; cur != IMM_UNIT; cur = pair_cdr(cur)) {
+
+        if (is_hashmap(pair_car(cur))) {
+            ret_slot = hashmap_get_op(context, pair_car(cur), symbol);
+            // 找不到的话 刚好返回 IMM_UNIT
+            break;
+        } else {
+
+            // 否则的话为单个 env frame 链
+            for (object slot = pair_car(cur); slot != IMM_UNIT; slot = pair_cdr(slot)) {
+                assert(is_env_slot(slot));
+                assert(is_symbol(env_slot_var(slot)));
+                if (symbol_equals(context, env_slot_var(slot), symbol)) {
+                    found = 1;
+                    ret_slot = slot;
+                    break;
+                }
+            }
+        }
+
+        // 只查找一次
+        if (first_env) {
+            first_env = 0;
+            if (!all) break;
+        }
+
+        // 找到的话结束
+        if (found == 1) break;
+    }
+
+    return ret_slot;
+}
+/**
+ * 在当前 context->current_env 插入新 env_slot
+ * @param context
+ * @param symbol
+ * @param value
+ */
+EXPORT_API GC void new_slot_in_env(context_t context, object symbol, object value) {
+    new_slot_in_spec_env(context, symbol, value, context->current_env);
+}
+/**
+ * 从特定 env frame 插入新 env_slot
+ * @param context
+ * @param symbol
+ * @param value
+ * @param env
+ */
+EXPORT_API GC void new_slot_in_spec_env(context_t context, object symbol, object value, object env) {
+    assert(context != NULL);
+    assert(is_symbol(symbol));
+    assert(env != IMM_UNIT);
+
+    gc_param3(context, symbol, value, env);
+    gc_var1(context, slot);
+
+    slot = env_slot_make_op(context, symbol, value, IMM_UNIT);
+
+    if (is_hashmap(pair_car(env))) {
+        hashmap_put_op(context, pair_car(env), symbol, slot);
+    } else {
+        env_slot_next(slot) = pair_car(env);
+        pair_car(env) = slot;
+    }
+
+    gc_release_param(context);
+}
+
+/**
+ * 以 old_env 作为上层, 创建新 frame, 赋值给 context->current_env
+ * @param context
+ * @param old_env 一般是 context->current_env
+ */
+EXPORT_API GC void new_frame_in_env(context_t context, object old_env) {
+    assert(context != NULL);
+    assert(old_env != IMM_UNIT);
+
+    gc_param1(context, old_env);
+    context->current_env = pair_make_op(context, IMM_UNIT, old_env);
+    gc_release_param(context);
+}
 
 
 /******************************************************************************
-                               current_env 操作
+                              load_stack 操作
 ******************************************************************************/
 
 
@@ -214,11 +351,25 @@ string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object st
                                     元循环
 ******************************************************************************/
 uint32_t eval_apply_loop(context_t context, enum opcode_e opcode) {
-
-
     return 1;
 }
 
 static object operation_execute_0(context_t context, enum opcode_e opcode) {
+    return 0;
+}
+
+
+/******************************************************************************
+                                  文件读入
+******************************************************************************/
+EXPORT_API GC void interpreter_load_cstr(context_t context, const char *cstr) {
+
+}
+
+EXPORT_API GC void interpreter_load_file(context_t context, FILE *file) {
+    interpreter_load_file_with_name(context, file, NULL);
+}
+
+EXPORT_API GC void interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name) {
 
 }

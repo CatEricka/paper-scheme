@@ -334,6 +334,40 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .hash_code = weak_hashset_hash_code,
                 .equals = weak_hashset_equals,
         },
+        {
+                .name = (object) "Scheme-Stack-Frame", .tag = OBJ_STACK_FRAME,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(stack_frame, args),
+                .member_eq_len_base = 3,
+                .member_len_base = 3,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(stack_frame),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = stack_frame_hash_code,
+                .equals = stack_frame_equals,
+        },
+        {
+                .name = (object) "Environment-Slot", .tag = OBJ_ENV_SLOT,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(env_slot, var_name),
+                .member_eq_len_base = 3,
+                .member_len_base = 3,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(env_slot),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = env_slot_hash_code,
+                .equals = env_slot_equals,
+        },
 };
 
 
@@ -763,6 +797,16 @@ EXPORT_API uint32_t weak_hashset_hash_code(context_t context, object weak_hashse
     return weak_hashset->value.weak_hashset.hash;
 }
 
+EXPORT_API uint32_t stack_frame_hash_code(context_t context, object frame) {
+    assert(is_stack_frame(frame));
+    return frame->value.stack_frame.hash;
+}
+
+EXPORT_API uint32_t env_slot_hash_code(context_t context, object slot) {
+    assert(is_env_slot(slot));
+    return slot->value.env_slot.hash;
+}
+
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
     return symbol->value.symbol.hash;
@@ -921,6 +965,22 @@ EXPORT_API int weak_hashset_equals(context_t context, object weak_hashset_a, obj
         return 0;
     } else {
         return weak_hashset_a == weak_hashset_b;
+    }
+}
+
+EXPORT_API int stack_frame_equals(context_t context, object frame_a, object frame_b) {
+    if (!is_stack_frame(frame_a) || !is_stack_frame(frame_b)) {
+        return 0;
+    } else {
+        return frame_a == frame_b;
+    }
+}
+
+EXPORT_API int env_slot_equals(context_t context, object slot_a, object slot_b) {
+    if (!is_env_slot(slot_a) || !is_env_slot(slot_b)) {
+        return 0;
+    } else {
+        return slot_a == slot_b;
     }
 }
 

@@ -14,7 +14,6 @@
 
 
 #include <paper-scheme/runtime.h>
-#include <paper-scheme/opcodes.h>
 #include <paper-scheme/token.h>
 
 
@@ -109,21 +108,87 @@ string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object st
 
 
 /******************************************************************************
-                          global_environment 操作
+                             scheme_stack 操作
+******************************************************************************/
+/**
+ * 重置 scheme stack
+ * @param context
+ */
+EXPORT_API void scheme_stack_reset(context_t context);
+/**
+ * push scheme stack
+ * @param context
+ * @param op
+ * @param args
+ * @param code
+ */
+EXPORT_API GC void scheme_stack_save(context_t context, enum opcode_e op, object args, object code);
+/**
+ * pop scheme stack
+ * @param context
+ * @param value
+ * @return
+ */
+EXPORT_API object scheme_stack_return(context_t context, object value);
+
+
+
+/******************************************************************************
+                           TODO   environment 操作
+******************************************************************************/
+/**
+ * 从 context->current_env 向上查找 env_slot
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param symbol
+ * @param all 1: 持续查找到全局 env; 0: 只查找当前 environment
+ * @return pair(symbol, value) / IMM_UNIT (未找到)
+ */
+EXPORT_API object find_slot_in_env(REF NOTNULL context_t context, object env, object symbol, int all);
+/**
+ * 在当前 context->current_env 插入新 env_slot
+ * @param context
+ * @param symbol
+ * @param value
+ */
+EXPORT_API GC void new_slot_in_env(context_t context, object symbol, object value);
+/**
+ * 从特定 env frame 插入新 env_slot
+ * @param context
+ * @param symbol
+ * @param value
+ * @param env
+ */
+EXPORT_API GC void new_slot_in_spec_env(context_t context, object symbol, object value, object env);
+
+/**
+ * 以 old_env 作为上层, 创建新 frame, 赋值给 context->current_env
+ * @param context
+ * @param old_env
+ */
+EXPORT_API GC void new_frame_in_env(context_t context, object old_env);
+
+
+/******************************************************************************
+                              load_stack 操作
 ******************************************************************************/
 
 
 
 /******************************************************************************
-                               current_env 操作
-******************************************************************************/
-
-
-
-/******************************************************************************
-                                    TODO 元循环
+                                TODO 元循环
 ******************************************************************************/
 EXPORT_API uint32_t eval_apply_loop(context_t context, enum opcode_e opcode);
 
+
+
+/******************************************************************************
+                                  文件读入
+******************************************************************************/
+EXPORT_API GC void interpreter_load_cstr(context_t context, const char *cstr);
+
+EXPORT_API GC void interpreter_load_file(context_t context, FILE *file);
+
+EXPORT_API GC void interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name);
 
 #endif //PAPER_SCHEME_INTERPRETER_H

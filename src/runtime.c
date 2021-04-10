@@ -555,6 +555,60 @@ weak_hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN 
     return weak_hashset;
 }
 
+/**
+ * 构造 stack frame
+ * @param context
+ * @param op int
+ * @param args pair
+ * @param env env_slot
+ * @param code pair
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+stack_frame_make_op(REF NOTNULL context_t context, enum opcode_e op, object args, object code, object env) {
+    assert(context != NULL);
+    assert(op >= 0);
+
+    gc_param3(context, args, code, env);
+    gc_var1(context, frame);
+
+    frame = raw_object_make(context, OBJ_STACK_FRAME, object_sizeof_base(stack_frame));
+    stack_frame_op(frame) = op;
+    stack_frame_args(frame) = args;
+    stack_frame_code(frame) = code;
+    stack_frame_env(frame) = env;
+    frame->value.stack_frame.hash = pointer_with_type_to_hash(frame, OBJ_STACK_FRAME);
+
+    gc_release_param(context);
+    return frame;
+}
+
+/**
+ * 构造 environment slot
+ * @param context
+ * @param var symbol
+ * @param value any
+ * @param pre_env_frame env_slot
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+env_slot_make_op(REF NOTNULL context_t context, object var, object value, object pre_env_frame) {
+    assert(context != NULL);
+    assert(is_symbol(var));
+
+    gc_param3(context, var, value, pre_env_frame);
+    gc_var1(context, frame);
+
+    frame = raw_object_make(context, OBJ_ENV_SLOT, object_sizeof_base(env_slot));
+    env_slot_var(frame) = var;
+    env_slot_value(frame) = value;
+    env_slot_next(frame) = pre_env_frame;
+    frame->value.env_slot.hash = pointer_with_type_to_hash(frame, OBJ_ENV_SLOT);
+
+    gc_release_param(context);
+    return frame;
+}
+
 /******************************************************************************
                                 对象操作 API
 ******************************************************************************/

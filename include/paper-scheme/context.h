@@ -68,12 +68,16 @@ typedef struct scheme_context_t {
      */
     GC object code;
     /**
-     * 当前 environment 指针, (const (make-hashmap GLOBAL_SYMBOL_TABLE_INIT_SIZE) '())
-     * <p>hashmap symbol->object</p>
+     * 当前 environment 指针
+     * <p>只有最顶端的全局 env 是 hashmap, </p>
+     * <p>env: (list ... env_frame2 env_frame1 global_environment '())</p>
+     * <p>env_frame: (list ... slot3 slot2 slot1)</p>
+     * <p>因为后面的常常很短, 构造 hashmap 的代价过高</p>
+     * <p>参见 env_stack 类型</p>
      */
     GC object current_env;
     /**
-     * 栈记录, (cons (stack MAX_STACK_BLOCK_DEEP) '())
+     * 栈记录, 链栈, 为了实现`延续`
      */
     GC object scheme_stack;
 
@@ -146,6 +150,12 @@ typedef struct scheme_context_t {
      ****************************************************/
     // 基础类型信息索引表, 仅用于构造期, 其中 object 类型均不可用; .name 字段为字符串指针
     struct object_runtime_type_info_t const *_internal_scheme_type_specs;
+
+
+    /**
+     *                      C 交互
+     ****************************************************/
+    int ret;
 } *context_t;
 
 
@@ -230,17 +240,11 @@ EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum 
                        todo 增加新类型重写 hash 算法
 ******************************************************************************/
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64);
-
 EXPORT_API uint32_t d64_hash_code(context_t context, object d64);
-
 EXPORT_API uint32_t char_hash_code(context_t context, object imm_char);
-
 EXPORT_API uint32_t boolean_hash_code(context_t context, object imm_bool);
-
 EXPORT_API uint32_t unit_hash_code(context_t context, object unit_obj);
-
 EXPORT_API uint32_t eof_hash_code(context_t context, object eof_obj);
-
 EXPORT_API uint32_t pair_hash_code(context_t context, object pair);
 
 EXPORT_API uint32_t bytes_hash_code(context_t context, object bytes);
@@ -262,6 +266,12 @@ EXPORT_API uint32_t hash_map_hash_code(context_t context, object hashmap);
 EXPORT_API uint32_t weak_ref_hash_code(context_t context, object weak_ref);
 
 EXPORT_API uint32_t weak_hashset_hash_code(context_t context, object weak_hashset);
+
+EXPORT_API uint32_t stack_frame_hash_code(context_t context, object frame);
+
+EXPORT_API uint32_t env_slot_hash_code(context_t context, object slot);
+
+
 /**
  * symbol hash code 计算
  * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
@@ -293,7 +303,6 @@ EXPORT_API int eof_equals(context_t context, object eof_a, object eof_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int pair_equals(context_t context, object pair_a, object pair_b);
 EXPORT_API int bytes_equals(context_t context, object bytes_a, object bytes_b);
-
 EXPORT_API int string_buffer_equals(context_t context, object string_buffer_a, object string_buffer_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int vector_equals(context_t context, object vector_a, object vector_b);
@@ -311,6 +320,11 @@ EXPORT_API int hash_map_equals(context_t context, object hashmap_a, object hashm
 EXPORT_API int weak_ref_equals(context_t context, object weak_ref_a, object weak_ref_b);
 
 EXPORT_API int weak_hashset_equals(context_t context, object weak_hashset_a, object weak_hashset_b);
+
+EXPORT_API int stack_frame_equals(context_t context, object stack_a, object stack_b);
+
+EXPORT_API int env_slot_equals(context_t context, object slot_a, object slot_b);
+
 /**
  * symbol 比较
  * @param context

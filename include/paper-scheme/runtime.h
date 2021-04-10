@@ -219,6 +219,30 @@ weak_ref_make_op(REF NOTNULL context_t context, REF NULLABLE object obj);
 EXPORT_API OUT NOTNULL GC object
 weak_hashset_make_op(REF NOTNULL context_t context, IN size_t init_capacity, IN double load_factor);
 
+/**
+ * 构造 stack frame
+ * @param context
+ * @param op
+ * @param args
+ * @param env
+ * @param code
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+stack_frame_make_op(REF NOTNULL context_t context, enum opcode_e op, object args, object code, object env);
+
+/**
+ * 构造 environment slot
+ * @param context
+ * @param var
+ * @param value
+ * @param pre_env_frame
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+env_slot_make_op(REF NOTNULL context_t context, object var, object value, object pre_env_frame);
+
+
 /******************************************************************************
                                 对象操作 API
 ******************************************************************************/
@@ -599,6 +623,7 @@ hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap)
  */
 EXPORT_API OUT NOTNULL GC object
 weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object weak_hashset);
+
 
 
 /******************************************************************************
