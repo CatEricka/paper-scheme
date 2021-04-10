@@ -119,12 +119,13 @@ bytes_make_op(REF NOTNULL context_t context, IN size_t capacity) {
 /**
  * 构造 symbol 类型对象
  * <p>symbol_len() 运算结果不包括 '\0', 但是 object->symbol.len 包括 '\0', 这是为了方便运行时计算对象大小</p>
+ * <p>不要直接使用, 参见 interpreter.h: symbol_make_from_cstr_op()</p>
  * @param context
  * @param cstr C字符串, '\0'结尾
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
+symbol_make_from_cstr_untracked_op(REF NOTNULL context_t context, COPY const char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
 
@@ -156,7 +157,7 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
+string_make_from_cstr_op(REF NOTNULL context_t context, COPY const char *cstr) {
     assert(context != NULL);
     size_t cstr_len;
 
@@ -304,7 +305,6 @@ string_port_input_from_string_op(REF NOTNULL context_t context, REF NULLABLE obj
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
     ret->value.string_port.kind = PORT_INPUT;
     ret->value.string_port.string_buffer_data = str;
-    ret->value.string_port.length = string_len(str);
     ret->value.string_port.current = 0;
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
@@ -327,6 +327,30 @@ string_port_output_use_buffer_op(REF NOTNULL context_t context) {
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
 
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_SRFI6;
+    ret->value.string_port.string_buffer_data = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
+    ret->value.string_port.current = 0;
+    ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
+
+    gc_release_var(context);
+    return ret;
+}
+
+
+/**
+ * 打开 input-output port, 深拷贝, 具有内部缓冲
+ * <p>(open-input-output-string)</p>
+ * @param context
+ * @return 打开失败返回 IMM_UNIT, 否则返回值满足 is_srfi6_port(obj), is_string_port_in_out_put(obj)
+ */
+EXPORT_API OUT NOTNULL GC object
+string_port_in_out_put_use_buffer_op(REF NOTNULL context_t context) {
+    assert(context != NULL);
+
+    gc_var1(context, str_buffer);
+
+    object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
+
+    ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_INPUT | (unsigned) PORT_SRFI6;
     ret->value.string_port.string_buffer_data = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
     ret->value.string_port.current = 0;
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
@@ -618,6 +642,52 @@ string_buffer_append_string_op(
 }
 
 /**
+ * string_buffer 拼接 c_str, 深拷贝
+ * @param context
+ * @param str_buffer string_buffer
+ * @param str string
+ * @return 修改后的 string_buffer
+ */
+EXPORT_API OUT NOTNULL GC object
+string_buffer_append_cstr_op(
+        REF NOTNULL context_t context,
+        IN NULLABLE object str_buffer, COPY NULLABLE const char *cstr) {
+
+    assert(context != NULL);
+    assert(is_string_buffer(str_buffer));
+
+    gc_param1(context, str_buffer);
+    gc_var1(context, tmp);
+
+    if (cstr == NULL) {
+        gc_release_param(context);
+        return str_buffer;
+    }
+
+    size_t str_buffer_len = string_buffer_length(str_buffer);
+    size_t str_len = strlen(cstr);
+    size_t buffer_size = string_buffer_capacity(str_buffer);
+
+    assert(cstr[str_len] == '\0');
+
+    if (str_len + str_buffer_len > buffer_size) {
+        // 容量不足
+        size_t add_size = (str_len + str_buffer_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE) - buffer_size;
+        str_buffer = string_buffer_capacity_increase_op(context, str_buffer, add_size);
+
+        assert(add_size + buffer_size == string_buffer_capacity(str_buffer));
+    }
+
+    // 不复制 '\0'
+    memcpy(string_buffer_bytes_data(str_buffer) + str_buffer_len, cstr, str_len);
+    // 修正长度
+    str_buffer->value.string_buffer.buffer_length = str_buffer_len + str_len;
+
+    gc_release_param(context);
+    return str_buffer;
+}
+
+/**
  * string_buffer 拼接 imm_char, 深拷贝
  * @param context
  * @param str_buffer
@@ -665,6 +735,22 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NOTNULL object st
 
     gc_release_param(context);
     return str_buffer;
+}
+
+/**
+ * vector 填充
+ * @param vector
+ * @param obj 被填充, 浅拷贝
+ */
+EXPORT_API OUT void
+vector_fill(REF NOTNULL object vector, REF NOTNULL object obj) {
+    assert(vector != NULL);
+    assert(is_vector(vector));
+
+    size_t l = vector_len(vector);
+    for (size_t i = 0; i < l; i++) {
+        vector_set(vector, i, obj);
+    }
 }
 
 
@@ -1653,14 +1739,16 @@ symbol_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object symbol) {
     return str;
 }
 
+
 /**
  * string 转 symbol
+ * <p>不要直接使用, 参见 interpreter.h: string_to_symbol_op()</p>
  * @param context
  * @param string
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str) {
+string_to_symbol_untracked_op(REF NOTNULL context_t context, NOTNULL COPY object str) {
     assert(context != NULL);
     assert(is_string(str));
 
@@ -1708,12 +1796,13 @@ string_buffer_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object st
 
 /**
  * string_buffer 转换为 symbol, 深拷贝
+ * <p>不要直接使用, 参见 interpreter.h: string_buffer_to_symbol_op()</p>
  * @param context
  * @param str_buffer string_buffer
  * @return symbol
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
+string_buffer_to_symbol_untracked_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
     assert(context != 0);
     assert(is_string_buffer(str_buffer));
 
@@ -1865,4 +1954,318 @@ weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object wea
 
     gc_release_param(context);
     return vector;
+}
+
+/******************************************************************************
+                             输入输出 API
+******************************************************************************/
+/**
+ * 从 port 读入一个 char
+ * <p>不会触发 GC</p>
+ * @param port
+ * @return IMM_CHAR 或 IMM_EOF
+ */
+EXPORT_API object port_get_char(REF NOTNULL object port) {
+    assert(is_port(port));
+    assert(is_port_input(port));
+
+    object ch;
+
+    if (is_port_eof(port)) {
+        ch = IMM_EOF;
+    } else if (is_stdio_port(port)) {
+        // FILE port
+
+        int raw_ch = fgetc(port->value.stdio_port.file);
+        if (raw_ch == EOF) {
+            port->value.stdio_port.kind |= PORT_EOF;
+            ch = IMM_EOF;
+        } else {
+            ch = char_imm_make((char) raw_ch);
+        }
+    } else if (is_srfi6_port(port)) {
+        // string_buffer port
+        assert(is_string_buffer(port->value.string_port.string_buffer_data));
+
+        object str_buff = port->value.string_port.string_buffer_data;
+        if (port->value.string_port.current < string_buffer_length(str_buff)) {
+            ch = char_imm_make(string_buffer_index(str_buff, port->value.string_port.current));
+            port->value.string_port.current++;
+        } else {
+            port->value.stdio_port.kind |= PORT_EOF;
+            ch = IMM_EOF;
+        }
+    } else {
+        // string port
+        assert(is_string(port->value.string_port.string_buffer_data));
+
+        object str = port->value.string_port.string_buffer_data;
+        if (port->value.string_port.current < string_len(str)) {
+            ch = char_imm_make(string_index(str, port->value.string_port.current));
+            port->value.string_port.current++;
+        } else {
+            port->value.stdio_port.kind |= PORT_EOF;
+            ch = IMM_EOF;
+        }
+    }
+
+    return ch;
+}
+/**
+ * char 重新放回 port
+ * <p>不会触发 GC</p>
+ * @param port PORT_INPUT
+ * @param ch IMM_CHAR / IMM_EOF, 后者不做任何事
+ */
+EXPORT_API void port_unget_char(REF NOTNULL object port, object ch) {
+    assert(is_port(port));
+    assert(is_imm_char(ch));
+
+    if (ch == IMM_EOF) {
+        return;
+    }
+
+    if (is_stdio_port(port)) {
+        ungetc(char_imm_getvalue(ch), port->value.stdio_port.file);
+    } else {
+        if (port->value.string_port.current != 0) {
+            // 忽略 ch 值
+            port->value.string_port.current--;
+        }
+    }
+
+    // 如果字符被退回, 则必定不是 EOF
+    if (is_port_eof(port)) {
+        if (is_stdio_port_eof(port)) {
+            port->value.stdio_port.kind ^= PORT_EOF;
+        } else {
+            port->value.string_port.kind ^= PORT_EOF;
+        }
+    }
+}
+
+/**
+ * 向 port 输出 char
+ * @param context
+ * @param port PORT_OUTPUT
+ * @param ch IMM_CHAR
+ */
+EXPORT_API GC void
+port_put_char(REF NOTNULL context_t context, REF NOTNULL object port, COPY object ch) {
+    assert(context != NULL);
+    assert(port != NULL);
+    assert(is_port_output(port));
+    assert(is_imm_char(ch));
+
+    gc_param1(context, port);
+    gc_var1(context, str_buff);
+
+    if (is_stdio_port(port)) {
+        fputc(char_imm_getvalue(ch), port->value.stdio_port.file);
+    } else if (is_srfi6_port(port)) {
+        str_buff = port->value.string_port.string_buffer_data;
+
+        size_t current = port->value.string_port.current;
+        size_t str_buff_len = string_buffer_length(str_buff);
+
+        if (current < str_buff_len) {
+            string_buffer_index(str_buff, current) = char_imm_getvalue(ch);
+            port->value.string_port.current++;
+        } else {
+            assert(current == str_buff_len);
+
+            str_buff = string_buffer_append_imm_char_op(context, str_buff, ch);
+            port->value.string_port.current = string_buffer_length(str_buff);
+            port->value.string_port.string_buffer_data = str_buff;
+        }
+    } else {
+        assert((0 && "UNKNOWN TYPE PORT"));
+    }
+
+    gc_release_param(context);
+}
+/**
+ * 向 port 输出 c str
+ * @param context
+ * @param port PORT_OUTPUT
+ * @param cstr
+ */
+EXPORT_API GC void
+port_put_cstr(REF NOTNULL context_t context, REF NOTNULL object port, COPY const char *cstr) {
+    assert(context != NULL);
+    assert(port != NULL);
+    assert(is_port_output(port));
+
+    gc_param1(context, port);
+    gc_var1(context, str_buff);
+
+    if (cstr == NULL) {
+        gc_release_param(context);
+        return;
+    }
+
+    if (is_stdio_port(port)) {
+        fputs(cstr, port->value.stdio_port.file);
+    } else if (is_srfi6_port(port)) {
+
+        str_buff = port->value.string_port.string_buffer_data;
+
+        size_t current = port->value.string_port.current;
+        size_t str_buff_len = string_buffer_length(str_buff);
+        size_t cstr_len = strlen(cstr);
+
+        if (cstr_len == 0) {
+            gc_release_param(context);
+            return;
+        }
+
+        if (current + cstr_len <= str_buff_len) {
+            for (size_t i = 0; i < cstr_len; i++) {
+                assert(current + i <= str_buff_len);
+                string_buffer_index(str_buff, current + i) = cstr[i];
+            }
+            port->value.string_port.current += cstr_len;
+        } else {
+            assert(current == str_buff_len);
+
+            str_buff = string_buffer_append_cstr_op(context, str_buff, cstr);
+            port->value.string_port.current = string_buffer_length(str_buff);
+            port->value.string_port.string_buffer_data = str_buff;
+        }
+    } else {
+        assert((0 && "UNKNOWN TYPE PORT"));
+    }
+
+    gc_release_param(context);
+}
+/**
+ * 向 port 输出 string
+ * @param context
+ * @param port PORT_OUTPUT
+ * @param string
+ */
+EXPORT_API GC void
+port_put_string(REF NOTNULL context_t context, REF NOTNULL object port, COPY object string) {
+    assert(context != NULL);
+    assert(port != NULL);
+    assert(is_port_output(port));
+
+    gc_param2(context, port, string);
+    gc_var1(context, str_buff);
+
+    if (string_len(string) == 0) {
+        gc_release_param(context);
+        return;
+    }
+
+    if (is_stdio_port(port)) {
+        fputs(string_get_cstr(string), port->value.stdio_port.file);
+    } else if (is_srfi6_port(port)) {
+
+        str_buff = port->value.string_port.string_buffer_data;
+
+        size_t current = port->value.string_port.current;
+        size_t str_buff_len = string_buffer_length(str_buff);
+        size_t str_len = string_len(string);
+
+        if (str_len == 0) {
+            gc_release_param(context);
+            return;
+        }
+
+        if (current + str_len <= str_buff_len) {
+            for (size_t i = 0; i < str_len; i++) {
+                assert(current + i <= str_buff_len);
+                string_buffer_index(str_buff, current + i) = string_index(string, i);
+            }
+            port->value.string_port.current += str_len;
+        } else {
+            // current + str_len > str_buff_len
+
+            str_buff = string_buffer_append_string_op(context, str_buff, string);
+            port->value.string_port.current = string_buffer_length(str_buff);
+            port->value.string_port.string_buffer_data = str_buff;
+        }
+    } else {
+        assert((0 && "UNKNOWN TYPE PORT"));
+    }
+
+    gc_release_param(context);
+}
+
+
+/**
+ * port 定位
+ * @param port
+ * @param offset 偏移量
+ * @param origin 起始位置: 0, 起始; 1, 当前位置; 2, 结束位置
+ * @return IMM_TRUE / IMM_FALSE 移动是否成功
+ */
+EXPORT_API object port_seek(REF NOTNULL object port, long offset, int origin) {
+    if (is_stdio_port(port)) {
+        switch (origin) {
+            case 1:
+                fseek(port->value.stdio_port.file, offset, SEEK_CUR);
+                break;
+            case 2:
+                fseek(port->value.stdio_port.file, offset, SEEK_END);
+                break;
+            case 0:
+            default:
+                fseek(port->value.stdio_port.file, offset, SEEK_SET);
+                break;
+        }
+    } else {
+        uint64_t end = 0;
+        uint64_t current = port->value.string_port.current;
+        if (is_srfi6_port(port)) {
+            end = string_buffer_length(port->value.string_port.string_buffer_data);
+        } else {
+            end = string_len(port->value.string_port.string_buffer_data);
+        }
+        switch (origin) {
+            case 1:
+                if (current + offset >= 0 && current + offset <= end) {
+                    port->value.string_port.current += offset;
+                } else return IMM_FALSE;
+                break;
+            case 2:
+                if (end + offset >= 0 && end + offset <= end) {
+                    port->value.string_port.current = (size_t) (end + offset);
+                } else return IMM_FALSE;
+                break;
+            case 0:
+            default:
+                if (offset >= 0 && offset <= end) {
+                    port->value.string_port.current = offset;
+                } else return IMM_FALSE;
+                break;
+        }
+    }
+
+    // fseek 结束, 去掉 EOF 标志
+    // 如果字符被退回, 则必定不是 EOF
+    if (is_port_eof(port)) {
+        if (is_stdio_port_eof(port)) {
+            port->value.stdio_port.kind ^= PORT_EOF;
+        } else {
+            port->value.string_port.kind ^= PORT_EOF;
+        }
+    }
+
+    return IMM_TRUE;
+}
+
+
+/**
+ * 返回当前 port 位置
+ * @param port
+ * @return port 当前游标位置
+ */
+EXPORT_API size_t port_tail(REF NOTNULL object port) {
+    if (is_stdio_port(port)) {
+        return ftell(port->value.stdio_port.file);
+    } else {
+        return port->value.string_port.current;
+    }
 }

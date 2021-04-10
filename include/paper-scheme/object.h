@@ -94,14 +94,14 @@ compile_time_assert(sizeof(double) == sizeof(uint64_t));
 ******************************************************************************/
 // port 类型
 enum port_kind {
-    // 具有内部缓冲 https://srfi.schemers.org/srfi-6/srfi-6.html
-            PORT_SRFI6 = 1,
+    // 具有内部缓冲 string_buffer, 参见 https://srfi.schemers.org/srfi-6/srfi-6.html
+            PORT_SRFI6 = 1u,
     // 输入 port
-            PORT_INPUT = 2,
+            PORT_INPUT = 2u,
     // 输出 port
-            PORT_OUTPUT = 4,
+            PORT_OUTPUT = 4u,
     // port 到达结尾
-            PORT_EOF = 8,
+            PORT_EOF = 8u,
 };
 
 struct object_struct_t;
@@ -200,7 +200,6 @@ struct object_struct_t {
             uint32_t hash;
             enum port_kind kind;
             object string_buffer_data;
-            size_t length;
             size_t current;
         } string_port;
 
@@ -346,7 +345,8 @@ struct object_struct_t {
             - bytes:            bytes_make_op()
             - string:           string_make_from_cstr_op()
             - string_buffer:    string_buffer_make_op(), string_buffer_make_from_string_op()
-            - symbol:           symbol_make_from_cstr_op()
+            - symbol:           symbol_make_from_cstr_untracked_op()
+                                symbol_make_from_cstr_op()
             - vector:           vector_make_op()
             - stack:            stack_make_op()
             - string_port:      string_port_input_from_string_op(), string_port_output_use_buffer_op(),
@@ -397,8 +397,10 @@ struct object_struct_t {
             - char (立即数):     imm_char_to_string_op()
             - char (C 原始类型): char_to_string_op()
             - symbol:           symbol_to_string_op()
-            - string:           string_to_symbol_op()
-            - string_buffer:    string_buffer_to_string_op(), string_buffer_to_symbol_op()
+            - string:           string_to_symbol_untracked_op()
+                                string_to_symbol_op()
+            - string_buffer:    string_buffer_to_string_op(), string_buffer_to_symbol_untracked_op()
+                                string_buffer_to_symbol_op()
             - hashset:          hashset_to_vector_op()
             - hashmap:          hashmap_to_vector_op()
             - weak_hashset:     weak_hashset_to_vector_op()

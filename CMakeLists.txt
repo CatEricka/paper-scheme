@@ -67,6 +67,8 @@ if (ENABLE_UNIT_TESTS)
             "test/test_cases/hashmap_test.c"
             "test/test_cases/hashset_test.c"
             "test/test_cases/weak_hashset_test.c"
+            "test/test_cases/global_symbol_table_test.c"
+            "test/test_cases/port_test.c"
             "test/test_run.c"
             )
     target_link_libraries(paper-scheme-test paper-scheme-lib)

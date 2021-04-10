@@ -233,7 +233,7 @@ UTEST(gc_test, heap_make_free_test) {
     object string_obj = string_make_from_cstr_op(context, "this is a string object");
     object string_null_object = string_make_from_cstr_op(context, NULL);
     object string_empty = string_make_from_cstr_op(context, "");
-    object symbol_obj = symbol_make_from_cstr_op(context, "this is a symbol object");
+    object symbol_obj = symbol_make_from_cstr_untracked_op(context, "this is a symbol object");
     object vector10 = vector_make_op(context, 10);
 
     vector_ref(vector10, 0) = i64;

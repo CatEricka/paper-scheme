@@ -56,12 +56,13 @@ pair_make_op(REF NOTNULL context_t context, REF NULLABLE object car, REF NULLABL
 /**
  * 构造 symbol 类型对象
  * <p>symbol_len() 运算结果不包括 '\0', 但是 object->symbol.len 包括 '\0', 这是为了方便运行时计算对象大小</p>
+ * <p>不要直接使用, 参见 interpreter.h: symbol_make_from_cstr_op()</p>
  * @param context
  * @param cstr C字符串, '\0'结尾
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr);
+symbol_make_from_cstr_untracked_op(REF NOTNULL context_t context, COPY const char *cstr);
 
 /**
  * 构造 bytes 对象
@@ -81,7 +82,7 @@ bytes_make_op(REF NOTNULL context_t context, IN size_t capacity);
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr);
+string_make_from_cstr_op(REF NOTNULL context_t context, COPY const char *cstr);
 
 /**
  * 构造 string_buffer 对象
@@ -138,6 +139,15 @@ string_port_input_from_string_op(REF NOTNULL context_t context, REF NULLABLE obj
  */
 EXPORT_API OUT NOTNULL GC object
 string_port_output_use_buffer_op(REF NOTNULL context_t context);
+
+/**
+ * 打开 input-output port, 深拷贝, 具有内部缓冲
+ * <p>(open-input-output-string)</p>
+ * @param context
+ * @return 打开失败返回 IMM_UNIT, 否则返回值满足 is_srfi6_port(obj), is_string_port_in_out_put(obj)
+ */
+EXPORT_API OUT NOTNULL GC object
+string_port_in_out_put_use_buffer_op(REF NOTNULL context_t context);
 
 /**
  * 从输入字符串打开 input-output port, 深拷贝, 具有内部缓冲
@@ -236,6 +246,18 @@ string_buffer_append_string_op(
         IN NULLABLE object str_buffer, COPY NULLABLE object str);
 
 /**
+ * string_buffer 拼接 c_str, 深拷贝
+ * @param context
+ * @param str_buffer string_buffer
+ * @param str string
+ * @return 修改后的 string_buffer
+ */
+EXPORT_API OUT NOTNULL GC object
+string_buffer_append_cstr_op(
+        REF NOTNULL context_t context,
+        IN NULLABLE object str_buffer, COPY NULLABLE const char *cstr);
+
+/**
  * string_buffer 拼接 imm_char, 深拷贝
  * @param context
  * @param str_buffer
@@ -256,6 +278,15 @@ string_buffer_append_imm_char_op(
  */
 EXPORT_API OUT NOTNULL GC object
 string_buffer_append_char_op(REF NOTNULL context_t context, IN NOTNULL object str_buffer, COPY char ch);
+
+
+/**
+ * vector 填充
+ * @param vector
+ * @param obj 被填充, 浅拷贝
+ */
+EXPORT_API OUT void
+vector_fill(REF NOTNULL object vector, REF NOTNULL object obj);
 
 
 /**
@@ -514,12 +545,13 @@ symbol_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object symbol);
 
 /**
  * string 转 symbol
+ * <p>不要直接使用, 参见 interpreter.h: string_to_symbol_op()</p>
  * @param context
  * @param string
  * @return
  */
 EXPORT_API OUT NOTNULL GC object
-string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str);
+string_to_symbol_untracked_op(REF NOTNULL context_t context, NOTNULL COPY object str);
 
 /**
  * string_buffer 转换为 string, 深拷贝
@@ -532,12 +564,13 @@ string_buffer_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object st
 
 /**
  * string_buffer 转换为 symbol, 深拷贝
+ * <p>不要直接使用, 参见 interpreter.h: string_buffer_to_symbol_op()</p>
  * @param context
  * @param str_buffer string_buffer
  * @return symbol
  */
 EXPORT_API OUT NOTNULL GC object
-string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
+string_buffer_to_symbol_untracked_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer);
 
 /**
  * hashset 转为 vector, 无序
@@ -566,5 +599,64 @@ hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap)
  */
 EXPORT_API OUT NOTNULL GC object
 weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object weak_hashset);
+
+
+/******************************************************************************
+                                输入输出 API
+******************************************************************************/
+/**
+ * 从 port 读入一个 char
+ * <p>不会触发 GC</p>
+ * @param port
+ * @return IMM_CHAR 或 IMM_EOF
+ */
+EXPORT_API object port_get_char(REF NOTNULL object port);
+/**
+ * char 重新放回 port
+ * <p>不会触发 GC</p>
+ * @param port PORT_INPUT
+ * @param ch IMM_CHAR / IMM_EOF, 后者不做任何事
+ */
+EXPORT_API GC void port_unget_char(REF NOTNULL object port, object ch);
+
+/**
+ * 向 port 输出 char
+ * @param context
+ * @param port PORT_OUTPUT
+ * @param ch IMM_CHAR
+ */
+EXPORT_API GC void
+port_put_char(REF NOTNULL context_t context, REF NOTNULL object port, COPY object ch);
+/**
+ * 向 port 输出 c str
+ * @param context
+ * @param port PORT_OUTPUT
+ * @param cstr
+ */
+EXPORT_API GC void
+port_put_cstr(REF NOTNULL context_t context, REF NOTNULL object port, COPY const char *cstr);
+/**
+ * 向 port 输出 string
+ * @param context
+ * @param port PORT_OUTPUT
+ * @param string
+ */
+EXPORT_API GC void
+port_put_string(REF NOTNULL context_t context, REF NOTNULL object port, COPY object string);
+
+/**
+ * port 定位
+ * @param port
+ * @param offset 偏移量
+ * @param origin 起始位置: 0, 起始; 1, 当前位置; 2, 结束位置
+ */
+EXPORT_API object port_seek(REF NOTNULL object port, long offset, int origin);
+
+/**
+ * 返回当前 port 位置
+ * @param port
+ * @return port 当前游标位置
+ */
+EXPORT_API size_t port_tail(REF NOTNULL object port);
 
 #endif //BASE_SCHEME_RUNTIME_H

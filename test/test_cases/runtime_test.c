@@ -227,7 +227,7 @@ UTEST(runtime_test, context_runtime_type_test) {
     ASSERT_EQ(object_type_info_member_slots_of(t, obj), 0);
     ASSERT_EQ(object_type_info_member_eq_slots_of(t, obj), 0);
 
-    object symbol_obj = symbol_make_from_cstr_op(context, "this is a symbol object");
+    object symbol_obj = symbol_make_from_cstr_untracked_op(context, "this is a symbol object");
     size1 = object_bootstrap_sizeof(symbol_obj);
     size2 = context_object_sizeof(context, symbol_obj);
     ASSERT_EQ(size1, size2);

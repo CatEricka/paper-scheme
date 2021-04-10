@@ -46,11 +46,11 @@ UTEST(weak_hashset_test, strong_ref_test) {
     // 强引用
     vector = vector_make_op(context, symbols_len);
     for (size_t i = 0; i < symbols_len; i++) {
-        vector_ref(vector, i) = symbol_make_from_cstr_op(context, symbols[i]);
+        vector_ref(vector, i) = symbol_make_from_cstr_untracked_op(context, symbols[i]);
     }
     vector2 = vector_make_op(context, other_symbol_len);
     for (size_t i = 0; i < other_symbol_len; i++) {
-        vector_ref(vector2, i) = symbol_make_from_cstr_op(context, other_symbol_table[i]);
+        vector_ref(vector2, i) = symbol_make_from_cstr_untracked_op(context, other_symbol_table[i]);
     }
 
     gc_collect(context);
@@ -221,11 +221,11 @@ UTEST(weak_hashset_test, strong_ref_remove_test) {
     // 强引用
     vector = vector_make_op(context, symbols_len);
     for (size_t i = 0; i < symbols_len; i++) {
-        vector_ref(vector, i) = symbol_make_from_cstr_op(context, symbols[i]);
+        vector_ref(vector, i) = symbol_make_from_cstr_untracked_op(context, symbols[i]);
     }
     vector2 = vector_make_op(context, other_symbol_len);
     for (size_t i = 0; i < other_symbol_len; i++) {
-        vector_ref(vector2, i) = symbol_make_from_cstr_op(context, other_symbol_table[i]);
+        vector_ref(vector2, i) = symbol_make_from_cstr_untracked_op(context, other_symbol_table[i]);
     }
 
     gc_collect(context);

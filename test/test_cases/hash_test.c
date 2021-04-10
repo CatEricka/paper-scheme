@@ -27,14 +27,14 @@ UTEST(hash_test, symbol_hash_test) {
     gc_var1(context, str);
 
     char *cstr = "abcdefghijkl";
-    str = symbol_make_from_cstr_op(context, cstr);
+    str = symbol_make_from_cstr_untracked_op(context, cstr);
     object_type_info_ptr t = context_get_object_type(context, str);
     hash_code_fn hash = type_info_hash_code(t);
     ASSERT_NE((void *) hash, NULL);
     UTEST_PRINTF("%s hash: %u\n", cstr, hash(context, str));
 
     cstr = "123456789010";
-    str = symbol_make_from_cstr_op(context, cstr);
+    str = symbol_make_from_cstr_untracked_op(context, cstr);
     UTEST_PRINTF("%s hash: %u\n", cstr, hash(context, str));
 
     ASSERT_EQ(context->saves, &__gc_var_dream1__);
@@ -104,7 +104,7 @@ UTEST(hash_test, all_value_hash_test) {
 
     // pair1
     tmp1 = string_make_from_cstr_op(context, "pair_car");
-    tmp2 = symbol_make_from_cstr_op(context, "pair_cdr");
+    tmp2 = symbol_make_from_cstr_untracked_op(context, "pair_cdr");
     obj = pair_make_op(context, tmp1, tmp2);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
@@ -195,7 +195,7 @@ UTEST(hash_test, all_value_hash_test) {
     UTEST_PRINTF("string_buffer->string: \"%s\"\n\t\t\thash: %u\n", string_get_cstr(tmp1),
                  string_hash_code(context, tmp1));
 
-    tmp1 = string_buffer_to_symbol_op(context, obj);
+    tmp1 = string_buffer_to_symbol_untracked_op(context, obj);
     type = context_get_object_type(context, tmp1);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, tmp1);
@@ -244,7 +244,7 @@ UTEST(hash_test, all_value_hash_test) {
 
     // symbol
     char symbol_obj[] = "symbol_object test";
-    obj = symbol_make_from_cstr_op(context, symbol_obj);
+    obj = symbol_make_from_cstr_untracked_op(context, symbol_obj);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);

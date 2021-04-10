@@ -80,10 +80,10 @@ UTEST(equals_test, value_equals_test) {
 
     // pair1
     tmp1 = string_make_from_cstr_op(context, "pair_car");
-    tmp2 = symbol_make_from_cstr_op(context, "pair_cdr");
+    tmp2 = symbol_make_from_cstr_untracked_op(context, "pair_cdr");
     obj1 = pair_make_op(context, tmp1, tmp2);
     tmp1 = string_make_from_cstr_op(context, "pair_car");
-    tmp2 = symbol_make_from_cstr_op(context, "pair_cdr");
+    tmp2 = symbol_make_from_cstr_untracked_op(context, "pair_cdr");
     obj2 = pair_make_op(context, tmp1, tmp2);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
@@ -99,7 +99,7 @@ UTEST(equals_test, value_equals_test) {
     tmp2 = vector_make_op(context, 10);
     tmp2 = pair_make_op(context, tmp2, IMM_UNIT);
     obj1 = pair_make_op(context, tmp1, tmp2);
-    tmp1 = symbol_make_from_cstr_op(context, "pair_car");
+    tmp1 = symbol_make_from_cstr_untracked_op(context, "pair_car");
     tmp2 = vector_make_op(context, 10);
     tmp2 = pair_make_op(context, tmp2, IMM_UNIT);
     obj2 = pair_make_op(context, tmp1, tmp2);
@@ -189,8 +189,8 @@ UTEST(equals_test, value_equals_test) {
     ASSERT_TRUE(equals(context, tmp1, tmp2));
     ASSERT_TRUE(equals(context, tmp1, tmp1));
 
-    tmp1 = string_buffer_to_symbol_op(context, obj1);
-    tmp2 = string_buffer_to_symbol_op(context, obj2);
+    tmp1 = string_buffer_to_symbol_untracked_op(context, obj1);
+    tmp2 = string_buffer_to_symbol_untracked_op(context, obj2);
     type = context_get_object_type(context, tmp1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, tmp1);
@@ -227,8 +227,8 @@ UTEST(equals_test, value_equals_test) {
 
     // symbol
     char symbol_obj[] = "symbol_object test";
-    obj1 = symbol_make_from_cstr_op(context, symbol_obj);
-    obj2 = symbol_make_from_cstr_op(context, symbol_obj);
+    obj1 = symbol_make_from_cstr_untracked_op(context, symbol_obj);
+    obj2 = symbol_make_from_cstr_untracked_op(context, symbol_obj);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);

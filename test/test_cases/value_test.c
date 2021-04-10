@@ -738,7 +738,7 @@ UTEST(value_test, all_value_type_function_test) {
 
     // symbol
     char symbol_str[] = "this is a symbol object";
-    obj = symbol_make_from_cstr_op(context, symbol_str);
+    obj = symbol_make_from_cstr_untracked_op(context, symbol_str);
     ASSERT_EQ(strlen(str), symbol_len(obj));
     for (size_t i = 0; i <= strlen(symbol_str); i++) {
         ASSERT_EQ(symbol_str[i], symbol_index(obj, i));
@@ -791,7 +791,7 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
-    obj = symbol_make_from_cstr_op(context, NULL);
+    obj = symbol_make_from_cstr_untracked_op(context, NULL);
     ASSERT_EQ(0, symbol_len(obj));
     ASSERT_EQ('\0', symbol_index(obj, 0));
     ASSERT_FALSE(is_null(obj));
@@ -838,7 +838,7 @@ UTEST(value_test, all_value_type_function_test) {
                              " ns\n", time);
     }
 
-    obj = symbol_make_from_cstr_op(context, "");
+    obj = symbol_make_from_cstr_untracked_op(context, "");
     ASSERT_EQ(0, symbol_len(obj));
     ASSERT_EQ('\0', symbol_index(obj, 0));
     ASSERT_FALSE(is_null(obj));
@@ -1840,7 +1840,7 @@ UTEST(value_test, all_value_type_function_test) {
     gc_collect(context);
 
     char symbol_cstr[] = "this_is_a_symbol";
-    obj = symbol_make_from_cstr_op(context, symbol_cstr);
+    obj = symbol_make_from_cstr_untracked_op(context, symbol_cstr);
     hash_code_fn hash_fn = object_hash_helper(context, obj);
     uint32_t hash1 = hash_fn(context, obj);
     obj = symbol_to_string_op(context, obj);
@@ -1857,7 +1857,7 @@ UTEST(value_test, all_value_type_function_test) {
     obj = string_make_from_cstr_op(context, string_cstr);
     hash_fn = object_hash_helper(context, obj);
     hash1 = hash_fn(context, obj);
-    obj = string_to_symbol_op(context, obj);
+    obj = string_to_symbol_untracked_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("%s string hash: %u\n", string_cstr, hash1);
@@ -1872,7 +1872,7 @@ UTEST(value_test, all_value_type_function_test) {
     obj = string_buffer_make_from_string_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     hash1 = hash_fn(context, obj);
-    obj = string_buffer_to_symbol_op(context, obj);
+    obj = string_buffer_to_symbol_untracked_op(context, obj);
     hash_fn = object_hash_helper(context, obj);
     hash2 = hash_fn(context, obj);
     UTEST_PRINTF("%s string_buffer hash: %u\n", string_buffer_cstr, hash1);

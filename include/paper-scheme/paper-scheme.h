@@ -2,7 +2,7 @@
 #define BASE_SCHEME_MAIN_H
 #pragma once
 
-#include <paper-scheme/runtime.h>
+#include <paper-scheme/interpreter.h>
 
 
 #endif // BASE_SCHEME_MAIN_H

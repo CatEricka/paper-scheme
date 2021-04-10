@@ -51,43 +51,65 @@ typedef struct scheme_context_t {
     int debug;
     // 是否处于 repl 模式
     int repl_mode;
+    // 解释器环境是否初始化结束
+    int init_done;
 
 
     /**
      *                    解释器寄存器
      ****************************************************/
     // TODO 解释器寄存器
-    // 参数寄存器, pair / IMM_UNIT
+    /**
+     * 参数寄存器, pair / IMM_UNIT
+     */
     GC object args;
-    // s-exp 寄存器, pair / IMM_UNIT
+    /**
+     * s-exp 寄存器, pair / IMM_UNIT
+     */
     GC object code;
-    // 当前 environment 指针, (const (make-hashmap GLOBAL_SYMBOL_TABLE_INIT_SIZE) '())
-    // hashmap symbol->object
+    /**
+     * 当前 environment 指针, (const (make-hashmap GLOBAL_SYMBOL_TABLE_INIT_SIZE) '())
+     * <p>hashmap symbol->object</p>
+     */
     GC object current_env;
-    // 栈记录, (cons (stack MAX_STACK_BLOCK_DEEP) '())
+    /**
+     * 栈记录, (cons (stack MAX_STACK_BLOCK_DEEP) '())
+     */
     GC object scheme_stack;
 
-    // 当前操作码
+    /**
+     * 当前操作码
+     */
     int op_code;
-    // 返回值, any type
+    /**
+     * 返回值, any type
+     */
     GC object value;
 
-    // (load "") 栈, (make-stack MAX_LOAD_FILE_DEEP)
+    /**
+     * (load "") 栈, (make-stack MAX_LOAD_FILE_DEEP)
+     */
     GC object load_stack;
 
 
     /**
      *                   全局信息表
      ****************************************************/
-    // 全局符号表 弱引用 hashset
-    // (make-weak-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)
-    // symbol
+    /**
+     * 全局符号表 弱引用 hashset
+     * <p>(make-weak-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)</p>
+     * <p>symbol</p>
+     */
     GC object global_symbol_table;
-    // 全局 environment, (make-hashmap)
-    // symbol->any
+    /**
+     * 全局 environment, (make-hashmap)
+     * symbol->any
+     */
     GC object global_environment;
 
-    // GC 全局类型信息表
+    /**
+     * GC 全局类型信息表
+     */
     GC struct object_runtime_type_info_t *global_type_table;
     // 全局类型信息表最大长度
     size_t type_info_table_size;

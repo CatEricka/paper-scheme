@@ -74,14 +74,14 @@ UTEST(hashmap_test, test) {
     // make test data
     vector = vector_make_op(context, symbols_len);
     for (size_t i = 0; i < symbols_len; i++) {
-        k = symbol_make_from_cstr_op(context, symbols[i]);
+        k = symbol_make_from_cstr_untracked_op(context, symbols[i]);
         v = string_make_from_cstr_op(context, values[i]);
         obj = pair_make_op(context, k, v);
         vector_ref(vector, i) = obj;
     }
     vector2 = vector_make_op(context, other_symbol_len);
     for (size_t i = 0; i < other_symbol_len; i++) {
-        k = symbol_make_from_cstr_op(context, other_symbols[i]);
+        k = symbol_make_from_cstr_untracked_op(context, other_symbols[i]);
         v = string_make_from_cstr_op(context, other_values[i]);
         obj = pair_make_op(context, k, v);
         vector_ref(vector2, i) = obj;

@@ -459,6 +459,11 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
     //return;
     notnull_or_return(context->heap, "context->heap make failed.", NULL);
 
+    // 初始化开关
+    context->debug = 0;
+    context->repl_mode = 0;
+    context->init_done = 0;
+
     // 初始化 gc 相关
     context->gc_collect_on = 1;
     context->mark_stack_top = NULL;
@@ -628,7 +633,7 @@ EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum 
     uint32_t rand_sand = rand_helper();
     uint32_t hash = 0;
 #ifdef IS_32_BIT_ARCH
-    hash = (uint32_t)ptr;
+    hash = (uint32_t) ptr;
     hash = uint32_pair_hash(hash, rand_sand);
     hash = uint32_pair_hash(hash, type);
     return hash;
