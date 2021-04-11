@@ -33,6 +33,9 @@ TODO:
 - [x] 实现 `weak_ref_hashmap`
 - [x] 实现支持 `延续` 的 scheme stack
 - [x] 实现 environment 链
+- [ ] 实现 proc syntax 相关
+- [ ] 实现 opcode/proc 类型检查
+- [ ] 实现初始过程和特殊符号表赋值
 - [ ] 实现运行时类型与解释器结构
 - [ ] 实现 `stdio_port` / `string_port` 相关操作
 - [ ] 初步实现 `opcodes.h`

@@ -30,7 +30,6 @@
 /******************************************************************************
                                 解释器初始化
 ******************************************************************************/
-#define assert_init_done(context) assert((context)->init_done)
 
 /**
  * 创建解释器
@@ -45,7 +44,7 @@ EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growt
  * 析构解释器
  * @param context
  */
-EXPORT_API void interpreter_destory(context_t context);
+EXPORT_API void interpreter_destroy(context_t context);
 
 /******************************************************************************
                          global_symbol_table 操作

@@ -1,6 +1,51 @@
 #include "paper-scheme/interpreter.h"
 
 
+
+/******************************************************************************
+                          opcode procedure 类型检查
+******************************************************************************/
+
+
+/******************************************************************************
+                         内部 opcode dispatch table
+******************************************************************************/
+static object op_exec_0(context_t context, enum opcode_e opcode);
+
+static object op_exec_1(context_t context, enum opcode_e opcode);
+
+static object op_exec_2(context_t context, enum opcode_e opcode);
+
+/**
+ * op_exec_ 分发表内部定义
+ */
+op_code_info internal_dispatch_table[] = {
+        {READ_SEXP_OP, op_exec_0, NULL, 0, 0, NULL,},
+};
+
+/**
+ * op_exec_ 参数类型检查表
+ */
+
+static void register_op_code(context_t context) {
+    for (size_t i = 0; i < sizeof(internal_dispatch_table) / sizeof(op_code_info); i++) {
+        op_code_info *info = &internal_dispatch_table[i];
+        int op = info->op;
+        context->dispatch_table[op].op = info->op;
+        context->dispatch_table[op].func = info->func;
+        context->dispatch_table[op].min_args_length = info->min_args_length;
+        context->dispatch_table[op].max_args_length = info->max_args_length;
+        context->dispatch_table[op].op = info->op;
+
+        if (info->name == NULL) {
+            context->dispatch_table[op].name = IMM_UNIT;
+        } else {
+            // 构造内部 proc
+        }
+    }
+}
+
+
 /******************************************************************************
                                 解释器初始化
 ******************************************************************************/
@@ -40,6 +85,13 @@ static int interpreter_default_env_init(context_t context) {
     context->out_port = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     context->err_out_port = stdio_port_from_file_op(context, stderr, PORT_OUTPUT);
 
+    // 初始化 op code dispatch table
+    context->dispatch_table = raw_alloc(sizeof(op_code_info) * MAX_OP_CODE_SIZE);
+    notnull_or_return(context->dispatch_table, "[ERROR] context->dispatch_table alloc failed.", 0);
+    register_op_code(context);
+
+    // 注册内部 proc
+
     // 环境初始化结束
     context->init_done = 1;
     gc_release_var(context);
@@ -57,15 +109,22 @@ EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growt
     context_t context = context_make(heap_init_size, heap_growth_scale, heap_max_size);
     notnull_or_return(context, "interpreter_create failed", NULL);
 
-    interpreter_default_env_init(context);
-    return context;
+    int ret = interpreter_default_env_init(context);
+    if (ret) {
+        return context;
+    } else {
+        interpreter_destroy(context);
+        notnull_or_return(NULL, "interpreter_create failed", NULL);
+    }
 }
 
 /**
  * 析构解释器
  * @param context
  */
-EXPORT_API void interpreter_destory(context_t context) {
+EXPORT_API void interpreter_destroy(context_t context) {
+    if (context == NULL) return;
+
     context->debug = 0;
     context->repl_mode = 0;
 
@@ -129,7 +188,6 @@ EXPORT_API OUT NOTNULL GC object gensym(REF NOTNULL context_t context) {
 EXPORT_API OUT NOTNULL GC void
 global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL object symbol) {
     assert(context != NULL);
-    assert_init_done(context);
     assert(is_symbol(symbol));
     assert(is_weak_hashset(context->global_symbol_table));
     gc_param1(context, symbol);
@@ -148,7 +206,6 @@ global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL obj
 EXPORT_API OUT NOTNULL object
 global_symbol_found(REF NOTNULL context_t context, REF NOTNULL object symbol) {
     assert(context != NULL);
-    assert_init_done(context);
     assert(is_symbol(symbol));
 
     return weak_hashset_contains_op(context, context->global_symbol_table, symbol);
@@ -162,7 +219,6 @@ global_symbol_found(REF NOTNULL context_t context, REF NOTNULL object symbol) {
 EXPORT_API OUT NOTNULL GC object
 global_symbol_all_symbol(REF NOTNULL context_t context) {
     assert(context != NULL);
-    assert_init_done(context);
     return weak_hashset_to_vector_op(context, context->global_symbol_table);
 }
 
@@ -177,7 +233,6 @@ global_symbol_all_symbol(REF NOTNULL context_t context) {
 EXPORT_API OUT NOTNULL GC object
 symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
     assert(context != NULL);
-    assert_init_done(context);
 
     gc_var1(context, symbol);
     symbol = symbol_make_from_cstr_untracked_op(context, cstr);
@@ -196,7 +251,6 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
 EXPORT_API OUT NOTNULL GC object
 string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str) {
     assert(context != NULL);
-    assert_init_done(context);
 
     gc_param1(context, str);
     gc_var1(context, symbol);
@@ -216,7 +270,6 @@ string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str) {
 EXPORT_API OUT NOTNULL GC object
 string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str_buffer) {
     assert(context != NULL);
-    assert_init_done(context);
 
     gc_param1(context, str_buffer);
     gc_var1(context, symbol);
@@ -407,7 +460,7 @@ uint32_t eval_apply_loop(context_t context, enum opcode_e opcode) {
     return 1;
 }
 
-static object operation_execute_0(context_t context, enum opcode_e opcode) {
+static object op_exec_0(context_t context, enum opcode_e opcode) {
     return 0;
 }
 

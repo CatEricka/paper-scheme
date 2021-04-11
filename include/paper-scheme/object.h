@@ -43,6 +43,8 @@ enum object_type_enum {
     OBJ_WEAK_HASH_SET,
     OBJ_STACK_FRAME,
     OBJ_ENV_SLOT,
+    OBJ_PROC,
+    OBJ_SYNTAX,
 
     // 标记枚举最大值
             OBJECT_TYPE_ENUM_MAX,
@@ -274,7 +276,7 @@ struct object_struct_t {
             object table;
         } weak_hashset;
 
-        // TODO 栈帧结构
+        // 栈帧结构
         struct value_scheme_stack_frame_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -284,7 +286,7 @@ struct object_struct_t {
             object code;
         } stack_frame;
 
-        // TODO environment 槽
+        // environment 槽
         struct value_environment_slot_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
@@ -293,6 +295,16 @@ struct object_struct_t {
             object next_env_slot;   // 禁止非解释器内部修改这个字段
         } env_slot;
 
+        // TODO proc
+        struct value_proc_t {
+            object symbol;
+            enum opcode_e opcode;
+        } proc;
+
+        // TODO syntax
+        struct value_syntax_t {
+            object syntax_name; // symbol
+        } syntax;
     } value;
     /*  对齐填充, 对齐到 ALIGN_SIZE, 即 sizeof(void *)  */
 };
@@ -364,8 +376,9 @@ struct object_struct_t {
 
             - weak_ref:         is_weak_ref(obj)
             - weak_hashset:     is_weak_hashset(obj)
-            - stack_frame:      TODO is_stack_frame
-            - env_slot:         TODO is_env_slot()
+            - stack_frame:      is_stack_frame
+            - env_slot:         is_env_slot()
+            - proc:             TODO is_proc()
         构造:
             - i64:              i64_make_op(), i64_imm_make()
             - imm_char:         char_imm_make()
@@ -386,8 +399,9 @@ struct object_struct_t {
 
             - weak_ref:         weak_ref_make_op()
             - weak_hashset:     weak_hashset_make_op()
-            - stack_frame:      TODO stack_frame_make_op()
-            - env_stack:        TODO env_slot_make_op()
+            - stack_frame:      stack_frame_make_op()
+            - env_stack:        env_slot_make_op()
+            - proc:             TODO proc_make_internal()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -410,9 +424,10 @@ struct object_struct_t {
 
             - weak_ref:         weak_ref_is_valid()
             - weak_hashset:     weak_hashset_size_op()
-            - stack_frame:      TODO stack_frame_op(), stack_frame_args(),
-                                TODO stack_frame_env(), stack_frame_code()
-            - env_stack:        TODO env_slot_var(), env_slot_value(), env_slot_next()
+            - stack_frame:      stack_frame_op(), stack_frame_args(),
+                                stack_frame_env(), stack_frame_code()
+            - env_stack:        env_slot_var(), env_slot_value(), env_slot_next()
+            - proc:             TODO proc_get_opcode(), proc_get_symbol()
         操作:
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
@@ -746,6 +761,8 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 #define is_stack_frame(obj)             (is_object(obj) && ((obj)->type == OBJ_STACK_FRAME))
 // env 帧
 #define is_env_slot(obj)                (is_object(obj) && ((obj)->type == OBJ_ENV_SLOT))
+// proc
+#define is_proc(obj)                    (is_object(obj) && ((obj)->type == OBJ_PROC))
 /**
                                 对象值操作
 ******************************************************************************/

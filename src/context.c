@@ -368,6 +368,40 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .hash_code = env_slot_hash_code,
                 .equals = env_slot_equals,
         },
+        {
+                .name = (object) "Procedure", .tag = OBJ_PROC,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(proc, symbol),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(proc),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = proc_hash_code,
+                .equals = proc_equals,
+        }, ,
+        {
+            .name = (object) "Procedure", .tag = OBJ_PROC,
+            .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+            .member_base = object_offsetof(syntax, syntax_name),
+            .member_eq_len_base = 1,
+            .member_len_base = 1,
+            .member_meta_len_offset = 0,
+            .member_meta_len_scale = 0,
+
+            .size_base = object_sizeof_base(syntax),
+            .size_meta_size_offset = 0,
+            .size_meta_size_scale = 0,
+            .finalizer = NULL,
+            .hash_code = syntax_hash_code,
+            .equals = syntax_equals,
+        },
 };
 
 

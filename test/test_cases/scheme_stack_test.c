@@ -98,5 +98,5 @@ UTEST(scheme_stack_test, test) {
 
     assert(context->saves == &__gc_var_dream5__);
     gc_release_var(context);
-    interpreter_destory(context);
+    interpreter_destroy(context);
 }

@@ -12,7 +12,6 @@
  */
 
 
-#include <paper-scheme/opcodes.h>
 #include <paper-scheme/gc.h>
 
 
@@ -623,6 +622,16 @@ hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap)
  */
 EXPORT_API OUT NOTNULL GC object
 weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object weak_hashset);
+
+/**
+ *
+ * @param context
+ * @param opcode
+ * @param name
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+proc_make_internal(REF NOTNULL context_t context, COPY enum opcode_e opcode, COPY char *name);
 
 
 

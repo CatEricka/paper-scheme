@@ -40,10 +40,32 @@ struct object_runtime_type_info_t;
 typedef struct object_runtime_type_info_t *object_type_info_ptr;
 
 /**
- * vm 上下文
+ * 上下文
  */
 struct scheme_context_t;
-typedef struct scheme_context_t {
+typedef struct scheme_context_t *context_t;
+
+/**
+ * op_exec_ 函数指针
+ */
+typedef object (*op_exec_dispatch_func)(context_t r, enum opcode_e e);
+
+/**
+ * opcodes info
+ */
+typedef struct op_code_info_t {
+    enum opcode_e op;
+    op_exec_dispatch_func func;
+    object name;
+    size_t min_args_length;
+    size_t max_args_length;
+    char *args_type_table;
+} op_code_info;
+
+/**
+ * 上下文结构定义
+ */
+struct scheme_context_t {
     /**
      *                      开关选项
      ****************************************************/
@@ -53,6 +75,12 @@ typedef struct scheme_context_t {
     int repl_mode;
     // 解释器环境是否初始化结束
     int init_done;
+
+
+    /**
+     *                  op_exec 分发表
+     ****************************************************/
+    op_code_info *dispatch_table;
 
 
     /**
@@ -160,7 +188,7 @@ typedef struct scheme_context_t {
      *                      C 交互
      ****************************************************/
     int ret;
-} *context_t;
+};
 
 
 /**
