@@ -503,10 +503,10 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
     context->mark_stack_top = NULL;
     context->saves = NULL;
 
-    // TODO 修改为内部 port 实现; 解释器输入输出
-    context->in_port = stdin;
-    context->out_port = stdout;
-    context->err_out_port = stderr;
+    // 修改为内部 port 实现; 解释器输入输出
+    context->in_port = IMM_UNIT;
+    context->out_port = IMM_UNIT;
+    context->err_out_port = IMM_UNIT;
 
 
     context->_internal_scheme_type_specs = scheme_type_specs;

@@ -157,6 +157,10 @@ static object gc_mark(context_t context) {
     // 标记全局 environment
     gc_mark_one_start(context, context->global_environment);
 
+    // 标记输入输出
+    gc_mark_one_start(context, context->in_port);
+    gc_mark_one_start(context, context->out_port);
+    gc_mark_one_start(context, context->err_out_port);
 
     // 全局类型
     for (size_t i = 0; i < context->global_type_table_len; i++) {
@@ -302,6 +306,11 @@ static void gc_adjust_ref(context_t context) {
     // 调整 global_environment
     gc_adjust_ref_one(&(context->global_environment));
 
+    // 调整输入输出
+    gc_adjust_ref_one(&context->in_port);
+    gc_adjust_ref_one(&context->out_port);
+    gc_adjust_ref_one(&context->err_out_port);
+
     // 全局类型信息
     for (size_t i = 0; i < context->global_type_table_len; i++) {
         object_type_info_ptr t = &context->global_type_table[i];
@@ -369,6 +378,10 @@ static void gc_adjust_ref(context_t context) {
                     assert(field_len == 1);
                 } else if (is_weak_hashset(obj)) {
                     assert(field_len == 1);
+                } else if (is_stack_frame(obj)) {
+                    assert(field_len == 3);
+                } else if (is_env_slot(obj)) {
+                    assert(field_len == 3);
                 }
 #endif
 

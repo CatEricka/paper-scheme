@@ -290,7 +290,7 @@ struct object_struct_t {
             uint32_t hash;
             object var_name;
             object value;
-            object next_env_slot;
+            object next_env_slot;   // 禁止非解释器内部修改这个字段
         } env_slot;
 
     } value;

@@ -110,6 +110,10 @@ typedef struct scheme_context_t {
      * symbol->any
      */
     GC object global_environment;
+    /**
+     * 用于 gensym 生成唯一 symbol
+     */
+    uint64_t gensym_count;
 
     /**
      * GC 全局类型信息表
@@ -140,9 +144,9 @@ typedef struct scheme_context_t {
     gc_mark_stack_ptr mark_stack_top;
 
     // TODO 修改为内部 port 实现, 决定构造时机; 解释器输入输出
-    FILE *in_port;
-    FILE *out_port;
-    FILE *err_out_port;
+    GC object in_port;
+    GC object out_port;
+    GC object err_out_port;
 
 
     /**

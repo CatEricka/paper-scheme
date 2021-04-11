@@ -51,6 +51,12 @@ EXPORT_API void interpreter_destory(context_t context);
                          global_symbol_table 操作
 ******************************************************************************/
 /**
+ * 生成当前环境下唯一 symbol
+ * @param context
+ * @return symbol
+ */
+EXPORT_API OUT NOTNULL GC object gensym(REF NOTNULL context_t context);
+/**
  * 向全局符号表添加 symbol 并返回这个 symbol
  * @param context
  * @param symbol symbol 对象
@@ -62,7 +68,7 @@ global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL obj
  * 从全局符号表中查找是否存在此符号
  * @param context
  * @param symbol
- * @return 存在返回 IMM_TRUE, 否则返回 IMM_UNIT
+ * @return 存在返回 IMM_TRUE, 否则返回 IMM_FALSE
  */
 EXPORT_API OUT NOTNULL GC object
 global_symbol_found(REF NOTNULL context_t context, REF NOTNULL object symbol);
@@ -141,17 +147,26 @@ EXPORT_API object scheme_stack_return(context_t context, object value);
  * <p>不会触发 GC</p>
  * @param context
  * @param symbol
+ * @param all 1: 持续查找到全局 env; 0: 只查找当前 env
+ * @return env_slot / IMM_UNIT (未找到)
+ */
+EXPORT_API object find_slot_in_current_env(REF NOTNULL context_t context, object symbol, int all);
+/**
+ * 从 context->current_env 向上查找 env_slot
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param symbol
  * @param all 1: 持续查找到全局 env; 0: 只查找当前 environment
  * @return pair(symbol, value) / IMM_UNIT (未找到)
  */
-EXPORT_API object find_slot_in_env(REF NOTNULL context_t context, object env, object symbol, int all);
+EXPORT_API object find_slot_in_spec_env(REF NOTNULL context_t context, object env, object symbol, int all);
 /**
  * 在当前 context->current_env 插入新 env_slot
  * @param context
  * @param symbol
  * @param value
  */
-EXPORT_API GC void new_slot_in_env(context_t context, object symbol, object value);
+EXPORT_API GC void new_slot_in_current_env(context_t context, object symbol, object value);
 /**
  * 从特定 env frame 插入新 env_slot
  * @param context
@@ -160,13 +175,18 @@ EXPORT_API GC void new_slot_in_env(context_t context, object symbol, object valu
  * @param env
  */
 EXPORT_API GC void new_slot_in_spec_env(context_t context, object symbol, object value, object env);
-
+/**
+ * 以 context->current_env 作为上层, 创建新 frame, 赋值给 context->current_env
+ * @param context
+ * @param old_env 一般是 context->current_env
+ */
+EXPORT_API GC void new_frame_push_current_env(context_t context);
 /**
  * 以 old_env 作为上层, 创建新 frame, 赋值给 context->current_env
  * @param context
  * @param old_env
  */
-EXPORT_API GC void new_frame_in_env(context_t context, object old_env);
+EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env);
 
 
 /******************************************************************************

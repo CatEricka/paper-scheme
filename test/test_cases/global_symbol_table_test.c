@@ -41,6 +41,15 @@ UTEST(global_symbol_table, test) {
     obj = global_symbol_all_symbol(context);
     ASSERT_EQ(0, vector_len(obj));
 
+    // ²âÊÔ gensym
+    obj = symbol_make_from_cstr_op(context, "gensym_0x0000000000000000");
+    sym = gensym(context);
+    UTEST_PRINTF("gensym: %s\n", symbol_get_cstr(sym));
+    sym = gensym(context);
+    UTEST_PRINTF("gensym: %s\n", symbol_get_cstr(sym));
+    sym = gensym(context);
+    UTEST_PRINTF("gensym: %s\n", symbol_get_cstr(sym));
+
     ASSERT_EQ(context->saves, &__gc_var_dream2__);
     gc_release_var(context);
 }

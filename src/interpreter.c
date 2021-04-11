@@ -22,17 +22,23 @@ static int interpreter_default_env_init(context_t context) {
     tmp = pair_make_op(context, IMM_UNIT, IMM_UNIT);
     pair_car(tmp) = hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
     context->global_environment = tmp;
+    context->gensym_count = 0;
 
     context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
 
-    // TODO op_code 初始化
-    context->op_code = OP_TOP_LEVEL;
+    // op_code 初始化为 0, 需要后续正确初始化
+    context->op_code = 0;
     context->value = IMM_UNIT;
     context->args = IMM_UNIT;
     context->code = IMM_UNIT;
 
     context->current_env = context->global_environment;
     context->scheme_stack = IMM_UNIT;
+
+    // 默认输入输出
+    context->in_port = stdio_port_from_file_op(context, stdin, PORT_INPUT);
+    context->out_port = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
+    context->err_out_port = stdio_port_from_file_op(context, stderr, PORT_OUTPUT);
 
     // 环境初始化结束
     context->init_done = 1;
@@ -76,9 +82,9 @@ EXPORT_API void interpreter_destory(context_t context) {
 
     // 全局符号表 global_symbol_table 弱引用 hashset
     context->global_symbol_table = IMM_UNIT;
-
     // 全局 environment
     context->global_environment = IMM_UNIT;
+    context->gensym_count = 0;
 
     context->init_done = 0;
 
@@ -88,6 +94,33 @@ EXPORT_API void interpreter_destory(context_t context) {
 /******************************************************************************
                          global_symbol_table 操作
 ******************************************************************************/
+/**
+ * 生成当前环境下唯一 symbol
+ * @param context
+ * @return symbol
+ */
+EXPORT_API OUT NOTNULL GC object gensym(REF NOTNULL context_t context) {
+    assert(context != NULL);
+    gc_var1(context, new_sym);
+
+    char sym[30] = {0};
+    for (; context->gensym_count < UINT64_MAX; context->gensym_count++) {
+        snprintf(sym, sizeof(sym), "gensym_0x%016"PRIx64, context->gensym_count);
+        new_sym = symbol_make_from_cstr_untracked_op(context, sym);
+        if (is_imm_true(global_symbol_found(context, new_sym))) {
+            // 冲突
+            continue;
+        } else {
+            // 全局符号表中没有对应符号
+            global_symbol_add_from_symbol_obj(context, new_sym);
+            gc_release_var(context);
+            return new_sym;
+        }
+    }
+
+    gc_release_var(context);
+    return IMM_UNIT;
+}
 /**
  * 向全局符号表添加 symbol 并返回这个 symbol
  * @param context
@@ -110,7 +143,7 @@ global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL obj
  * <p>不会触发 GC</p>
  * @param context
  * @param symbol
- * @return 存在返回 IMM_TRUE, 否则返回 IMM_UNIT
+ * @return 存在返回 IMM_TRUE, 否则返回 IMM_FALSE
  */
 EXPORT_API OUT NOTNULL object
 global_symbol_found(REF NOTNULL context_t context, REF NOTNULL object symbol) {
@@ -210,9 +243,9 @@ EXPORT_API GC void scheme_stack_save(context_t context, enum opcode_e op, object
     gc_param2(context, args, code);
     gc_var1(context, tmp);
 
-    // 填充 stack_frame
+    // 保存栈帧
     tmp = stack_frame_make_op(context, op, args, code, context->current_env);
-    // push 栈
+    // 入栈栈
     context->scheme_stack = pair_make_op(context, tmp, context->scheme_stack);
 
     gc_release_param(context);
@@ -222,6 +255,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
     assert(context != NULL);
     assert(is_pair(context->scheme_stack) || context->scheme_stack == IMM_UNIT);
 
+    // 返回值赋值
     context->value = value;
 
     if (context->scheme_stack == IMM_UNIT) {
@@ -230,6 +264,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
         return IMM_UNIT;
     }
 
+    // 取出顶层栈帧
     object stack_frame = pair_car(context->scheme_stack);
     // 恢复环境
     context->op_code = stack_frame_op(stack_frame);
@@ -238,7 +273,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
     context->current_env = stack_frame_env(stack_frame);
 
     context->scheme_stack = pair_cdr(context->scheme_stack);
-    return IMM_TRUE;
+    return value;
 }
 
 /******************************************************************************
@@ -249,10 +284,21 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
  * <p>不会触发 GC</p>
  * @param context
  * @param symbol
+ * @param all 1: 持续查找到全局 env; 0: 只查找当前 env
+ * @return env_slot / IMM_UNIT (未找到)
+ */
+EXPORT_API object find_slot_in_current_env(REF NOTNULL context_t context, object symbol, int all) {
+    return find_slot_in_spec_env(context, context->current_env, symbol, all);
+}
+/**
+ * 从特定 env 向上查找 env_slot
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param symbol
  * @param all 1: 持续查找到全局 env; 0: 只查找当前 environment
  * @return env_slot / IMM_UNIT (未找到)
  */
-EXPORT_API object find_slot_in_env(REF NOTNULL context_t context, object env, object symbol, int all) {
+EXPORT_API object find_slot_in_spec_env(REF NOTNULL context_t context, object env, object symbol, int all) {
     assert(context != NULL);
 
     int first_env = 1;
@@ -268,7 +314,7 @@ EXPORT_API object find_slot_in_env(REF NOTNULL context_t context, object env, ob
         } else {
 
             // 否则的话为单个 env frame 链
-            for (object slot = pair_car(cur); slot != IMM_UNIT; slot = pair_cdr(slot)) {
+            for (object slot = pair_car(cur); slot != IMM_UNIT; slot = env_slot_next(slot)) {
                 assert(is_env_slot(slot));
                 assert(is_symbol(env_slot_var(slot)));
                 if (symbol_equals(context, env_slot_var(slot), symbol)) {
@@ -297,7 +343,7 @@ EXPORT_API object find_slot_in_env(REF NOTNULL context_t context, object env, ob
  * @param symbol
  * @param value
  */
-EXPORT_API GC void new_slot_in_env(context_t context, object symbol, object value) {
+EXPORT_API GC void new_slot_in_current_env(context_t context, object symbol, object value) {
     new_slot_in_spec_env(context, symbol, value, context->current_env);
 }
 /**
@@ -326,13 +372,20 @@ EXPORT_API GC void new_slot_in_spec_env(context_t context, object symbol, object
 
     gc_release_param(context);
 }
-
+/**
+ * 以 context->current_env 作为上层, 创建新 frame, 赋值给 context->current_env
+ * @param context
+ * @param old_env 一般是 context->current_env
+ */
+EXPORT_API GC void new_frame_push_current_env(context_t context) {
+    new_frame_push_spec_env(context, context->current_env);
+}
 /**
  * 以 old_env 作为上层, 创建新 frame, 赋值给 context->current_env
  * @param context
  * @param old_env 一般是 context->current_env
  */
-EXPORT_API GC void new_frame_in_env(context_t context, object old_env) {
+EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env) {
     assert(context != NULL);
     assert(old_env != IMM_UNIT);
 
