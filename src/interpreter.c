@@ -339,6 +339,7 @@ global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL obj
     gc_param1(context, symbol);
 
     symbol = weak_hashset_put_op(context, context->global_symbol_table, symbol);
+    set_immutable(symbol);
     gc_release_param(context);
     return symbol;
 }
@@ -562,6 +563,7 @@ EXPORT_API GC void new_slot_in_spec_env(context_t context, object symbol, object
     gc_var1(context, slot);
 
     slot = env_slot_make_op(context, symbol, value, IMM_UNIT);
+    set_immutable(slot);
 
     if (is_hashmap(pair_car(env))) {
         hashmap_put_op(context, pair_car(env), symbol, slot);
@@ -592,6 +594,7 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env) {
     gc_param1(context, old_env);
     context->current_env = pair_make_op(context, IMM_UNIT, old_env);
     set_ext_type_environment(context->current_env);
+    set_immutable(context->current_env);
     gc_release_param(context);
 }
 

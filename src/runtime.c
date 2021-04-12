@@ -1849,6 +1849,7 @@ symbol_to_string_op(REF NOTNULL context_t context, NOTNULL COPY object symbol) {
     str->value.string.len = len;
     memcpy(string_get_cstr(str), symbol_get_cstr(symbol), len);
     str->value.string.hash = string_hash_helper(str);
+    set_immutable(str);
 
     gc_release_param(context);
     return str;
