@@ -156,6 +156,8 @@ static object gc_mark(context_t context) {
     gc_mark_one_start(context, context->global_symbol_table);
     // 标记全局 environment
     gc_mark_one_start(context, context->global_environment);
+    // 标记 syntax table
+    gc_mark_one_start(context, context->syntax_table);
 
     // 标记输入输出
     gc_mark_one_start(context, context->in_port);
@@ -305,6 +307,8 @@ static void gc_adjust_ref(context_t context) {
     gc_adjust_ref_one(&(context->global_symbol_table));
     // 调整 global_environment
     gc_adjust_ref_one(&(context->global_environment));
+    // 调整 syntax_table
+    gc_adjust_ref_one(&(context->syntax_table));
 
     // 调整输入输出
     gc_adjust_ref_one(&context->in_port);
@@ -382,6 +386,10 @@ static void gc_adjust_ref(context_t context) {
                     assert(field_len == 3);
                 } else if (is_env_slot(obj)) {
                     assert(field_len == 3);
+                } else if (is_proc(obj)) {
+                    assert(field_len == 1);
+                } else if (is_syntax(obj)) {
+                    assert(field_len == 1);
                 }
 #endif
 
@@ -463,13 +471,13 @@ EXPORT_API CHECKED GC object gc_collect(REF NOTNULL context_t context) {
     gc_mark(context);
     // 重设弱引用
     gc_reset_weak_references(context);
+    assert(context->weak_ref_chain == NULL);
     gc_set_forwarding(context);
     gc_adjust_ref(context);
     move_objects(context);
 
 #if USE_DEBUG_GC
 #endif
-
     return IMM_TRUE;
 }
 

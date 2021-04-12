@@ -56,10 +56,10 @@ typedef object (*op_exec_dispatch_func)(context_t r, enum opcode_e e);
 typedef struct op_code_info_t {
     enum opcode_e op;
     op_exec_dispatch_func func;
-    object name;
+    char *name;
     size_t min_args_length;
     size_t max_args_length;
-    char *args_type_table;
+    char *args_type_check_table;
 } op_code_info;
 
 /**
@@ -128,6 +128,10 @@ struct scheme_context_t {
      *                   全局信息表
      ****************************************************/
     /**
+     * 关键字表 hashmap: symbol->syntax
+     */
+    GC object syntax_table;
+    /**
      * 全局符号表 弱引用 hashset
      * <p>(make-weak-hashset GLOBAL_SYMBOL_TABLE_INIT_SIZE)</p>
      * <p>symbol</p>
@@ -171,7 +175,7 @@ struct scheme_context_t {
     // 标记栈顶
     gc_mark_stack_ptr mark_stack_top;
 
-    // TODO 修改为内部 port 实现, 决定构造时机; 解释器输入输出
+    // 解释器输入输出
     GC object in_port;
     GC object out_port;
     GC object err_out_port;
@@ -255,7 +259,14 @@ EXPORT_API uint32_t uint32_pair_hash(uint32_t x, uint32_t y);
 EXPORT_API uint32_t uint64_hash(uint64_t value);
 
 EXPORT_API uint32_t double_number_hash(double num);
-// https://www.partow.net/programming/hashfunctions/#BKDRHashFunction
+
+/**
+ * string hash 计算
+ * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
+ * @param context
+ * @param str
+ * @return imm_i64, 非负数
+ */
 EXPORT_API uint32_t symbol_hash_helper(object symbol);
 
 EXPORT_API uint32_t string_hash_helper(object str_obj);
@@ -272,11 +283,17 @@ EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum 
                        todo 增加新类型重写 hash 算法
 ******************************************************************************/
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64);
+
 EXPORT_API uint32_t d64_hash_code(context_t context, object d64);
+
 EXPORT_API uint32_t char_hash_code(context_t context, object imm_char);
+
 EXPORT_API uint32_t boolean_hash_code(context_t context, object imm_bool);
+
 EXPORT_API uint32_t unit_hash_code(context_t context, object unit_obj);
+
 EXPORT_API uint32_t eof_hash_code(context_t context, object eof_obj);
+
 EXPORT_API uint32_t pair_hash_code(context_t context, object pair);
 
 EXPORT_API uint32_t bytes_hash_code(context_t context, object bytes);
@@ -303,23 +320,12 @@ EXPORT_API uint32_t stack_frame_hash_code(context_t context, object frame);
 
 EXPORT_API uint32_t env_slot_hash_code(context_t context, object slot);
 
+EXPORT_API uint32_t proc_hash_code(context_t context, object proc);
 
-/**
- * symbol hash code 计算
- * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
- * @param context
- * @param symbol
- * @return imm_i64, 非负数
- */
+EXPORT_API uint32_t syntax_hash_code(context_t context, object syntax);
+
 EXPORT_API uint32_t symbol_hash_code(context_t _context, object symbol);
 
-/**
- * string hash code 计算
- * <p>https://www.partow.net/programming/hashfunctions/#BKDRHashFunction</p>
- * @param context
- * @param str
- * @return imm_i64, 非负数
- */
 EXPORT_API uint32_t string_hash_code(context_t _context, object str);
 
 /**
@@ -327,14 +333,21 @@ EXPORT_API uint32_t string_hash_code(context_t _context, object str);
                           todo 增加新类型重写 equals 算法
 ******************************************************************************/
 EXPORT_API int i64_equals(context_t context, object i64_a, object i64_b);
+
 EXPORT_API int d64_equals(context_t context, object d64_a, object d64_b);
+
 EXPORT_API int char_equals(context_t context, object char_a, object char_b);
+
 EXPORT_API int boolean_equals(context_t context, object boolean_a, object boolean_b);
+
 EXPORT_API int unit_equals(context_t context, object unit_a, object unit_b);
+
 EXPORT_API int eof_equals(context_t context, object eof_a, object eof_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int pair_equals(context_t context, object pair_a, object pair_b);
+
 EXPORT_API int bytes_equals(context_t context, object bytes_a, object bytes_b);
+
 EXPORT_API int string_buffer_equals(context_t context, object string_buffer_a, object string_buffer_b);
 // 注意, 遇到自引用结构会出现问题, 递归比较可能无法终止
 EXPORT_API int vector_equals(context_t context, object vector_a, object vector_b);
@@ -356,6 +369,10 @@ EXPORT_API int weak_hashset_equals(context_t context, object weak_hashset_a, obj
 EXPORT_API int stack_frame_equals(context_t context, object stack_a, object stack_b);
 
 EXPORT_API int env_slot_equals(context_t context, object slot_a, object slot_b);
+
+EXPORT_API int proc_equals(context_t context, object proc_a, object proc_b);
+
+EXPORT_API int syntax_equals(context_t context, object syntax_a, object syntax_b);
 
 /**
  * symbol 比较

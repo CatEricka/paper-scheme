@@ -1,5 +1,47 @@
 #include "paper-scheme/interpreter.h"
 
+/******************************************************************************
+                            关键字和内部过程初始化
+******************************************************************************/
+/**
+ * 检查给定的 symbol 是否是 syntax
+ * @param context
+ * @param symbol
+ * @return IMM_TRUE/IMM_FALSE
+ */
+EXPORT_API object symbol_is_syntax(context_t context, object symbol) {
+    assert(context != NULL);
+    assert(is_symbol(symbol));
+
+    return hashmap_contains_key_op(context, context->syntax_table, symbol);
+}
+
+static GC void assign_proc(context_t context, char *name, enum opcode_e opcode) {
+    assert(context != NULL);
+    assert(name != NULL);
+    assert(strlen(name) != 0);
+    assert(opcode >= 0 && opcode < MAX_OP_CODE);
+    gc_var2(context, proc, sym);
+
+    sym = symbol_make_from_cstr_op(context, name);
+    proc = proc_make_internal(context, sym, opcode);
+    new_slot_in_spec_env(context, context->global_environment, sym, proc);
+
+    gc_release_var(context);
+}
+
+static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode) {
+    assert(context != NULL);
+    assert(name != NULL);
+    assert(strlen(name) != 0);
+    gc_var2(context, sym, syntax);
+
+    sym = symbol_make_from_cstr_op(context, name);
+    syntax = syntax_make_internal(context, sym, opcode);
+    hashmap_put_op(context, context->syntax_table, sym, syntax);
+
+    gc_release_var(context);
+}
 
 
 /******************************************************************************
@@ -27,7 +69,7 @@ op_code_info internal_dispatch_table[] = {
  * op_exec_ 参数类型检查表
  */
 
-static void register_op_code(context_t context) {
+static GC void init_opcode(context_t context) {
     for (size_t i = 0; i < sizeof(internal_dispatch_table) / sizeof(op_code_info); i++) {
         op_code_info *info = &internal_dispatch_table[i];
         int op = info->op;
@@ -37,10 +79,9 @@ static void register_op_code(context_t context) {
         context->dispatch_table[op].max_args_length = info->max_args_length;
         context->dispatch_table[op].op = info->op;
 
-        if (info->name == NULL) {
-            context->dispatch_table[op].name = IMM_UNIT;
-        } else {
+        if (info->name != NULL) {
             // 构造内部 proc
+            assign_proc(context, info->name, info->op);
         }
     }
 }
@@ -63,11 +104,14 @@ static int interpreter_default_env_init(context_t context) {
     // 全局符号表 global_symbol_table 弱引用 hashset
     context->global_symbol_table =
             weak_hashset_make_op(context, GLOBAL_SYMBOL_TABLE_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
+    context->gensym_count = 0;
     // 全局 environment
     tmp = pair_make_op(context, IMM_UNIT, IMM_UNIT);
     pair_car(tmp) = hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
     context->global_environment = tmp;
-    context->gensym_count = 0;
+    // syntax_table
+    // 30 看起来很适合, 30 > 17/0.75
+    context->syntax_table = hashmap_make_op(context, 30, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
 
     context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
 
@@ -85,12 +129,30 @@ static int interpreter_default_env_init(context_t context) {
     context->out_port = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     context->err_out_port = stdio_port_from_file_op(context, stderr, PORT_OUTPUT);
 
-    // 初始化 op code dispatch table
-    context->dispatch_table = raw_alloc(sizeof(op_code_info) * MAX_OP_CODE_SIZE);
+    // 初始化 op_code dispatch_table 和内部 proc
+    context->dispatch_table = raw_alloc(sizeof(op_code_info) * MAX_OP_CODE);
     notnull_or_return(context->dispatch_table, "[ERROR] context->dispatch_table alloc failed.", 0);
-    register_op_code(context);
+    init_opcode(context);
 
-    // 注册内部 proc
+    // TODO 填写 opcode 初始化关键字
+    // todo 添加关键字 (syntax) 记得修改这里
+    assign_syntax(context, "lambda", -1);
+    assign_syntax(context, "quote", -1);
+    assign_syntax(context, "define", -1);
+    assign_syntax(context, "if", -1);
+    assign_syntax(context, "else", -1);
+    assign_syntax(context, "begin", -1);
+    assign_syntax(context, "set!", -1);
+    assign_syntax(context, "let", -1);
+    assign_syntax(context, "let*", -1);
+    assign_syntax(context, "letrec", -1);
+    assign_syntax(context, "cond", -1);
+    assign_syntax(context, "delay", -1);
+    assign_syntax(context, "and", -1);
+    assign_syntax(context, "or", -1);
+    assign_syntax(context, "cons-stream", -1);
+    assign_syntax(context, "macro", -1);
+    assign_syntax(context, "case", -1);
 
     // 环境初始化结束
     context->init_done = 1;
@@ -123,6 +185,7 @@ EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growt
  * @param context
  */
 EXPORT_API void interpreter_destroy(context_t context) {
+    // todo 修改 context 后修改 interpreter_destroy
     if (context == NULL) return;
 
     context->debug = 0;
@@ -139,14 +202,28 @@ EXPORT_API void interpreter_destroy(context_t context) {
 
     context->load_stack = IMM_UNIT;
 
-    // 全局符号表 global_symbol_table 弱引用 hashset
+    context->syntax_table = IMM_UNIT;
     context->global_symbol_table = IMM_UNIT;
-    // 全局 environment
     context->global_environment = IMM_UNIT;
     context->gensym_count = 0;
 
-    context->init_done = 0;
+    for (size_t i = 0; i < context->global_type_table_len; i++) {
+        context->global_type_table[i].name = IMM_UNIT;
+        context->global_type_table[i].getter = IMM_UNIT;
+        context->global_type_table[i].setter = IMM_UNIT;
+        context->global_type_table[i].to_string = IMM_UNIT;
+    }
 
+    context->in_port = IMM_UNIT;
+    context->out_port = IMM_UNIT;
+    context->err_out_port = IMM_UNIT;
+
+    context->saves = NULL;
+
+    // 全局清理, 因为根引用都被清理了
+    gc_collect(context);
+
+    context->init_done = 0;
     context_destroy(context);
 }
 
@@ -171,7 +248,7 @@ EXPORT_API OUT NOTNULL GC object gensym(REF NOTNULL context_t context) {
             continue;
         } else {
             // 全局符号表中没有对应符号
-            global_symbol_add_from_symbol_obj(context, new_sym);
+            new_sym = global_symbol_add_from_symbol_obj(context, new_sym);
             gc_release_var(context);
             return new_sym;
         }
@@ -184,16 +261,18 @@ EXPORT_API OUT NOTNULL GC object gensym(REF NOTNULL context_t context) {
  * 向全局符号表添加 symbol 并返回这个 symbol
  * @param context
  * @param symbol symbol 对象
+ * @param 添加后的 symbol 对象, 如果存在则返回原始对象
  */
-EXPORT_API OUT NOTNULL GC void
+EXPORT_API OUT NOTNULL GC object
 global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL object symbol) {
     assert(context != NULL);
     assert(is_symbol(symbol));
     assert(is_weak_hashset(context->global_symbol_table));
     gc_param1(context, symbol);
 
-    weak_hashset_put_op(context, context->global_symbol_table, symbol);
+    symbol = weak_hashset_put_op(context, context->global_symbol_table, symbol);
     gc_release_param(context);
+    return symbol;
 }
 
 /**
@@ -236,7 +315,7 @@ symbol_make_from_cstr_op(REF NOTNULL context_t context, COPY char *cstr) {
 
     gc_var1(context, symbol);
     symbol = symbol_make_from_cstr_untracked_op(context, cstr);
-    global_symbol_add_from_symbol_obj(context, symbol);
+    symbol = global_symbol_add_from_symbol_obj(context, symbol);
     gc_release_var(context);
     return symbol;
 }
@@ -255,7 +334,7 @@ string_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object str) {
     gc_param1(context, str);
     gc_var1(context, symbol);
     symbol = string_to_symbol_untracked_op(context, str);
-    global_symbol_add_from_symbol_obj(context, symbol);
+    symbol = global_symbol_add_from_symbol_obj(context, symbol);
     gc_release_param(context);
     return symbol;
 }
@@ -274,7 +353,7 @@ string_buffer_to_symbol_op(REF NOTNULL context_t context, NOTNULL COPY object st
     gc_param1(context, str_buffer);
     gc_var1(context, symbol);
     symbol = string_buffer_to_symbol_untracked_op(context, str_buffer);
-    global_symbol_add_from_symbol_obj(context, symbol);
+    symbol = global_symbol_add_from_symbol_obj(context, symbol);
     gc_release_param(context);
     return symbol;
 }
@@ -330,7 +409,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
 }
 
 /******************************************************************************
-                           TODO   environment 操作
+                              environment 操作
 ******************************************************************************/
 /**
  * 从 context->current_env 向上查找 env_slot

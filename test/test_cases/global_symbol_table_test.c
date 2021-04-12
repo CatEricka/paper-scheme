@@ -22,8 +22,9 @@ UTEST(global_symbol_table, test) {
     obj = symbol_make_from_cstr_untracked_op(context, "string_buffer");
     ASSERT_EQ(IMM_FALSE, global_symbol_found(context, sym));
     ASSERT_EQ(IMM_FALSE, global_symbol_found(context, obj));
-    obj = global_symbol_all_symbol(context);
-    ASSERT_EQ(0, vector_len(obj));
+    // 不再有效, 因为初始环境中存在关键字和默认过程
+    //    obj = global_symbol_all_symbol(context);
+    //    ASSERT_EQ(0, vector_len(obj));
 
     obj = string_make_from_cstr_op(context, "string");
     obj = string_to_symbol_op(context, obj);
@@ -38,8 +39,8 @@ UTEST(global_symbol_table, test) {
     obj = symbol_make_from_cstr_untracked_op(context, "string");
     ASSERT_EQ(IMM_FALSE, global_symbol_found(context, sym));
     ASSERT_EQ(IMM_FALSE, global_symbol_found(context, obj));
-    obj = global_symbol_all_symbol(context);
-    ASSERT_EQ(0, vector_len(obj));
+    //    obj = global_symbol_all_symbol(context);
+    //    ASSERT_EQ(0, vector_len(obj));
 
     // 测试 gensym
     obj = symbol_make_from_cstr_op(context, "gensym_0x0000000000000000");

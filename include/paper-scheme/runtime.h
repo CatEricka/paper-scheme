@@ -241,7 +241,27 @@ stack_frame_make_op(REF NOTNULL context_t context, enum opcode_e op, object args
 EXPORT_API OUT NOTNULL GC object
 env_slot_make_op(REF NOTNULL context_t context, object var, object value, object pre_env_frame);
 
+/**
+ * 构造 proc
+ * @param context
+ * @param symbol
+ * @param opcode enum opcode_e
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+proc_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e opcode);
 
+/**
+ * 构造 syntax
+ * @param context
+ * @param symbol 关键字名
+ * @param opcode opcode
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+syntax_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e opcode);
+
+// todo 增加新类型记得增加构造函数
 /******************************************************************************
                                 对象操作 API
 ******************************************************************************/
@@ -327,8 +347,9 @@ hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, R
  * obj 放入 hashset
  * @param context
  * @param obj
+ * @return 如果已经存在旧值, 则返回旧值, 否则返回刚刚放入的值
  */
-EXPORT_API GC void
+EXPORT_API GC object
 hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj);
 
 /**
@@ -439,8 +460,9 @@ weak_hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object weak_
  * <p>清除部分无效引用</p>
  * @param context
  * @param obj
+ * @return 添加后的 object, 如果存在则返回原始 object
  */
-EXPORT_API GC void
+EXPORT_API GC object
 weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj);
 
 /**
@@ -622,17 +644,6 @@ hashmap_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object hashmap)
  */
 EXPORT_API OUT NOTNULL GC object
 weak_hashset_to_vector_op(REF NOTNULL context_t context, NOTNULL COPY object weak_hashset);
-
-/**
- *
- * @param context
- * @param opcode
- * @param name
- * @return
- */
-EXPORT_API OUT NOTNULL GC object
-proc_make_internal(REF NOTNULL context_t context, COPY enum opcode_e opcode, COPY char *name);
-
 
 
 /******************************************************************************

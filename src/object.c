@@ -143,6 +143,10 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj) {
         return size_helper(stack_frame, 0);
     } else if (is_env_slot(obj)) {
         return size_helper(env_slot, 0);
+    } else if (is_proc(obj)) {
+        return size_helper(proc, 0);
+    } else if (is_syntax(obj)) {
+        return size_helper(syntax, 0);
     }
     // todo 新实现的类型记得修改 object_bootstrap_sizeof
 

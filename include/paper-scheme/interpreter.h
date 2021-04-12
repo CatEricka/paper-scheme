@@ -47,6 +47,17 @@ EXPORT_API context_t interpreter_create(size_t heap_init_size, size_t heap_growt
 EXPORT_API void interpreter_destroy(context_t context);
 
 /******************************************************************************
+                            关键字 (syntax) 相关
+******************************************************************************/
+/**
+ * 检查给定的 symbol 是否是 syntax
+ * @param context
+ * @param symbol
+ * @return IMM_TRUE/IMM_FALSE
+ */
+EXPORT_API object symbol_is_syntax(context_t context, object symbol);
+
+/******************************************************************************
                          global_symbol_table 操作
 ******************************************************************************/
 /**
@@ -59,8 +70,9 @@ EXPORT_API OUT NOTNULL GC object gensym(REF NOTNULL context_t context);
  * 向全局符号表添加 symbol 并返回这个 symbol
  * @param context
  * @param symbol symbol 对象
+ * @param 添加后的 symbol 对象, 如果存在则返回原始对象
  */
-EXPORT_API OUT NOTNULL GC void
+EXPORT_API OUT NOTNULL GC object
 global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL object symbol);
 
 /**
@@ -139,7 +151,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value);
 
 
 /******************************************************************************
-                           TODO   environment 操作
+                              environment 操作
 ******************************************************************************/
 /**
  * 从 context->current_env 向上查找 env_slot

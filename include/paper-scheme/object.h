@@ -295,14 +295,17 @@ struct object_struct_t {
             object next_env_slot;   // 禁止非解释器内部修改这个字段
         } env_slot;
 
-        // TODO proc
+        // TODO proc 内部过程
         struct value_proc_t {
-            object symbol;
+            uint32_t hash;
             enum opcode_e opcode;
+            object symbol;
         } proc;
 
-        // TODO syntax
+        // TODO syntax 关键字
         struct value_syntax_t {
+            uint32_t hash;
+            enum opcode_e opcode;
             object syntax_name; // symbol
         } syntax;
     } value;
@@ -379,6 +382,7 @@ struct object_struct_t {
             - stack_frame:      is_stack_frame
             - env_slot:         is_env_slot()
             - proc:             TODO is_proc()
+            - syntax:           TODO is_syntax()
         构造:
             - i64:              i64_make_op(), i64_imm_make()
             - imm_char:         char_imm_make()
@@ -402,6 +406,7 @@ struct object_struct_t {
             - stack_frame:      stack_frame_make_op()
             - env_stack:        env_slot_make_op()
             - proc:             TODO proc_make_internal()
+            - syntax:           TODO syntax_make_internal()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -428,6 +433,7 @@ struct object_struct_t {
                                 stack_frame_env(), stack_frame_code()
             - env_stack:        env_slot_var(), env_slot_value(), env_slot_next()
             - proc:             TODO proc_get_opcode(), proc_get_symbol()
+            - syntax:           TODO syntax_get_opcode(), syntax_get_symbol()
         操作:
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
@@ -763,6 +769,8 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 #define is_env_slot(obj)                (is_object(obj) && ((obj)->type == OBJ_ENV_SLOT))
 // proc
 #define is_proc(obj)                    (is_object(obj) && ((obj)->type == OBJ_PROC))
+// syntax
+#define is_syntax(obj)                  (is_object(obj) && ((obj)->type == OBJ_SYNTAX))
 /**
                                 对象值操作
 ******************************************************************************/
@@ -1028,7 +1036,13 @@ CHECKED OUT int stack_pop_op(REF object stack);
 
 #define env_slot_var(obj)           ((obj)->value.env_slot.var_name)
 #define env_slot_value(obj)         ((obj)->value.env_slot.value)
-#define env_slot_next(obj)           ((obj)->value.env_slot.next_env_slot)
+#define env_slot_next(obj)          ((obj)->value.env_slot.next_env_slot)
+
+#define proc_get_opcode(obj)        ((obj)->value.proc.opcode)
+#define proc_get_symbol(obj)        ((obj)->value.proc.symbol)
+
+#define syntax_get_opcode(obj)      ((obj)->value.syntax.opcode)
+#define syntax_get_symbol(obj)      ((obj)->value.syntax.syntax_name)
 /**
                            对象值操作: compare
 ******************************************************************************/

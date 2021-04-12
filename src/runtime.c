@@ -609,6 +609,55 @@ env_slot_make_op(REF NOTNULL context_t context, object var, object value, object
     return frame;
 }
 
+/**
+ * 构造 proc
+ * @param context
+ * @param symbol
+ * @param opcode enum opcode_e
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+proc_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e opcode) {
+    assert(context != NULL);
+    assert(is_symbol(symbol));
+    assert(opcode >= 0);
+
+    gc_param1(context, symbol);
+    gc_var1(context, proc);
+
+    proc = raw_object_make(context, OBJ_PROC, object_sizeof_base(proc));
+    proc_get_symbol(proc) = symbol;
+    proc_get_opcode(proc) = opcode;
+    proc->value.proc.hash = pointer_with_type_to_hash(proc, OBJ_PROC);
+
+    gc_release_param(context);
+    return proc;
+}
+
+/**
+ * 构造 syntax
+ * @param context
+ * @param symbol 关键字名
+ * @param opcode opcode
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+syntax_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e opcode) {
+    assert(context != NULL);
+    assert(is_symbol(symbol));
+
+    gc_param1(context, symbol);
+    gc_var1(context, syntax);
+
+    syntax = raw_object_make(context, OBJ_SYNTAX, object_sizeof_base(syntax));
+    syntax_get_symbol(syntax) = symbol;
+    syntax_get_opcode(syntax) = opcode;
+    syntax->value.syntax.hash = symbol_hash_code(context, symbol);
+
+    gc_release_param(context);
+    return syntax;
+}
+
 /******************************************************************************
                                 对象操作 API
 ******************************************************************************/
@@ -834,18 +883,27 @@ hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object hashset, R
  * obj 放入 hashset
  * @param context
  * @param obj
- * @return 如果已经存在旧值, 将存入新值返回旧值, 否则返回 IMM_UNIT
+ * @return 如果已经存在旧值, 则返回旧值, 否则返回刚刚放入的值
  */
-EXPORT_API GC void
+EXPORT_API GC object
 hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object hashset, REF NOTNULL object obj) {
     assert(context != NULL);
     assert(is_hashset(hashset));
     assert(!is_null(obj));
 
     gc_param2(context, hashset, obj);
+    gc_var1(context, ret);
+
     // 所有的 key 对应的 value 都是 IMM_TRUE
-    hashmap_put_op(context, hashset->value.hashset.map, obj, IMM_TRUE);
+    if (is_imm_true(hashmap_contains_key_op(context, hashset->value.hashset.map, obj))) {
+        ret = hashmap_get_op(context, hashset->value.hashset.map, obj);
+    } else {
+        hashmap_put_op(context, hashset->value.hashset.map, obj, obj);
+        ret = obj;
+    }
+
     gc_release_param(context);
+    return ret;
 }
 
 /**
@@ -1328,8 +1386,9 @@ weak_hashset_contains_op(REF NOTNULL context_t context, REF NOTNULL object weak_
  * <p>清除部分无效引用</p>
  * @param context
  * @param obj
+ * @return 添加后的 object, 如果存在则返回原始 object
  */
-EXPORT_API GC void
+EXPORT_API GC object
 weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashset, REF NOTNULL object obj) {
     assert(context != NULL);
     assert(is_weak_hashset(weak_hashset));
@@ -1362,7 +1421,7 @@ weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashs
     //  清理 index 位置的空值, 不考虑其他位置, contains() 函数自然会清理
     weak_hashset_expunge_stale_ref(context, weak_hashset, index);
 
-    // 3. 检查索引位置是否有旧值, 如果存在则替换, 返回旧值
+    // 3. 检查索引位置是否有旧值, 如果存在则返回旧值
     for (entry_list = vector_ref(table, index);
          entry_list != IMM_UNIT;
          entry_list = pair_cdr(entry_list)) {
@@ -1377,12 +1436,10 @@ weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashs
             assert(!is_null(old_object));
 
             if (equals(context, obj, old_object)) {
-                // 找到已经存在的对象, 替换掉旧值
-                weak_ref_get(ref) = obj;
-
+                // 找到已经存在的对象, 直接返回
                 // 注意释放 C 调用栈保护链
                 gc_release_param(context);
-                return;
+                return old_object;
             }
         }
     }
@@ -1465,6 +1522,7 @@ weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashs
     // 此时插入过新的键值对, 返回 IMM_UNIT
     weak_hashset->value.weak_hashset.size++;
     gc_release_param(context);
+    return obj;
 }
 
 /**

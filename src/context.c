@@ -7,7 +7,6 @@
 /**
  * 基础类型定义
  * 这部分赋值在 context 中此时无法自举, 应当后期再处理, .name 定义应当仅用于备忘
- * todo 增加新类型重写 scheme_type_specs
  */
 static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX] = {
         {
@@ -384,24 +383,25 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .finalizer = NULL,
                 .hash_code = proc_hash_code,
                 .equals = proc_equals,
-        }, ,
-        {
-            .name = (object) "Procedure", .tag = OBJ_PROC,
-            .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
-
-            .member_base = object_offsetof(syntax, syntax_name),
-            .member_eq_len_base = 1,
-            .member_len_base = 1,
-            .member_meta_len_offset = 0,
-            .member_meta_len_scale = 0,
-
-            .size_base = object_sizeof_base(syntax),
-            .size_meta_size_offset = 0,
-            .size_meta_size_scale = 0,
-            .finalizer = NULL,
-            .hash_code = syntax_hash_code,
-            .equals = syntax_equals,
         },
+        {
+                .name = (object) "Syntax", .tag = OBJ_SYNTAX,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(syntax, syntax_name),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(syntax),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = syntax_hash_code,
+                .equals = syntax_equals,
+        },
+        // todo 增加新类型重写 scheme_type_specs
 };
 
 
@@ -558,23 +558,6 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     // todo context 修改后, context_destroy 补全
     if (context == NULL) {
         return;
-    }
-
-    // context_destroy 中应当对所有的对象进行 finalize
-    for (heap_node_t node = context->heap->first_node; node != NULL; node = node->next) {
-        for (char *ptr = node->data; ptr < node->free_ptr;) {
-            object obj = (object) ptr;
-            assert(is_object(obj));
-            size_t size = context_object_sizeof(context, obj);
-
-            // 执行对象析构方法
-            proc_1 finalizer = context_get_object_finalize(context, obj);
-            if (finalizer != NULL) {
-                finalizer(context, obj);
-            }
-
-            ptr += size;
-        }
     }
 
     // 释放堆结构
@@ -841,6 +824,16 @@ EXPORT_API uint32_t env_slot_hash_code(context_t context, object slot) {
     return slot->value.env_slot.hash;
 }
 
+EXPORT_API uint32_t proc_hash_code(context_t context, object proc) {
+    assert(is_proc(proc));
+    return proc->value.proc.hash;
+}
+
+EXPORT_API uint32_t syntax_hash_code(context_t context, object syntax) {
+    assert(is_syntax(syntax));
+    return syntax->value.syntax.hash;
+}
+
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
     return symbol->value.symbol.hash;
@@ -1015,6 +1008,22 @@ EXPORT_API int env_slot_equals(context_t context, object slot_a, object slot_b) 
         return 0;
     } else {
         return slot_a == slot_b;
+    }
+}
+
+EXPORT_API int proc_equals(context_t context, object proc_a, object proc_b) {
+    if (!is_proc(proc_a) || !is_proc(proc_b)) {
+        return 0;
+    } else {
+        return proc_a == proc_b;
+    }
+}
+
+EXPORT_API int syntax_equals(context_t context, object syntax_a, object syntax_b) {
+    if (!is_syntax(syntax_a) || !is_syntax(syntax_b)) {
+        return 0;
+    } else {
+        return syntax_a == syntax_b;
     }
 }
 

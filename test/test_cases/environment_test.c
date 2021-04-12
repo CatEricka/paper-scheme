@@ -60,7 +60,7 @@ UTEST(environment_test, test) {
     slot = find_slot_in_current_env(context, var, 0);
     ASSERT_EQ(slot, IMM_UNIT);
     slot = find_slot_in_current_env(context, var, 1);
-    ASSERT_NE(var, env_slot_var(slot));
+    ASSERT_EQ(var, env_slot_var(slot));
     ASSERT_NE(val, env_slot_value(slot));
     ASSERT_TRUE(symbol_equals(context, var, env_slot_var(slot)));
     ASSERT_TRUE(string_equals(context, val, env_slot_value(slot)));
@@ -79,12 +79,12 @@ UTEST(environment_test, test) {
     slot = find_slot_in_current_env(context, var, 0);
     ASSERT_EQ(slot, IMM_UNIT);
     slot = find_slot_in_current_env(context, var, 1);
-    ASSERT_NE(var, env_slot_var(slot));
+    ASSERT_EQ(var, env_slot_var(slot));
     ASSERT_NE(val, env_slot_value(slot));
     ASSERT_TRUE(symbol_equals(context, var, env_slot_var(slot)));
     ASSERT_TRUE(string_equals(context, val, env_slot_value(slot)));
     slot = find_slot_in_spec_env(context, context->global_environment, var, 1);
-    ASSERT_NE(var, env_slot_var(slot));
+    ASSERT_EQ(var, env_slot_var(slot));
     ASSERT_NE(val, env_slot_value(slot));
     ASSERT_TRUE(symbol_equals(context, var, env_slot_var(slot)));
     ASSERT_TRUE(string_equals(context, val, env_slot_value(slot)));
