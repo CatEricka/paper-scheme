@@ -123,6 +123,11 @@ struct scheme_context_t {
      */
     GC object load_stack;
 
+    /**
+     * token 枚举换存
+     */
+    int token;
+
 
     /**
      *                   全局信息表

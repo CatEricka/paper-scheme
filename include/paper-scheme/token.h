@@ -2,6 +2,8 @@
 #define PAPER_SCHEME_TOKEN_H
 #pragma once
 
+#include <paper-scheme/runtime.h>
+
 enum token_e {
     TOKEN_LEFT_PAREN = 0,   // (
     TOKEN_RIGHT_PAREN,      // )
@@ -20,5 +22,12 @@ enum token_e {
 
 // 终结符: () " \f \t \v \n \r 空格
 #define DELIMITERS "()\";\f\t\v\n\r "
+
+/**
+ * 读入 token, 返回给 context->token
+ * @param context
+ * @return enum token_e
+ */
+EXPORT_API int token(context_t context);
 
 #endif //PAPER_SCHEME_TOKEN_H

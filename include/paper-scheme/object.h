@@ -18,7 +18,9 @@
                                对象类型标记
 ******************************************************************************/
 // todo  增加新类型重写 object_type_enum 枚举
-enum object_type_enum {
+// 基础类型
+typedef enum object_type_enum {
+    // 0: AnyType
     // 基础类型
             OBJ_I64 = 0,
     OBJ_D64,
@@ -48,9 +50,18 @@ enum object_type_enum {
 
     // 标记枚举最大值
             OBJECT_TYPE_ENUM_MAX,
-};
-typedef enum object_type_enum object_type_tag;
-//compile_time_assert(((size_t) OBJECT_TYPE_ENUM_MAX) <= SIZE_MAX);
+} object_type_tag;
+
+// 额外的类型标记, 只用于运行时类型检查, 不属于基础类型系统:
+// 因为附加了额外类型标记的对象都是
+typedef enum extern_type_enum {
+    EXTERN_TYPE_NONE = 0,
+    EXTERN_TYPE_ENVIRONMENT,
+    // 最大值不能超过 uint8max
+            EXTERN_TYPE_MAX
+} extern_type_tag;
+compile_time_assert(((size_t) EXTERN_TYPE_MAX) <= UINT8_MAX);
+
 
 // 对象头魔数, uint8_t, B1010 1010
 #define OBJECT_HEADER_MAGIC (0xAAu)
@@ -121,6 +132,8 @@ struct object_struct_t {
     /*  对象头  */
     // 对象头魔数
     uint8_t magic;
+    // 用于额外的类型标记, 如 environment
+    uint8_t extern_type_tag;
     // gc状态, 1为存活
     uint8_t marked: 1;
     // 是否为不可变对象
@@ -217,12 +230,14 @@ struct object_struct_t {
             // 用于 hash 计算, 固定不变
             uint32_t hash;
             enum port_kind kind;
-            FILE *file;
-            object filename;
             // 是否已经释放
             int is_released;
             // 是否需要关闭, stdin, stdout, stderr 不需要关闭
             int need_close;
+            // 当前行数
+            size_t current_line;
+            FILE *file;
+            object filename;
         } stdio_port;
 
         // 实现 hash set, 可变
@@ -771,6 +786,16 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 #define is_proc(obj)                    (is_object(obj) && ((obj)->type == OBJ_PROC))
 // syntax
 #define is_syntax(obj)                  (is_object(obj) && ((obj)->type == OBJ_SYNTAX))
+
+
+/**
+                     附加类型标记, 用于运行时为对象提供特殊标记
+******************************************************************************/
+#define set_ext_type_tag_none(obj)  ((obj)->extern_type_tag = EXTERN_TYPE_NONE)
+#define set_ext_type_environment(obj) ((obj)->extern_type_tag = EXTERN_TYPE_ENVIRONMENT)
+#define is_ext_type_environment(obj) (is_object(obj) && (obj)->extern_type_tag == EXTERN_TYPE_ENVIRONMENT)
+
+
 /**
                                 对象值操作
 ******************************************************************************/

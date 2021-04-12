@@ -47,6 +47,71 @@ static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode
 /******************************************************************************
                           opcode procedure 类型检查
 ******************************************************************************/
+//#define TYPE_NONE         NULL
+// 任何类型
+#define TYPE_ANY            "\001"
+#define TYPE_INTEGER        "\002"
+#define TYPE_REAL           "\003"
+#define TYPE_NATURAL        "\004"
+#define TYPE_CHAR           "\005"
+#define TYPE_STRING         "\006"
+#define TYPE_SYMBOL         "\007"
+#define TYPE_PAIR           "\010"
+#define TYPE_LIST           "\011"
+#define TYPE_VECTOR         "\012"
+#define TYPE_PORT           "\013"
+#define TYPE_INPUT_PORT     "\014"
+#define TYPE_OUTPUT_PORT    "\015"
+#define TYPE_ENVIRONMENT    "\016"
+
+static int is_any_test(object obj) { return 1; }
+
+static int is_real_test(object obj) { return is_doublenum(obj); }
+
+static int is_natural_test(object obj) { return is_i64(obj) && i64_getvalue(obj) >= 0; }
+
+static int is_char_test(object obj) { return is_imm_char(obj); }
+
+static int is_string_test(object obj) { return is_string(obj); }
+
+static int is_symbol_test(object obj) { return is_symbol(obj); }
+
+static int is_pair_test(object obj) { return is_pair(obj); }
+
+static int is_list_test(object obj) { return obj == IMM_UNIT && is_pair(obj); }
+
+static int is_vector_test(object obj) { return is_vector(obj); }
+
+static int is_port_test(object obj) { return is_port(obj); }
+
+static int is_input_port_test(object obj) { return is_port_input(obj); }
+
+static int is_output_port_test(object obj) { return is_port_output(obj); }
+
+static int is_environment_test(object obj) { return is_ext_type_environment(obj); }
+
+typedef int (*type_test_func)(object);
+
+struct type_test_t {
+    type_test_func test;
+    const char *type_kind;
+} type_test_table[] = {
+        {.test = NULL, .type_kind = NULL},      // NULL 未使用: 不做类型检查
+        {.test = is_any_test, .type_kind = "any"},   // 001
+        {.test = is_i64, .type_kind = "integer"},   // 002
+        {.test = is_real_test, .type_kind = "real number"},   // 003
+        {.test = is_natural_test, .type_kind = "non-negative integer"},   // 004
+        {.test = is_char_test, .type_kind = "char"},   // 005
+        {.test = is_string_test, .type_kind = "string"},   // 006
+        {.test = is_symbol_test, .type_kind = "symbol"},   // 007
+        {.test = is_pair_test, .type_kind = "pair"},   // 010
+        {.test = is_list_test, .type_kind = "list"},   // 011
+        {.test = is_vector_test, .type_kind = "vector"},   // 012
+        {.test = is_port_test, .type_kind = "port"},   // 013
+        {.test = is_input_port_test, .type_kind = "input port"},   // 014
+        {.test = is_output_port_test, .type_kind = "output port"},   // 015
+        {.test = is_environment_test, .type_kind = "environment"},   // 016
+};
 
 
 /******************************************************************************
@@ -62,7 +127,7 @@ static object op_exec_2(context_t context, enum opcode_e opcode);
  * op_exec_ 分发表内部定义
  */
 op_code_info internal_dispatch_table[] = {
-        {READ_SEXP_OP, op_exec_0, NULL, 0, 0, NULL,},
+        {READ_SEXP_OP, op_exec_0, NULL, 0, 0, NULL},
 };
 
 /**
@@ -109,6 +174,9 @@ static int interpreter_default_env_init(context_t context) {
     tmp = pair_make_op(context, IMM_UNIT, IMM_UNIT);
     pair_car(tmp) = hashmap_make_op(context, GLOBAL_ENVIRONMENT_INIT_SIZE, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
     context->global_environment = tmp;
+    // 设置 env 类型标记
+    set_ext_type_environment(context->global_environment);
+
     // syntax_table
     // 30 看起来很适合, 30 > 17/0.75
     context->syntax_table = hashmap_make_op(context, 30, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
@@ -523,6 +591,7 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env) {
 
     gc_param1(context, old_env);
     context->current_env = pair_make_op(context, IMM_UNIT, old_env);
+    set_ext_type_environment(context->current_env);
     gc_release_param(context);
 }
 
@@ -530,6 +599,9 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env) {
 /******************************************************************************
                               load_stack 操作
 ******************************************************************************/
+static object file_push(context_t context, object file_name);
+
+static object file_pop(context_t context, object file_name);
 
 
 /******************************************************************************

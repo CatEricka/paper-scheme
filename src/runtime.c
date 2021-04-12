@@ -29,6 +29,7 @@ raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_
 
     // 预处理对象头
     ret->magic = OBJECT_HEADER_MAGIC;
+    ret->extern_type_tag = EXTERN_TYPE_NONE;
     ret->type = type;
     ret->marked = 0;
     ret->padding_size = (uint8_t) padding_size;   // 填充大小可能为0
@@ -422,6 +423,7 @@ stdio_port_from_filename_op(REF NOTNULL context_t context, REF NULLABLE object f
     port->value.stdio_port.is_released = 0;
     // 打开的文件需要关闭
     port->value.stdio_port.need_close = 1;
+    port->value.stdio_port.current_line = 1;
     port->value.stdio_port.hash = pointer_with_type_to_hash(port, OBJ_STDIO_PORT);
 
     gc_release_param(context);
@@ -449,6 +451,7 @@ stdio_port_from_file_op(REF NOTNULL context_t context, REF NOTNULL FILE *file, e
     port->value.stdio_port.is_released = 0;
     // 外部打开的文件外部负责关闭
     port->value.stdio_port.need_close = 0;
+    port->value.stdio_port.current_line = 1;
     port->value.stdio_port.hash = pointer_with_type_to_hash(port, OBJ_STDIO_PORT);
 
     gc_release_var(context);

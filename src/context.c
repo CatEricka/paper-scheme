@@ -588,6 +588,7 @@ object stdio_finalizer(context_t context, object port) {
         if (port->value.stdio_port.file != NULL) {
             fclose(port->value.stdio_port.file);
         }
+        port->value.stdio_port.current_line = 0;
         stdio_port_is_released(port) = 1;
         return IMM_TRUE;
     } else {
