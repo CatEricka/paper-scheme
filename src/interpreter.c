@@ -136,6 +136,9 @@ static object op_exec_repl(context_t context, enum opcode_e opcode);
 // 语法实现
 static object op_exec_syntax(context_t context, enum opcode_e opcode);
 
+// 基础运算
+static object op_exec_compute(context_t context, enum opcode_e opcode);
+
 // 词法分析和字符串输出
 static object op_exec_lexical(context_t context, enum opcode_e opcode);
 
@@ -802,6 +805,10 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
 }
 
 static object op_exec_syntax(context_t context, enum opcode_e opcode) {
+    return IMM_TRUE;
+}
+
+static object op_exec_compute(context_t context, enum opcode_e opcode) {
     return IMM_TRUE;
 }
 
