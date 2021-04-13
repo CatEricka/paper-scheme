@@ -124,10 +124,15 @@ struct scheme_context_t {
     GC object load_stack;
 
     /**
-     * token 枚举换存
+     * token 枚举缓存
      */
     int token;
 
+    /**
+     * 内部字符串缓存
+     * 希望足够大
+     */
+    char str_buffer[2048];
 
     /**
      *                   全局信息表

@@ -64,30 +64,43 @@ static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode
 #define TYPE_OUTPUT_PORT    "\015"
 #define TYPE_ENVIRONMENT    "\016"
 
+// 001
 static int is_any_test(object obj) { return 1; }
 
+// 003
 static int is_real_test(object obj) { return is_doublenum(obj); }
 
+// 004
 static int is_natural_test(object obj) { return is_i64(obj) && i64_getvalue(obj) >= 0; }
 
+// 005
 static int is_char_test(object obj) { return is_imm_char(obj); }
 
+// 006
 static int is_string_test(object obj) { return is_string(obj); }
 
+// 007
 static int is_symbol_test(object obj) { return is_symbol(obj); }
 
+// 010
 static int is_pair_test(object obj) { return is_pair(obj); }
 
+// 011
 static int is_list_test(object obj) { return obj == IMM_UNIT && is_pair(obj); }
 
+// 012
 static int is_vector_test(object obj) { return is_vector(obj); }
 
+// 013
 static int is_port_test(object obj) { return is_port(obj); }
 
+// 014
 static int is_input_port_test(object obj) { return is_port_input(obj); }
 
+// 015
 static int is_output_port_test(object obj) { return is_port_output(obj); }
 
+// 016
 static int is_environment_test(object obj) { return is_ext_type_environment(obj); }
 
 typedef int (*type_test_func)(object);
@@ -96,21 +109,21 @@ struct type_test_t {
     type_test_func test;
     const char *type_kind;
 } type_test_table[] = {
-        {.test = NULL, .type_kind = NULL},      // NULL 未使用: 不做类型检查
-        {.test = is_any_test, .type_kind = "any"},   // 001
-        {.test = is_i64, .type_kind = "integer"},   // 002
-        {.test = is_real_test, .type_kind = "real number"},   // 003
-        {.test = is_natural_test, .type_kind = "non-negative integer"},   // 004
-        {.test = is_char_test, .type_kind = "char"},   // 005
-        {.test = is_string_test, .type_kind = "string"},   // 006
-        {.test = is_symbol_test, .type_kind = "symbol"},   // 007
-        {.test = is_pair_test, .type_kind = "pair"},   // 010
-        {.test = is_list_test, .type_kind = "list"},   // 011
-        {.test = is_vector_test, .type_kind = "vector"},   // 012
-        {.test = is_port_test, .type_kind = "port"},   // 013
-        {.test = is_input_port_test, .type_kind = "input port"},   // 014
-        {.test = is_output_port_test, .type_kind = "output port"},   // 015
-        {.test = is_environment_test, .type_kind = "environment"},   // 016
+        {.test = NULL, .type_kind = NULL},                              // NULL 未使用: 不做类型检查
+        {.test = is_any_test, .type_kind = "any"},                      // 001
+        {.test = is_i64, .type_kind = "integer"},                       // 002
+        {.test = is_real_test, .type_kind = "real number"},             // 003
+        {.test = is_natural_test, .type_kind = "non-negative integer"}, // 004
+        {.test = is_char_test, .type_kind = "char"},                    // 005
+        {.test = is_string_test, .type_kind = "string"},                // 006
+        {.test = is_symbol_test, .type_kind = "symbol"},                // 007
+        {.test = is_pair_test, .type_kind = "pair"},                    // 010
+        {.test = is_list_test, .type_kind = "list"},                    // 011
+        {.test = is_vector_test, .type_kind = "vector"},                // 012
+        {.test = is_port_test, .type_kind = "port"},                    // 013
+        {.test = is_input_port_test, .type_kind = "input port"},        // 014
+        {.test = is_output_port_test, .type_kind = "output port"},      // 015
+        {.test = is_environment_test, .type_kind = "environment"},      // 016
 };
 
 
