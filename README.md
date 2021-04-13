@@ -33,6 +33,8 @@ TODO:
 - [x] 实现 `weak_ref_hashmap`
 - [x] 实现支持 `延续` 的 scheme stack
 - [x] 实现 environment 链
+- [x] 实现 repl 需要的相关框架
+- [ ] 开始实现元循环
 - [ ] 实现 proc syntax 相关
 - [ ] 实现 opcode/proc 类型检查
 - [ ] 实现初始过程和特殊符号表赋值
