@@ -12,7 +12,7 @@ UTEST(scheme_stack_test, test) {
 
     // new env 1
     new_frame_push_current_env(context);
-    context->op_code = 1;
+    context->opcode = 1;
     context->args = pair_make_op(context, IMM_TRUE, IMM_TRUE);
     context->code = pair_make_op(context, IMM_FALSE, IMM_FALSE);
     gc_collect(context);
@@ -22,12 +22,12 @@ UTEST(scheme_stack_test, test) {
     new_slot_in_current_env(context, var, val);
     // stack push 1
     gc_collect(context);
-    scheme_stack_save(context, context->op_code, context->args, context->code);
+    scheme_stack_save(context, context->opcode, context->args, context->code);
     gc_collect(context);
 
     // new env 2
     new_frame_push_current_env(context);
-    context->op_code = 2;
+    context->opcode = 2;
     context->args = pair_make_op(context, char_imm_make('x'), char_imm_make('x'));
     context->code = pair_make_op(context, char_imm_make('d'), char_imm_make('d'));
     gc_collect(context);
@@ -37,13 +37,13 @@ UTEST(scheme_stack_test, test) {
     new_slot_in_current_env(context, var, val);
     // stack push 2
     gc_collect(context);
-    scheme_stack_save(context, context->op_code, context->args, context->code);
+    scheme_stack_save(context, context->opcode, context->args, context->code);
     gc_collect(context);
 
     // new env 3
     new_frame_push_current_env(context);
     // push 3
-    scheme_stack_save(context, context->op_code, context->args, context->code);
+    scheme_stack_save(context, context->opcode, context->args, context->code);
     // pop 3
     scheme_stack_return(context, char_imm_make('r'));
     gc_collect(context);
@@ -53,7 +53,7 @@ UTEST(scheme_stack_test, test) {
     scheme_stack_return(context, char_imm_make('r'));
     gc_collect(context);
     ASSERT_EQ(context->value, char_imm_make('r'));
-    ASSERT_EQ(context->op_code, 2);
+    ASSERT_EQ(context->opcode, 2);
     ASSERT_EQ(pair_car(context->args), char_imm_make('x'));
     ASSERT_EQ(pair_cdr(context->args), char_imm_make('x'));
     ASSERT_EQ(pair_cdr(context->code), char_imm_make('d'));
@@ -73,7 +73,7 @@ UTEST(scheme_stack_test, test) {
     // env 1
     scheme_stack_return(context, char_imm_make('q'));
     ASSERT_EQ(context->value, char_imm_make('q'));
-    ASSERT_EQ(context->op_code, 1);
+    ASSERT_EQ(context->opcode, 1);
     ASSERT_EQ(pair_car(context->args), IMM_TRUE);
     ASSERT_EQ(pair_cdr(context->args), IMM_TRUE);
     ASSERT_EQ(pair_cdr(context->code), IMM_FALSE);

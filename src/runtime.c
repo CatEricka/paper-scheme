@@ -441,13 +441,14 @@ EXPORT_API OUT NOTNULL GC object
 stdio_port_from_file_op(REF NOTNULL context_t context, REF NOTNULL FILE *file, enum port_kind kind) {
     assert(context != NULL);
 
-    gc_var1(context, port);
+    gc_var2(context, port, filename);
 
     port = raw_object_make(context, OBJ_STDIO_PORT, object_sizeof_base(stdio_port));
 
     port->value.stdio_port.kind = kind;
     port->value.stdio_port.file = file;
-    port->value.stdio_port.filename = IMM_UNIT;
+    filename = string_make_from_cstr_op(context, "<unknown>");
+    port->value.stdio_port.filename = filename;
     port->value.stdio_port.is_released = 0;
     // 外部打开的文件外部负责关闭
     port->value.stdio_port.need_close = 0;

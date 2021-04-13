@@ -130,17 +130,27 @@ struct type_test_t {
 /******************************************************************************
                          内部 opcode dispatch table
 ******************************************************************************/
-static object op_exec_0(context_t context, enum opcode_e opcode);
+// repl 控制
+static object op_exec_repl(context_t context, enum opcode_e opcode);
 
-static object op_exec_1(context_t context, enum opcode_e opcode);
+// 语法实现
+static object op_exec_syntax(context_t context, enum opcode_e opcode);
 
-static object op_exec_2(context_t context, enum opcode_e opcode);
+// 词法分析和字符串输出
+static object op_exec_lexical(context_t context, enum opcode_e opcode);
+
+// 谓词函数
+static object op_exec_predicate(context_t context, enum opcode_e opcode);
+
+// 内建函数
+static object op_exec_builtin_function(context_t context, enum opcode_e opcode);
 
 /**
  * op_exec_ 分发表内部定义
  */
 op_code_info internal_dispatch_table[] = {
-        {READ_SEXP_OP, op_exec_0, NULL, 0, 0, NULL},
+        {OP_READ_SEXP, op_exec_lexical,          NULL, 0, 0, NULL},
+        {OP_ERROR,     op_exec_builtin_function, NULL, 0, 0, NULL},
 };
 
 /**
@@ -195,9 +205,11 @@ static int interpreter_default_env_init(context_t context) {
     context->syntax_table = hashmap_make_op(context, 30, DEFAULT_HASH_SET_MAP_LOAD_FACTOR);
 
     context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
+    // 每加载一次文件, 要新增一个词法分析器的括号深度记录
+    context->bracket_level_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
 
-    // op_code 初始化为 0, 需要后续正确初始化
-    context->op_code = 0;
+    // opcode 初始化为 0, 需要后续正确初始化
+    context->opcode = 0;
     context->value = IMM_UNIT;
     context->args = IMM_UNIT;
     context->code = IMM_UNIT;
@@ -209,8 +221,9 @@ static int interpreter_default_env_init(context_t context) {
     context->in_port = stdio_port_from_file_op(context, stdin, PORT_INPUT);
     context->out_port = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     context->err_out_port = stdio_port_from_file_op(context, stderr, PORT_OUTPUT);
+    context->load_port = IMM_UNIT;
 
-    // 初始化 op_code dispatch_table 和内部 proc
+    // 初始化 opcode dispatch_table 和内部 proc
     context->dispatch_table = raw_alloc(sizeof(op_code_info) * MAX_OP_CODE);
     notnull_or_return(context->dispatch_table, "[ERROR] context->dispatch_table alloc failed.", 0);
     init_opcode(context);
@@ -278,7 +291,7 @@ EXPORT_API void interpreter_destroy(context_t context) {
     context->current_env = IMM_UNIT;
     context->scheme_stack = IMM_UNIT;
 
-    context->op_code = 0;
+    context->opcode = 0;
     context->value = IMM_UNIT;
 
     context->load_stack = IMM_UNIT;
@@ -481,7 +494,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
     // 取出顶层栈帧
     object stack_frame = pair_car(context->scheme_stack);
     // 恢复环境
-    context->op_code = stack_frame_op(stack_frame);
+    context->opcode = stack_frame_op(stack_frame);
     context->args = stack_frame_args(stack_frame);
     context->code = stack_frame_code(stack_frame);
     context->current_env = stack_frame_env(stack_frame);
@@ -615,22 +628,194 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env) {
 /******************************************************************************
                               load_stack 操作
 ******************************************************************************/
-static object file_push(context_t context, object file_name);
+/**
+ * (load "") 函数推入 port
+ * @param context
+ * @param file_name
+ * @return 成功返回 IMM_TRUE, 否则 IMM_FALSE
+ */
+static GC object file_push(context_t context, object file_name) {
+    assert(context != NULL);
+    gc_param1(context, file_name);
+    gc_var3(context, port, name, bracket_level);
 
-static object file_pop(context_t context, object file_name);
+    port = stdio_port_from_filename_op(context, file_name, PORT_INPUT);
+    if (port != IMM_UNIT) {
+        // load stack 不足将自动增长
+        context->load_stack = stack_push_auto_increase_op(context, context->load_stack, port, 50);
+        bracket_level = i64_make_op(context, 0);
+        context->bracket_level_stack = stack_push_auto_increase_op(context, context->bracket_level_stack, bracket_level,
+                                                                   50);
+        context->load_port = port;
+    }
+
+    gc_release_param(context);
+    if (port != IMM_UNIT) return IMM_TRUE;
+    else return IMM_FALSE;
+}
+
+static void file_pop(context_t context) {
+    if (!stack_empty(context->load_stack)) {
+        object port = stack_peek_op(context->load_stack);
+        stack_pop_op(context->load_stack);
+        assert(port != NULL);
+
+        stdio_finalizer(context, port);
+        context->load_port = stack_peek_op(context->load_stack);
+    }
+}
 
 
 /******************************************************************************
                                     元循环
 ******************************************************************************/
-uint32_t eval_apply_loop(context_t context, enum opcode_e opcode) {
-    return 1;
+/**
+ * 构造 OP_ERROR 的参数并跳转到 ERROR
+ * <p>异常结构</p>
+ * <p>   '(error_message_str)</p>
+ * <p>或 '(error_message_str object)</p>
+ * @param context
+ * @param message
+ * @param obj
+ * @return
+ */
+static object error_throw(context_t context, const char *message, object obj) {
+    assert(context != 0);
+    gc_param1(context, obj);
+    gc_var2(context, strbuff, str);
+
+#define __Format_buff_size 30
+    char format_buff[__Format_buff_size];
+
+    strbuff = string_buffer_make_op(context, 512);
+    if (is_stdio_port(context->in_port) && stdio_port_get_file(context->in_port) != stdin) {
+        // 显示错误行数
+        string_buffer_append_cstr_op(context, strbuff, "(");
+        string_buffer_append_string_op(context, strbuff, stdio_port_get_filename(context->in_port));
+        string_buffer_append_cstr_op(context, strbuff, " : ");
+        snprintf(format_buff, __Format_buff_size, "%zu", stdio_port_get_line(context->in_port));
+        string_buffer_append_cstr_op(context, strbuff, format_buff);
+        string_buffer_append_cstr_op(context, strbuff, ") ");
+        string_buffer_append_cstr_op(context, strbuff, message);
+    }
+#undef __Format_buff_size
+
+    if (obj == NULL) {
+        context->args = IMM_UNIT;
+    } else {
+        context->args = pair_make_op(context, obj, IMM_UNIT);
+    }
+
+    str = string_buffer_to_string_op(context, strbuff);
+    set_immutable(str);
+    context->args = pair_make_op(context, str, context->args);
+    context->opcode = OP_ERROR;
+
+    gc_release_param(context);
+    return IMM_UNIT;
 }
 
-static object op_exec_0(context_t context, enum opcode_e opcode) {
-    return 0;
+#define Error_Throw_0(ctx, msg)       error_throw(ctx, msg, NULL)
+#define Error_Throw_1(ctx, msg, obj)    error_throw(ctx, msg, obj)
+
+/**
+ * 检查内建过程参数
+ * @param context
+ * @param vptr
+ */
+static void builtin_function_args_type_check(context_t context, op_code_info *vptr) {
+    int ok_flag = 1;
+    int64_t n = list_length(context->args);
+    if (n == -1) {
+        ok_flag = 0;
+        snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "argument(s) not a list");
+    }
+    if (ok_flag && n < vptr->min_args_length) {
+        // 参数长度不足
+        ok_flag = 0;
+        snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%s: needs%s %"PRId64" argument(s)",
+                 vptr->name,
+                 vptr->min_args_length == vptr->max_args_length ? "" : " at least",
+                 vptr->min_args_length);
+    }
+    if (ok_flag && n > vptr->max_args_length) {
+        // 参数过多
+        ok_flag = 0;
+        snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%s: needs%s %"PRId64" argument(s)",
+                 vptr->name,
+                 vptr->min_args_length == vptr->max_args_length ? "" : " at most",
+                 vptr->max_args_length);
+    }
+    if (ok_flag && vptr->args_type_check_table != NULL) {
+        const char *type_check = vptr->args_type_check_table;
+
+        object args = context->args;
+        for (size_t i = 0, type_check_index = 0; i < n; i++) {
+            int index = (int) (*type_check);
+            type_test_func test = type_test_table[index].test;
+            if (!test(pair_car(args))) {
+                ok_flag = 0;
+                snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%s: argument %d must be: %s",
+                         vptr->name,
+                         i + 1,
+                         type_test_table[index].type_kind);
+                break;
+            }
+
+            if (type_check[1] != '\0') {
+                // 重复最后一个测试
+                type_check++;
+            }
+
+            args = pair_cdr(args);
+        }
+    }
+
+    if (!ok_flag) {
+        Error_Throw_0(context, context->str_buffer);
+    }
 }
 
+EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode) {
+    context->opcode = opcode;
+    while (1) {
+        // 根据 opcode 取得对应函数
+        assert(context->opcode >= 0 && context->opcode <= MAX_OP_CODE);
+        op_code_info *vptr = &context->dispatch_table[context->opcode];
+
+        // 内建函数则检查参数是否正确
+        if (vptr->name != NULL) {
+            builtin_function_args_type_check(context, vptr);
+        }
+
+        // 执行一次循环
+        if (vptr->func(context, context->opcode) == IMM_UNIT) {
+            // 执行结束或出现错误时返回
+            // 运行结果见 context->ret
+            return;
+        }
+    }
+}
+
+static object op_exec_repl(context_t context, enum opcode_e opcode) {
+    return IMM_TRUE;
+}
+
+static object op_exec_syntax(context_t context, enum opcode_e opcode) {
+    return IMM_TRUE;
+}
+
+static object op_exec_lexical(context_t context, enum opcode_e opcode) {
+    return IMM_TRUE;
+}
+
+static object op_exec_predicate(context_t context, enum opcode_e opcode) {
+    return IMM_TRUE;
+}
+
+static object op_exec_builtin_function(context_t context, enum opcode_e opcode) {
+    return IMM_TRUE;
+}
 
 /******************************************************************************
                                   文件读入
@@ -640,9 +825,13 @@ EXPORT_API GC void interpreter_load_cstr(context_t context, const char *cstr) {
 }
 
 EXPORT_API GC void interpreter_load_file(context_t context, FILE *file) {
-    interpreter_load_file_with_name(context, file, NULL);
+    if (file == stdin) {
+        interpreter_load_file_with_name(context, file, "<stdin>");
+
+    } else {
+        interpreter_load_file_with_name(context, file, "<unknown>");
+    }
 }
 
 EXPORT_API GC void interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name) {
-
 }

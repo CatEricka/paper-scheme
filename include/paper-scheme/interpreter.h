@@ -209,7 +209,7 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env);
 /******************************************************************************
                                 TODO ÔªÑ­»·
 ******************************************************************************/
-EXPORT_API uint32_t eval_apply_loop(context_t context, enum opcode_e opcode);
+EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode);
 
 
 

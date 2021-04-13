@@ -4,6 +4,43 @@
 /**
                                 对象值操作
 ******************************************************************************/
+
+/**
+ * 返回 list 长度
+ * @param list cons(e1, cons(e2, IMM_UNIT))
+ * @return
+ */
+EXPORT_API int64_t list_length(object list) {
+    int i = 0;
+    object slow, fast;
+
+    slow = fast = list;
+    while (1) {
+        if (fast == IMM_UNIT)
+            return i;
+        if (!is_pair(fast))
+            return -2 - i;
+        fast = pair_cdr(fast);
+        ++i;
+        if (fast == IMM_UNIT)
+            return i;
+        if (!is_pair(fast))
+            return -2 - i;
+        ++i;
+        fast = pair_cdr(fast);
+
+        /* Safe because we would have already returned if `fast'
+           encountered a non-pair. */
+        slow = pair_cdr(slow);
+        if (fast == slow) {
+            /* the fast pointer has looped back around and caught up
+               with the slow pointer, hence the structure is circular,
+               not of finite length, and therefore not a list */
+            return -1;
+        }
+    }
+}
+
 /**
  * 返回栈顶元素
  * @param stack
@@ -17,6 +54,21 @@ NULLABLE CHECKED REF object stack_peek_op(object stack) {
     else {
         size_t top = stack->value.stack.length - 1;
         return stack->value.stack.data[top];
+    }
+}
+/**
+ * 替换掉栈顶元素, 如果栈为空则不做任何处理
+ * @param stack
+ * @param elem
+ */
+NULLABLE CHECKED REF void stack_set_top_op(object stack, object elem) {
+    assert(is_object(stack));
+    assert(is_stack(stack));
+
+    if (stack_empty(stack)) return;
+    else {
+        size_t top = stack->value.stack.length - 1;
+        stack->value.stack.data[top] = elem;
     }
 }
 /**

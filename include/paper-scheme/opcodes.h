@@ -6,7 +6,9 @@
 
 enum opcode_e {
     OP_TOP_LEVEL = 0,
-    READ_SEXP_OP,
+    OP_READ_ONCE,
+    OP_READ_SEXP,
+    OP_ERROR,
     // TODO opcode
             MAX_OP_CODE,
 };

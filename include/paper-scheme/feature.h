@@ -155,6 +155,8 @@ uint32_t rand_helper();
 #define GLOBAL_ENVIRONMENT_INIT_SIZE 512
 // (load "") 函数最大嵌套深度
 #define MAX_LOAD_FILE_DEEP 64
+// 内部字符串缓冲大小
+#define INTERNAL_STR_BUFFER_SIZE 2048
 
 /**
                              基础对象特征

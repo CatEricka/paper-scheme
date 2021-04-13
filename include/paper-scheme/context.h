@@ -57,8 +57,8 @@ typedef struct op_code_info_t {
     enum opcode_e op;
     op_exec_dispatch_func func;
     char *name;
-    size_t min_args_length;
-    size_t max_args_length;
+    int64_t min_args_length;
+    int64_t max_args_length;
     char *args_type_check_table;
 } op_code_info;
 
@@ -112,7 +112,7 @@ struct scheme_context_t {
     /**
      * 当前操作码
      */
-    int op_code;
+    int opcode;
     /**
      * 返回值, any type
      */
@@ -120,11 +120,18 @@ struct scheme_context_t {
 
     /**
      * (load "") 栈, (make-stack MAX_LOAD_FILE_DEEP)
+     * 类型: port
      */
     GC object load_stack;
+    /**
+     * 括号层级
+     * 用于词法分析器记录括号深度
+     * 类型: i64
+     */
+    GC object bracket_level_stack;
 
     /**
-     * token 枚举缓存
+     * token() 返回值保存在这里
      */
     int token;
 
@@ -132,7 +139,11 @@ struct scheme_context_t {
      * 内部字符串缓存
      * 希望足够大
      */
-    char str_buffer[2048];
+    char str_buffer[INTERNAL_STR_BUFFER_SIZE];
+
+    /**
+     *                  内部特殊变量
+     ****************************************************/
 
     /**
      *                   全局信息表
@@ -190,6 +201,8 @@ struct scheme_context_t {
     GC object out_port;
     GC object err_out_port;
 
+    // (load ) 函数加载用
+    GC object load_port;
 
     /**
      *                   公共信息引用
@@ -201,6 +214,9 @@ struct scheme_context_t {
     /**
      *                      C 交互
      ****************************************************/
+    /**
+     * 解释器运行结果
+     */
     int ret;
 };
 

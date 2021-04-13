@@ -151,6 +151,8 @@ static object gc_mark(context_t context) {
     gc_mark_one_start(context, context->value);
     // 标记 load stack
     gc_mark_one_start(context, context->load_stack);
+    // 词法分析器深度
+    gc_mark_one_start(context, context->bracket_level_stack);
 
     // 标记全局符号表
     gc_mark_one_start(context, context->global_symbol_table);
@@ -163,6 +165,7 @@ static object gc_mark(context_t context) {
     gc_mark_one_start(context, context->in_port);
     gc_mark_one_start(context, context->out_port);
     gc_mark_one_start(context, context->err_out_port);
+    gc_mark_one_start(context, context->load_port);
 
     // 全局类型
     for (size_t i = 0; i < context->global_type_table_len; i++) {
@@ -302,6 +305,7 @@ static void gc_adjust_ref(context_t context) {
     gc_adjust_ref_one(&(context->value));
     // load stack
     gc_adjust_ref_one(&(context->load_stack));
+    gc_adjust_ref_one(&(context->bracket_level_stack));
 
     // 调整 global_symbol_table
     gc_adjust_ref_one(&(context->global_symbol_table));
@@ -314,6 +318,7 @@ static void gc_adjust_ref(context_t context) {
     gc_adjust_ref_one(&context->in_port);
     gc_adjust_ref_one(&context->out_port);
     gc_adjust_ref_one(&context->err_out_port);
+    gc_adjust_ref_one(&context->load_port);
 
     // 全局类型信息
     for (size_t i = 0; i < context->global_type_table_len; i++) {

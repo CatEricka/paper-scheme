@@ -437,6 +437,7 @@ struct object_struct_t {
             - stack:            stack_clean(), stack_capacity(), stack_len()
                                 stack_full(), stack_empty()
                                 stack_push_op, stack_pop_op(),  stack_peek_op(),
+                                stack_set_top_op()
             - string_port:      string_port_kind()
             - stdio_port:       stdio_port_kind()
             - hashset:          hashset_size()
@@ -450,6 +451,7 @@ struct object_struct_t {
             - proc:             TODO proc_get_opcode(), proc_get_symbol()
             - syntax:           TODO syntax_get_opcode(), syntax_get_symbol()
         操作:
+            - list (pair):      TODO list_length()
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
                                 string_buffer_append_char_op()
@@ -849,6 +851,13 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
 #define pair_cadddr(x)      (pair_cadr(pair_cddr(x)))
 
 /**
+ * 返回 list 长度
+ * @param list cons(e1, cons(e2, IMM_UNIT))
+ * @return 如果不是 list, 返回 -1, 否则返回 list 长度
+ */
+EXPORT_API int64_t list_length(object list);
+
+/**
  * bytes 计算总大小
  */
 #define bytes_capacity(obj)     ((obj)->value.bytes.capacity)
@@ -1006,6 +1015,13 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
 NULLABLE CHECKED REF object stack_peek_op(object stack);
 
 /**
+ * 替换掉栈顶元素, 如果栈为空则不做任何处理
+ * @param stack
+ * @param elem
+ */
+NULLABLE CHECKED REF void stack_set_top_op(object stack, object elem);
+
+/**
  * 入栈
  * @param stack
  * @param obj
@@ -1068,6 +1084,10 @@ CHECKED OUT int stack_pop_op(REF object stack);
 
 #define syntax_get_opcode(obj)      ((obj)->value.syntax.opcode)
 #define syntax_get_symbol(obj)      ((obj)->value.syntax.syntax_name)
+
+#define stdio_port_get_file(obj)    ((obj)->value.stdio_port.file)
+#define stdio_port_get_filename(obj)    ((obj)->value.stdio_port.filename)
+#define stdio_port_get_line(obj)    ((obj)->value.stdio_port.current_line)
 /**
                            对象值操作: compare
 ******************************************************************************/

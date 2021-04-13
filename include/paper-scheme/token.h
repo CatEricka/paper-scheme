@@ -14,6 +14,7 @@ enum token_e {
     TOKEN_DOUBLE_QUOTE,     // "
     TOKEN_BACK_QUOTE,       // `
     TOKEN_AT_MART,          // @
+    TOKEN_COMMA,            // ,
     TOKEN_SHARP,            // #
     TOKEN_SHARP_CONST,      // #tfodxb
     TOKEN_VECTOR,           // #(var1 var2 ...)
