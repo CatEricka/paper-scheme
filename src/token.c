@@ -62,6 +62,9 @@ EXPORT_API GC object read_string_expr(context_t context) {
     assert(context != NULL);
     // 此时 in_port 刚读入一个 "
     gc_var1(context, buffer);
+
+    buffer = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
+
     object c;
     int tmp_ch;
     unsigned escape_value = 0;
@@ -190,10 +193,12 @@ EXPORT_API GC object read_string_expr(context_t context) {
                     }
                 }
                 break;
+            default:
+                gc_release_var(context);
+                return IMM_UNIT;
         }
     } while (1);
-    gc_release_var(context);
-    return IMM_UNIT;
+
 }
 
 /**
@@ -225,6 +230,8 @@ EXPORT_API int token(context_t context) {
             c = port_get_char(context->in_port);
             if (is_one_of(" \n\t", c)) {
                 return TOKEN_DOT;
+            } else if (is_one_of(")", c)) {
+                return TOKEN_ILLEGAL;
             } else {
                 port_unget_char(context->in_port, c);
                 port_unget_char(context->in_port, char_imm_make('.'));

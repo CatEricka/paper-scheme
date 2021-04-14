@@ -2133,7 +2133,7 @@ EXPORT_API object port_get_char(REF NOTNULL object port) {
  */
 EXPORT_API void port_unget_char(REF NOTNULL object port, object ch) {
     assert(is_port(port));
-    assert(is_imm_char(ch));
+    assert(is_imm_char(ch) || is_imm_eof(ch));
 
     if (ch == IMM_EOF) {
         return;

@@ -17,6 +17,7 @@ enum token_e {
     TOKEN_SHARP_CONST,      // #tfodxb
     TOKEN_VECTOR,           // #(var1 var2 ...)
     TOKEN_EOF,              // end of file
+    TOKEN_ILLEGAL,
 };
 
 // жу╫А╥Ш: () " \f \t \v \n \r ©у╦Я

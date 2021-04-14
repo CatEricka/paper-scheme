@@ -196,15 +196,25 @@ EXPORT_API GC object sharp_const_make_op(context_t context, object str) {
 EXPORT_API GC object atom_make_op(context_t context, object str) {
     assert(context != NULL);
     assert(is_string(str));
-    assert(string_len(str) != 0);
     gc_param1(context, str);
     gc_var2(context, sym, syntax);
 
     char *cstr = string_get_cstr(str);
+    if (string_len(str) == 0) {
+        // 空字符串也不是 atom
+        gc_release_param(context);
+        return IMM_UNIT;
+    }
+    if (strcmp(cstr, ".") == 0) {
+        // . 不应该是 atom
+        gc_release_param(context);
+        return IMM_UNIT;
+    }
     char ch, *cstr_cursor = cstr;
     int has_dec_point = 0;
 
     ch = *cstr_cursor++;
+
     if ((ch == '+') || (ch == '-')) {
         ch = *cstr_cursor++;
         if (ch == '.') {
@@ -750,8 +760,6 @@ EXPORT_API void scheme_stack_reset(context_t context) {
 
 EXPORT_API GC void scheme_stack_save(context_t context, enum opcode_e op, object args, object code) {
     assert(context != NULL);
-    assert(is_pair(args) || args == IMM_UNIT);
-    assert(is_pair(code) || code == IMM_UNIT);
 
     gc_param2(context, args, code);
     gc_var1(context, tmp);
@@ -1175,8 +1183,8 @@ static object error_throw(context_t context, const char *message, object obj) {
         snprintf(format_buff, __Format_buff_size__, "%zu", stdio_port_get_line(context->in_port));
         string_buffer_append_cstr_op(context, strbuff, format_buff);
         string_buffer_append_cstr_op(context, strbuff, ") ");
-        string_buffer_append_cstr_op(context, strbuff, message);
     }
+    string_buffer_append_cstr_op(context, strbuff, message);
 
     if (obj == NULL) {
         context->args = IMM_UNIT;
@@ -1419,13 +1427,13 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
 
     switch (opcode) {
         case OP_VECTOR:
-            size_t len = list_length(context->args);
-            size_t i;
+            int64_t len = list_length(context->args);
+            int64_t i;
             if (len < 0) {
                 Error_Throw_1(context, "vector: not a proper list:", context->args);
             }
             tmp1 = vector_make_op(context, len);
-            for (i = 0, tmp2 = context->args; is_pair(tmp2); tmp2 = pair_cdr(tmp1), i++) {
+            for (i = 0, tmp2 = context->args; is_pair(tmp2); tmp2 = pair_cdr(tmp2), i++) {
                 vector_set(tmp1, i, pair_car(tmp2));
             }
             s_return(context, tmp1);
@@ -1547,6 +1555,7 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                     }
                     set_immutable(tmp1);
                     s_return(context, tmp1);
+                case TOKEN_ILLEGAL:
                 default:
                     Error_Throw_0(context, "syntax error: illegal token");
             }
