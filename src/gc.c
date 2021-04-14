@@ -147,6 +147,10 @@ static object gc_mark(context_t context) {
     gc_mark_one_start(context, context->current_env);
     gc_mark_one_start(context, context->scheme_stack);
 
+    // 标记特殊变量
+    gc_mark_one_start(context, context->ERROR_HOOK);
+    gc_mark_one_start(context, context->COMPILE_HOOK);
+
     // 标记返回值
     gc_mark_one_start(context, context->value);
     // 标记 load stack
@@ -166,6 +170,7 @@ static object gc_mark(context_t context) {
     gc_mark_one_start(context, context->out_port);
     gc_mark_one_start(context, context->err_out_port);
     gc_mark_one_start(context, context->load_port);
+    gc_mark_one_start(context, context->save_port);
 
     // 全局类型
     for (size_t i = 0; i < context->global_type_table_len; i++) {
@@ -314,11 +319,17 @@ static void gc_adjust_ref(context_t context) {
     // 调整 syntax_table
     gc_adjust_ref_one(&(context->syntax_table));
 
+    // 调整特殊变量
+    gc_adjust_ref_one(&(context->ERROR_HOOK));
+    gc_adjust_ref_one(&(context->COMPILE_HOOK));
+
+
     // 调整输入输出
     gc_adjust_ref_one(&context->in_port);
     gc_adjust_ref_one(&context->out_port);
     gc_adjust_ref_one(&context->err_out_port);
     gc_adjust_ref_one(&context->load_port);
+    gc_adjust_ref_one(&context->save_port);
 
     // 全局类型信息
     for (size_t i = 0; i < context->global_type_table_len; i++) {

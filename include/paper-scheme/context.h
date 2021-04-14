@@ -54,12 +54,12 @@ typedef object (*op_exec_dispatch_func)(context_t r, enum opcode_e e);
  * opcodes info
  */
 typedef struct op_code_info_t {
-    enum opcode_e op;
-    op_exec_dispatch_func func;
     char *name;
     int64_t min_args_length;
     int64_t max_args_length;
     char *args_type_check_table;
+    enum opcode_e op;
+    op_exec_dispatch_func func;
 } op_code_info;
 
 /**
@@ -131,6 +131,11 @@ struct scheme_context_t {
     GC object bracket_level_stack;
 
     /**
+     * 当无法正确匹配括号时会被赋值
+     */
+    int64_t bracket_level;
+
+    /**
      * token() 返回值保存在这里
      */
     int token;
@@ -144,6 +149,9 @@ struct scheme_context_t {
     /**
      *                  内部特殊变量
      ****************************************************/
+    // TODO 完成内部 HOOK 使用说明和示例
+    object ERROR_HOOK;         /* *colon-hook* */
+    object COMPILE_HOOK;       /* *compile-hook* */
 
     /**
      *                   全局信息表
@@ -203,6 +211,8 @@ struct scheme_context_t {
 
     // (load ) 函数加载用
     GC object load_port;
+    // 在 读入 sexp 前临时保存 in_port;
+    GC object save_port;
 
     /**
      *                   公共信息引用

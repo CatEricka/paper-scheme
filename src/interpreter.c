@@ -16,18 +16,17 @@ EXPORT_API object symbol_is_syntax(context_t context, object symbol) {
     return hashmap_contains_key_op(context, context->syntax_table, symbol);
 }
 
-static GC void assign_proc(context_t context, char *name, enum opcode_e opcode) {
+/**
+ * 从 symbol 获取 syntax
+ * @param context
+ * @param symbol
+ * @return syntax, 不存在则返回 IMM_UNIT
+ */
+EXPORT_API object syntax_get_by_symbol(context_t context, object symbol) {
     assert(context != NULL);
-    assert(name != NULL);
-    assert(strlen(name) != 0);
-    assert(opcode >= 0 && opcode < MAX_OP_CODE);
-    gc_var2(context, proc, sym);
+    assert(is_symbol(symbol));
 
-    sym = symbol_make_from_cstr_op(context, name);
-    proc = proc_make_internal(context, sym, opcode);
-    new_slot_in_spec_env(context, context->global_environment, sym, proc);
-
-    gc_release_var(context);
+    return hashmap_get_op(context, context->syntax_table, symbol);
 }
 
 static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode) {
@@ -43,11 +42,227 @@ static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode
     gc_release_var(context);
 }
 
+static GC void assign_proc(context_t context, char *name, enum opcode_e opcode) {
+    assert(context != NULL);
+    assert(name != NULL);
+    assert(strlen(name) != 0);
+    assert(opcode >= 0 && opcode < MAX_OP_CODE);
+    gc_var2(context, proc, sym);
+
+    sym = symbol_make_from_cstr_op(context, name);
+    proc = proc_make_internal(context, sym, opcode);
+    new_slot_in_spec_env(context, sym, proc, context->global_environment);
+
+    gc_release_var(context);
+}
+
+
+/******************************************************************************
+                              词法分析器相关
+******************************************************************************/
+
+static int64_t binary_decode(const char *s) {
+    int64_t x = 0;
+
+    while (*s != 0 && (*s == '1' || *s == '0')) {
+        x <<= 1u;
+        x += *s - '0';
+        s++;
+    }
+
+    return x;
+}
+/**
+ * 根据输入字符串构造 sharp 常量
+ * @param context
+ * @param str
+ * @return sharp 常量或 IMM_UNIT (如果输入非法)
+ */
+EXPORT_API GC object sharp_const_make_op(context_t context, object str) {
+    assert(context != NULL);
+    gc_param1(context, str);
+    gc_var1(context, obj);
+    char format_buff[__Format_buff_size__];
+    obj = IMM_UNIT;
+
+    if (0 == string_len(str)) {
+        gc_release_param(context);
+        return IMM_UNIT;
+    }
+
+    if (!strcmp(string_get_cstr(str), "t")) {
+        gc_release_param(context);
+        return IMM_TRUE;
+    } else if (!strcmp(string_get_cstr(str), "f")) {
+        gc_release_param(context);
+        return IMM_FALSE;
+    } else if (string_index(str, 0) == 'o') {
+        snprintf(format_buff, __Format_buff_size__, "0%s", string_get_cstr(str) + 1);
+        uint64_t x;
+        if (sscanf(format_buff, "%"SCNo64, &x) == 1) {
+            // 是的, 这里有类型转换的安全问题, 但是实现有符号数太麻烦了.
+            // 与其实现有符号数不如实现大数运算
+            obj = i64_make_op(context, (int64_t) x);
+        } else {
+            obj = IMM_UNIT;
+        }
+        gc_release_param(context);
+        return obj;
+
+    } else if (string_index(str, 0) == 'd') {
+        int64_t x;
+        if (sscanf(string_get_cstr(str) + 1, "%"SCNd64, &x) == 1) {
+            obj = i64_make_op(context, (int64_t) x);
+        } else {
+            obj = IMM_UNIT;
+        }
+        gc_release_param(context);
+        return obj;
+    } else if (string_index(str, 0) == 'x') {
+        snprintf(format_buff, __Format_buff_size__, "0x%s", string_get_cstr(str) + 1);
+        uint64_t x;
+        if (sscanf(format_buff, "%"SCNx64, &x) == 1) {
+            obj = i64_make_op(context, (int64_t) x);
+        } else {
+            obj = IMM_UNIT;
+        }
+        gc_release_param(context);
+        return obj;
+    } else if (string_index(str, 0) == 'b') {
+        int64_t x = binary_decode(string_get_cstr(str) + 1);
+        obj = i64_make_op(context, x);
+        gc_release_param(context);
+        return obj;
+    } else if (string_index(str, 0) == '\\') {
+        // char 立即数
+        obj = IMM_UNIT;
+        if (!strcmp(string_get_cstr(str) + 1, "space")) {
+            obj = char_imm_make(' ');
+        } else if (!strcmp(string_get_cstr(str) + 1, "newline")) {
+            obj = char_imm_make('\n');
+        } else if (!strcmp(string_get_cstr(str) + 1, "return")) {
+            obj = char_imm_make('\r');
+        } else if (!strcmp(string_get_cstr(str) + 1, "tab")) {
+            obj = char_imm_make('\t');
+        } else if (string_index(str, 1) == 'x' && string_index(str, 2) != '\0') {
+            int hex = 0;
+            if (sscanf(string_get_cstr(str) + 2, "%x", &hex) == 1) {
+                if (hex >= 0 && hex <= UCHAR_MAX) {
+                    obj = char_imm_make((char) hex);
+                }
+            }
+        } else if (string_index(str, 2) != '\0') {
+            obj = char_imm_make(string_index(str, 1));
+        } else {
+            obj = IMM_UNIT;
+        }
+    } else {
+        obj = IMM_UNIT;
+    }
+
+    // 不符合全部情况, 返回 UNIT
+    gc_release_param(context);
+    return obj;
+}
+
+/**
+ * <p>如果 str 是 syntax, 则返回 syntax</p>
+ * <p>否则返回 原始 symbol</p>
+ * @param context
+ * @param str string
+ * @return syntax/symbol
+ */
+static object str_to_syntax_or_symbol(context_t context, object str) {
+    assert(context != NULL);
+    assert(is_string(str));
+    gc_param1(context, str);
+    gc_var1(context, ret);
+
+    ret = string_to_symbol_op(context, str);
+    if (symbol_is_syntax(context, ret)) {
+        ret = syntax_get_by_symbol(context, ret);
+        assert(is_syntax(ret));
+    }
+    gc_release_param(context);
+    return ret;
+}
+
+/**
+ * 从字符串构造 symbol, syntax 或者 数字
+ * @param context
+ * @param str
+ * @return
+ */
+EXPORT_API GC object atom_make_op(context_t context, object str) {
+    assert(context != NULL);
+    assert(is_string(str));
+    assert(string_len(str) != 0);
+    gc_param1(context, str);
+    gc_var2(context, sym, syntax);
+
+    char *cstr = string_get_cstr(str);
+    char ch, *cstr_cursor = cstr;
+    int has_dec_point = 0;
+
+    ch = *cstr_cursor++;
+    if ((ch == '+') || (ch == '-')) {
+        ch = *cstr_cursor++;
+        if (ch == '.') {
+            has_dec_point = 1;
+            ch = *cstr_cursor++;
+        }
+        if (!isdigit(ch)) {
+            gc_release_param(context);
+            return str_to_syntax_or_symbol(context, str);
+        }
+    } else if (ch == '.') {
+        has_dec_point = 1;
+        ch = *cstr_cursor++;
+        if (!isdigit(ch)) {
+            gc_release_param(context);
+            return str_to_syntax_or_symbol(context, str);
+        }
+    } else if (!isdigit(ch)) {
+        gc_release_param(context);
+        return str_to_syntax_or_symbol(context, str);
+    }
+
+    for (; (ch = *cstr_cursor) != 0; ++cstr_cursor) {
+        if (!isdigit(ch)) {
+            if (ch == '.') {
+                if (!has_dec_point) {
+                    // 指数部分不能有小数点
+                    has_dec_point = 1;
+                    continue;
+                }
+            } else if ((ch == 'e') || (ch == 'E')) {
+                // example: 12e3
+                has_dec_point = 1;
+                cstr_cursor++;
+                if ((*cstr_cursor == '-') || (*cstr_cursor == '+') || isdigit(*cstr_cursor)) {
+                    continue;
+                }
+            }
+            gc_release_param(context);
+            return string_to_symbol_op(context, str);
+        }
+    }
+    if (has_dec_point) {
+        double f = atof(string_get_cstr(str));
+        gc_release_param(context);
+        return doublenum_make_op(context, f);
+    } else {
+        gc_release_param(context);
+        int64_t i = atoll(string_get_cstr(str));
+        return i64_make_op(context, i);
+    }
+}
 
 /******************************************************************************
                           opcode procedure 类型检查
 ******************************************************************************/
-//#define TYPE_NONE         NULL
+// 没有检查
+#define TYPE_NONE         NULL
 // 任何类型
 #define TYPE_ANY            "\001"
 #define TYPE_INTEGER        "\002"
@@ -63,6 +278,9 @@ static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode
 #define TYPE_INPUT_PORT     "\014"
 #define TYPE_OUTPUT_PORT    "\015"
 #define TYPE_ENVIRONMENT    "\016"
+
+// 最大参数数量无限制
+#define ARGS_INF            (INT64_MAX-1)
 
 // 001
 static int is_any_test(object obj) { return 1; }
@@ -152,8 +370,9 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode);
  * op_exec_ 分发表内部定义
  */
 op_code_info internal_dispatch_table[] = {
-        {OP_READ_SEXP, op_exec_lexical,          NULL, 0, 0, NULL},
-        {OP_ERROR,     op_exec_builtin_function, NULL, 0, 0, NULL},
+        {NULL,    0, 0,        TYPE_NONE, OP_READ_SEXP,          op_exec_lexical},
+        {"error", 0, 0,        TYPE_NONE, OP_ERROR,              op_exec_builtin_function},
+        {NULL,    1, ARGS_INF, TYPE_NONE, OP_ERROR_PRINT_OBJECT, op_exec_builtin_function},
 };
 
 /**
@@ -210,6 +429,7 @@ static int interpreter_default_env_init(context_t context) {
     context->load_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
     // 每加载一次文件, 要新增一个词法分析器的括号深度记录
     context->bracket_level_stack = stack_make_op(context, MAX_LOAD_FILE_DEEP);
+    context->bracket_level = 0;
 
     // opcode 初始化为 0, 需要后续正确初始化
     context->opcode = 0;
@@ -225,6 +445,7 @@ static int interpreter_default_env_init(context_t context) {
     context->out_port = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
     context->err_out_port = stdio_port_from_file_op(context, stderr, PORT_OUTPUT);
     context->load_port = IMM_UNIT;
+    context->save_port = IMM_UNIT;
 
     // 初始化 opcode dispatch_table 和内部 proc
     context->dispatch_table = raw_alloc(sizeof(op_code_info) * MAX_OP_CODE);
@@ -250,6 +471,10 @@ static int interpreter_default_env_init(context_t context) {
     assign_syntax(context, "cons-stream", -1);
     assign_syntax(context, "macro", -1);
     assign_syntax(context, "case", -1);
+
+    // 初始化内部 hook 变量
+    context->ERROR_HOOK = symbol_make_from_cstr_op(context, "*error-hook*");
+    context->COMPILE_HOOK = symbol_make_from_cstr_op(context, "*compile-hook*");
 
     // 环境初始化结束
     context->init_done = 1;
@@ -311,9 +536,16 @@ EXPORT_API void interpreter_destroy(context_t context) {
         context->global_type_table[i].to_string = IMM_UNIT;
     }
 
+    // 初始化内部 hook 变量
+    context->ERROR_HOOK = IMM_UNIT;
+    context->COMPILE_HOOK = IMM_UNIT;
+
     context->in_port = IMM_UNIT;
     context->out_port = IMM_UNIT;
     context->err_out_port = IMM_UNIT;
+
+    context->load_port = IMM_UNIT;
+    context->save_port = IMM_UNIT;
 
     context->saves = NULL;
 
@@ -661,10 +893,12 @@ static void file_pop(context_t context) {
     if (!stack_empty(context->load_stack)) {
         object port = stack_peek_op(context->load_stack);
         stack_pop_op(context->load_stack);
-        assert(port != NULL);
+        stack_pop_op(context->bracket_level_stack);
 
+        assert(port != NULL);
         stdio_finalizer(context, port);
         context->load_port = stack_peek_op(context->load_stack);
+        context->bracket_level = i64_getvalue(stack_peek_op(context->bracket_level_stack));
     }
 }
 
@@ -672,6 +906,7 @@ static void file_pop(context_t context) {
 /******************************************************************************
                                     元循环
 ******************************************************************************/
+
 /**
  * 构造 OP_ERROR 的参数并跳转到 ERROR
  * <p>异常结构</p>
@@ -687,8 +922,7 @@ static object error_throw(context_t context, const char *message, object obj) {
     gc_param1(context, obj);
     gc_var2(context, strbuff, str);
 
-#define __Format_buff_size 30
-    char format_buff[__Format_buff_size];
+    char format_buff[__Format_buff_size__];
 
     strbuff = string_buffer_make_op(context, 512);
     if (is_stdio_port(context->in_port) && stdio_port_get_file(context->in_port) != stdin) {
@@ -696,12 +930,11 @@ static object error_throw(context_t context, const char *message, object obj) {
         string_buffer_append_cstr_op(context, strbuff, "(");
         string_buffer_append_string_op(context, strbuff, stdio_port_get_filename(context->in_port));
         string_buffer_append_cstr_op(context, strbuff, " : ");
-        snprintf(format_buff, __Format_buff_size, "%zu", stdio_port_get_line(context->in_port));
+        snprintf(format_buff, __Format_buff_size__, "%zu", stdio_port_get_line(context->in_port));
         string_buffer_append_cstr_op(context, strbuff, format_buff);
         string_buffer_append_cstr_op(context, strbuff, ") ");
         string_buffer_append_cstr_op(context, strbuff, message);
     }
-#undef __Format_buff_size
 
     if (obj == NULL) {
         context->args = IMM_UNIT;
@@ -715,18 +948,18 @@ static object error_throw(context_t context, const char *message, object obj) {
     context->opcode = OP_ERROR;
 
     gc_release_param(context);
-    return IMM_UNIT;
+    return IMM_TRUE;
 }
 
-#define Error_Throw_0(ctx, msg)       error_throw(ctx, msg, NULL)
-#define Error_Throw_1(ctx, msg, obj)    error_throw(ctx, msg, obj)
+#define Error_Throw_0(ctx, msg)       return error_throw(ctx, msg, NULL)
+#define Error_Throw_1(ctx, msg, obj)    return error_throw(ctx, msg, obj)
 
 /**
  * 检查内建过程参数
  * @param context
  * @param vptr
  */
-static void builtin_function_args_type_check(context_t context, op_code_info *vptr) {
+static object builtin_function_args_type_check(context_t context, op_code_info *vptr) {
     int ok_flag = 1;
     int64_t n = list_length(context->args);
     if (n == -1) {
@@ -741,7 +974,8 @@ static void builtin_function_args_type_check(context_t context, op_code_info *vp
                  vptr->min_args_length == vptr->max_args_length ? "" : " at least",
                  vptr->min_args_length);
     }
-    if (ok_flag && n > vptr->max_args_length) {
+    // max_args_length == ARGS_INF 的时候跳过最大参数长度检查
+    if (ok_flag && vptr->max_args_length != ARGS_INF && n > vptr->max_args_length) {
         // 参数过多
         ok_flag = 0;
         snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%s: needs%s %"PRId64" argument(s)",
@@ -753,12 +987,12 @@ static void builtin_function_args_type_check(context_t context, op_code_info *vp
         const char *type_check = vptr->args_type_check_table;
 
         object args = context->args;
-        for (size_t i = 0, type_check_index = 0; i < n; i++) {
+        for (int64_t i = 0; i < n; i++) {
             int index = (int) (*type_check);
             type_test_func test = type_test_table[index].test;
             if (!test(pair_car(args))) {
                 ok_flag = 0;
-                snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%s: argument %d must be: %s",
+                snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%s: argument %"PRId64" must be: %s",
                          vptr->name,
                          i + 1,
                          type_test_table[index].type_kind);
@@ -776,6 +1010,8 @@ static void builtin_function_args_type_check(context_t context, op_code_info *vp
 
     if (!ok_flag) {
         Error_Throw_0(context, context->str_buffer);
+    } else {
+        return IMM_TRUE;
     }
 }
 
@@ -800,45 +1036,409 @@ EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode) {
     }
 }
 
+#define s_save(context, op, args, code) scheme_stack_save((context), (op), (args), (code))
+
+#define s_goto(context, op) \
+    do { \
+        (context)->opcode = (op); \
+        gc_release_var((context)); \
+        return IMM_TRUE; \
+    } while(0)
+
+#define s_goto_without_release(context, op) \
+    do { \
+        (context)->opcode = (op); \
+        gc_release_var((context)); \
+        return IMM_TRUE; \
+    } while(0)
+
+#define s_return(context, value)    scheme_stack_return((context), (value))
+
+static int is_file_interactive(context_t context) {
+    return stack_len(context->load_stack) == 1 &&
+           stdio_port_get_file(stack_peek_op(context->load_stack)) &&
+           is_stdio_port(context->in_port);
+}
+
 static object op_exec_repl(context_t context, enum opcode_e opcode) {
-    return IMM_TRUE;
-}
+    gc_var2(context, tmp1, tmp2);
 
-static object op_exec_syntax(context_t context, enum opcode_e opcode) {
-    return IMM_TRUE;
-}
+    switch (opcode) {
+        case OP_LOAD:
+            // (load "")
+            // args: ("filename", IMM_UNIT)
+            assert(is_pair(context->args));
+            assert(is_imm_unit(pair_cdr(context->args)));
 
-static object op_exec_compute(context_t context, enum opcode_e opcode) {
+            if (is_file_interactive(context)) {
+                port_put_cstr(context, context->out_port, "Loading ");
+                port_put_string(context, context->out_port, pair_car(context->args));
+                port_put_char(context, context->out_port, char_imm_make('\n'));
+            }
+            if (is_imm_false(file_push(context, pair_car(context->args)))) {
+                Error_Throw_1(context, "unable to open", pair_car(context->args));
+            } else {
+                context->args = IMM_UNIT;
+                s_goto(context, OP_TOP_LEVEL_SETUP);
+            }
+        case OP_TOP_LEVEL_SETUP:
+            // args: IMM_UNIT
+
+            // 如果到达文件结尾则结束循环
+            // 如果载入的是 stdin, 永远不会遇到 EOF, 因此 repl 不会结束循环
+            if (is_port_eof(context->load_port)) {
+                // 如果 load_stack 最后一个文件遇到 EOF, 或者 load_stack 为空
+                // 此时结束解释器循环
+                if (stack_len(context->load_stack) <= 1) {
+                    context->args = IMM_UNIT;
+                    s_goto(context, OP_QUIT);
+                } else {
+                    file_pop(context);
+                    s_return(context, context->value);
+                }
+            }
+
+            // 如果 port 是 stdin 则显示提示符
+            if (is_file_interactive(context)) {
+                context->current_env = context->global_environment;
+                scheme_stack_reset(context);
+                port_put_cstr(context, context->out_port, "\n"USER_OVERTURE);
+            }
+
+            // 设置新的 repl 循环
+            // 重设括号层级深度
+            stack_set_top_op(context->bracket_level_stack, i64_imm_make(0));
+            context->bracket_level = 0;
+            // 在 OP_READ_INTERNAL 结束前临时保存 context->in_port
+            context->save_port = context->in_port;
+            context->in_port = context->load_port;
+            s_save(context, OP_TOP_LEVEL_SETUP, IMM_UNIT, IMM_UNIT);
+            s_save(context, OP_VALUE_PRINT, IMM_UNIT, IMM_UNIT);
+            s_save(context, OP_TOP_LEVEL, IMM_UNIT, IMM_UNIT);
+
+            s_goto(context, OP_READ_INTERNAL);
+
+        case OP_TOP_LEVEL:
+            // OP_READ_INTERNAL 结束后, 返回值是 sexp
+            context->code = context->value;
+            context->in_port = context->save_port;
+            // OP_EVAL 应当处理 context->code == IMM_EOF 的情况
+            s_goto(context, OP_EVAL);
+
+        case OP_READ_INTERNAL:
+            // return: sexp
+            context->token = token(context);
+            if (context->token == TOKEN_EOF) {
+                // 直接到达文件结尾, 返回 OP_TOP_LEVEL
+                s_return(context, IMM_EOF);
+            }
+            s_goto(context, OP_READ_SEXP);
+
+        case OP_VALUE_PRINT:
+        case OP_EVAL:
+        case OP_APPLY:
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
     return IMM_TRUE;
 }
 
 static object op_exec_lexical(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    if (context->bracket_level != 0) {
+        context->ret = ERROR_PARENTHESES_NOT_MATCH;
+        int64_t deep = context->bracket_level;
+        context->bracket_level = 0;
+        tmp1 = i64_make_op(context, deep);
+        Error_Throw_1(context, "unmatched parentheses:", tmp1);
+    }
+
+    // 词法分析
+    switch (opcode) {
+        case OP_READ_SEXP:
+            switch (context->token) {
+                case TOKEN_EOF:
+                    // 文件结束
+                    s_return(context, IMM_EOF);
+                case TOKEN_VECTOR:
+                    // "#(...)", 此时 token() 已经取走 "#("
+                    s_save(context, OP_READ_VECTOR, IMM_UNIT, IMM_UNIT);
+                    // 接着读入左括号紧接着的内容
+                    // 没有 break, 没有 return
+                    // 不是 bug
+                case TOKEN_LEFT_PAREN:
+                    context->token = token(context);
+                    if (context->token == TOKEN_RIGHT_PAREN) {
+                        // ()
+                        s_return(context, IMM_UNIT);
+                    } else if (context->token == TOKEN_DOT) {
+                        // (.)
+                        Error_Throw_0(context, "syntax error: illegal dot expression");
+                    } else {
+                        // 其他情况, 括号深度 +1
+                        int64_t deep = i64_getvalue(stack_peek_op(context->bracket_level_stack));
+                        deep += 1;
+                        tmp1 = i64_make_op(context, deep);
+                        stack_set_top_op(context->bracket_level_stack, tmp1);
+
+                        s_save(context, OP_READ_LIST, IMM_UNIT, IMM_UNIT);
+                        // 递归读入 sexp
+                        s_goto(context, OP_READ_SEXP);
+                    }
+                case TOKEN_QUOTE:
+                    // ' 引用, 再递归读入 sexp 后由 OP_READ_QUOTE 构造引用
+                    s_save(context, OP_READ_QUOTE, IMM_UNIT, IMM_UNIT);
+                    context->token = token(context);
+                    s_goto(context, OP_READ_SEXP);
+                case TOKEN_BACK_QUOTE:
+                    // ` 反引用
+                    // `(1 2 3)         =>  '(1 2 3)
+                    // `(1 ,(+ 2 3) 3)  =>  '(1 5 3)
+                    // `#(1 2)          =>  '(1 2)
+                    // `#(1 ,(+ 1 2))   =>  '#(1 3)
+                    context->token = token(context);
+
+                    if (context->token == TOKEN_VECTOR) {
+                        s_save(context, OP_READ_QUASIQUOTE_VECTOR, IMM_UNIT, IMM_UNIT);
+                        // 因为 token() 会吞掉 "#()" 的 "#("
+                        context->token = TOKEN_LEFT_PAREN;
+                        s_goto(context, OP_READ_SEXP);
+                    } else {
+                        s_save(context, OP_READ_QUASIQUOTE, IMM_UNIT, IMM_UNIT);
+                    }
+
+                    // 递归读入 sexp
+                    s_goto(context, OP_READ_SEXP);
+                case TOKEN_COMMA:
+                    // , 逗号 反引用遇到 ","
+                    // 在反引用中要先求值后被引用
+                    s_save(context, OP_READ_UNQUOTE, IMM_UNIT, IMM_UNIT);
+                    context->token = token(context);
+
+                    // 递归读入需要被求值的 sexp
+                    s_goto(context, OP_READ_SEXP);
+                case TOKEN_AT_MART:
+                    // @: 反引用遇到 ",@", 将 list 拼接进引用
+                    // `(1 ,@(list 1 2) 4)  =>  '(1 1 2 4)
+                    // `#(1 ,@(list 1 2) 4) =>  '#(1 1 2 4)
+                    s_save(context, OP_READ_UNQUOTE_SPLICING, IMM_UNIT, IMM_UNIT);
+                    context->token = token(context);
+                    // 递归读入要被展开的 list
+                    s_goto(context, OP_READ_SEXP);
+                case TOKEN_SHARP_CONST:
+                    tmp1 = read_upto(context, DELIMITERS);
+                    tmp2 = sharp_const_make_op(context, tmp1);
+                    if (tmp2 == IMM_UNIT) {
+                        Error_Throw_0(context, "unknown sharp expression");
+                    } else {
+                        s_return(context, tmp2);
+                    }
+                case TOKEN_ATOM:
+                    tmp1 = read_upto(context, DELIMITERS);
+                    tmp2 = atom_make_op(context, tmp1);
+                    if (tmp2 == IMM_UNIT) {
+                        Error_Throw_0(context, "unknown atom expression");
+                    } else {
+                        s_return(context, tmp2);
+                    }
+                    s_return(context, tmp2);
+                case TOKEN_DOUBLE_QUOTE:
+                    // "..."  字符串
+                    tmp1 = read_string_expr(context);
+                    if (tmp1 == IMM_UNIT) {
+                        Error_Throw_0(context, "Error reading string");
+                    }
+                    set_immutable(tmp1);
+                    s_return(context, tmp1);
+                default:
+                    Error_Throw_0(context, "syntax error: illegal token");
+            }
+        case OP_READ_LIST:
+        case OP_READ_DOT:
+        case OP_READ_QUOTE:
+        case OP_READ_QUASIQUOTE:
+        case OP_READ_VECTOR:
+        case OP_PRINT_OBJECT:
+        case OP_PRINT_LIST:
+        case OP_PRINT_VECTOR:
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
     return IMM_TRUE;
 }
 
+static object op_exec_syntax(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
+    return IMM_TRUE;
+}
+
+static object op_exec_compute(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
+    return IMM_TRUE;
+}
+
+
 static object op_exec_predicate(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
     return IMM_TRUE;
 }
 
 static object op_exec_builtin_function(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        case OP_QUIT:
+        case OP_GC:
+        case OP_ERROR:
+            // args: (error "message" . object)
+            assert(is_pair(context->args));
+
+            context->ret = -1;
+            // 输出 message
+            port_put_cstr(context, context->out_port, "Error: ");
+            if (!is_string(pair_car(context->args))) {
+                port_put_cstr(context, context->out_port, "--");
+
+            }
+            port_put_string(context, context->out_port, pair_car(context->args));
+
+            // 检查剩余的参数
+            context->args = pair_cdr(context->args);
+            s_goto(context, OP_ERROR_PRINT_OBJECT);
+        case OP_ERROR_PRINT_OBJECT:
+            // args: (. object)
+
+            port_put_cstr(context, context->out_port, " ");
+
+            if (context->args != IMM_UNIT) {
+                // 遍历输出所有参数
+                s_save(context, OP_ERROR_PRINT_OBJECT, pair_cdr(context->args), IMM_UNIT);
+                context->args = pair_car(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            } else {
+                // 参数为空则处理错误后的操作
+                port_put_cstr(context, context->out_port, "\n");
+                if (context->repl_mode) {
+                    // repl 模式则回到 OP_TOP_LEVEL_SETUP
+                    s_goto(context, OP_TOP_LEVEL_SETUP);
+                } else {
+                    // 其它模式直接结束解释器运行
+                    // context->ret 在抛出异常前应当先设置
+                    gc_release_var(context);
+                    return IMM_UNIT;
+                }
+            }
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
     return IMM_TRUE;
 }
 
 /******************************************************************************
                                   文件读入
 ******************************************************************************/
-EXPORT_API GC void interpreter_load_cstr(context_t context, const char *cstr) {
+EXPORT_API GC int interpreter_load_cstr(context_t context, const char *cstr) {
+    assert(context != NULL);
+    assert(cstr != NULL);
 
+    gc_var2(context, port, str);
+    scheme_stack_reset(context);
+    context->current_env = context->global_environment;
+    stack_clean(context->load_stack);
+    stack_clean(context->bracket_level_stack);
+
+    // 填入文件
+    str = string_make_from_cstr_op(context, cstr);
+    port = string_port_input_from_string_op(context, str);
+    context->load_stack = stack_push_auto_increase_op(context, context->load_stack, port, 50);
+    context->bracket_level_stack = stack_push_auto_increase_op(context, context->bracket_level_stack, i64_imm_make(0),
+                                                               50);
+    context->bracket_level = 0;
+    context->load_port = port;
+    context->ret = 0;
+    context->repl_mode = 0;
+
+    context->in_port = port;
+    return context->ret;
+
+    gc_release_var(context);
 }
 
-EXPORT_API GC void interpreter_load_file(context_t context, FILE *file) {
+EXPORT_API GC int interpreter_load_file(context_t context, FILE *file) {
     if (file == stdin) {
-        interpreter_load_file_with_name(context, file, "<stdin>");
+        return interpreter_load_file_with_name(context, file, "<stdin>");
 
     } else {
-        interpreter_load_file_with_name(context, file, "<unknown>");
+        return interpreter_load_file_with_name(context, file, "<unknown>");
     }
 }
 
-EXPORT_API GC void interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name) {
+EXPORT_API GC int interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name) {
+    assert(context != NULL);
+    assert(file != NULL);
+    assert(file_name != NULL);
+
+    gc_var1(context, port);
+    scheme_stack_reset(context);
+    context->current_env = context->global_environment;
+    stack_clean(context->load_stack);
+    stack_clean(context->bracket_level_stack);
+
+    // 填入文件
+    port = stdio_port_from_file_op(context, file, PORT_INPUT);
+    context->load_stack = stack_push_auto_increase_op(context, context->load_stack, port, 50);
+    context->bracket_level_stack = stack_push_auto_increase_op(context, context->bracket_level_stack, i64_imm_make(0),
+                                                               50);
+    context->bracket_level = 0;
+    context->load_port = port;
+    context->ret = 0;
+    if (file == stdin) {
+        context->repl_mode = 1;
+    } else {
+        context->repl_mode = 0;
+    }
+
+    context->in_port = port;
+    return context->ret;
+
+    gc_release_var(context);
 }

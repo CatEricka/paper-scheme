@@ -6,10 +6,10 @@
 
 enum opcode_e {
     // op_exec_repl
-            OP_QUIT = 0,
-    OP_LOAD,
+            OP_LOAD = 0,
+    OP_TOP_LEVEL_SETUP,
     OP_TOP_LEVEL,
-    OP_READ_ONCE,
+    OP_READ_INTERNAL,
     OP_EVAL,
     OP_APPLY,
     OP_VALUE_PRINT,
@@ -61,16 +61,22 @@ enum opcode_e {
     OP_READ_LIST,
     OP_READ_DOT,
     OP_READ_QUOTE,
+    OP_READ_UNQUOTE,
     OP_READ_QUASIQUOTE,
+    OP_READ_QUASIQUOTE_VECTOR,
+    OP_READ_UNQUOTE_SPLICING,
     OP_READ_VECTOR,
-    OP_DISPLAY_LIST,
-    OP_DISPLAY_VECTOR,
+    OP_PRINT_OBJECT,
+    OP_PRINT_LIST,
+    OP_PRINT_VECTOR,
 
     // op_exec_predicate
 
     // op_exec_builtin_function
-            OP_GC,
+            OP_QUIT,
+    OP_GC,
     OP_ERROR,
+    OP_ERROR_PRINT_OBJECT,
     // TODO opcode
             MAX_OP_CODE,
 };

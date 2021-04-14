@@ -597,7 +597,7 @@ struct object_struct_t {
  * 构造 char 对象/立即数, 参数为 char, 注意类型
  * @param object
  */
-#define char_imm_make(x) ((object) (((ptr_to_uintptr(x) & CHAR_VALUE_MASK) << CHAR_EXTENDED_BITS) | CHAR_IMM_TAG))
+#define char_imm_make(x) ((object) (((ptr_to_uintptr(((char)(x))) & CHAR_VALUE_MASK) << CHAR_EXTENDED_BITS) | CHAR_IMM_TAG))
 
 
 

@@ -57,6 +57,36 @@ EXPORT_API void interpreter_destroy(context_t context);
  */
 EXPORT_API object symbol_is_syntax(context_t context, object symbol);
 
+/**
+ * 从 symbol 获取 syntax
+ * @param context
+ * @param symbol
+ * @return syntax, 不存在则返回 IMM_UNIT
+ */
+EXPORT_API object syntax_get_by_symbol(context_t context, object symbol);
+
+
+/******************************************************************************
+                              词法分析器相关
+******************************************************************************/
+/**
+ * 根据输入字符串构造 sharp 常量
+ * <p>from tiny_scheme</p>
+ * @param context
+ * @param str
+ * @return sharp 常量或 IMM_UNIT (如果输入非法)
+ */
+EXPORT_API GC object sharp_const_make_op(context_t context, object str);
+
+/**
+ * 从字符串构造 symbol 或者 数字
+ * <p>from tiny_scheme</p>
+ * @param context
+ * @param str
+ * @return
+ */
+EXPORT_API GC object atom_make_op(context_t context, object str);
+
 /******************************************************************************
                          global_symbol_table 操作
 ******************************************************************************/
@@ -209,6 +239,15 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env);
 /******************************************************************************
                                 TODO 元循环
 ******************************************************************************/
+
+/**
+ * <p>不要直接使用, 参见</p>
+ * <li>interpreter_load_cstr()</li>
+ * <li>interpreter_load_file()</li>
+ * <li>interpreter_load_file_with_name()</li>
+ * @param context
+ * @param opcode
+ */
 EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode);
 
 
@@ -216,10 +255,33 @@ EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode);
 /******************************************************************************
                                   文件读入
 ******************************************************************************/
-EXPORT_API GC void interpreter_load_cstr(context_t context, const char *cstr);
+/**
+ * <p>字符串载入代码</p>
+ * <p>char *字符串会被解释器复制, 注意内存问题</p>
+ * @param context
+ * @param cstr
+ * @return 参见 feature.h: 返回值定义
+ */
+EXPORT_API GC int interpreter_load_cstr(context_t context, const char *cstr);
 
-EXPORT_API GC void interpreter_load_file(context_t context, FILE *file);
+/**
+ * 从 FILE* 载入代码
+ * <p>文件名会被命名为 "<unknown>"</p>
+ * <p>参见 interpreter_load_file_with_name()</p>
+ * @param context
+ * @param file
+ * @return
+ */
+EXPORT_API GC int interpreter_load_file(context_t context, FILE *file);
 
-EXPORT_API GC void interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name);
+/**
+ * 从 FILE* 载入代码
+ * <p>自定义文件名</p>
+ * @param context
+ * @param file
+ * @param file_name
+ * @return
+ */
+EXPORT_API GC int interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name);
 
 #endif //PAPER_SCHEME_INTERPRETER_H

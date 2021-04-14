@@ -72,6 +72,7 @@ if (ENABLE_UNIT_TESTS)
             "test/test_cases/environment_test.c"
             "test/test_cases/scheme_stack_test.c"
             "test/test_cases/syntax_test.c"
+            "test/test_cases/opcode_test.c"
             "test/test_run.c"
             )
     target_link_libraries(paper-scheme-test paper-scheme-lib)

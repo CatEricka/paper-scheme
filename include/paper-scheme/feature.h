@@ -131,11 +131,23 @@ uint32_t rand_helper();
                              exit() 返回值定义
 ******************************************************************************/
 // 未知错误
-#define EXIT_FAILURE_UNKNOWN (-2)
+#define EXIT_FAILURE_UNKNOWN            (-2)
 // 内存不足: 堆增长超过 max_size
-#define EXIT_FAILURE_OUT_OF_MEMORY (-3)
+#define EXIT_FAILURE_OUT_OF_MEMORY      (-3)
 // malloc() 函数失败
-#define EXIT_FAILURE_MALLOC_FAILED (-4)
+#define EXIT_FAILURE_MALLOC_FAILED      (-4)
+
+/**
+                         context->ret 返回值定义
+******************************************************************************/
+// 正常退出
+#define NO_ERROR                        (0)
+// 未知错误
+#define UNKNOWN_ERROR                   (-5)
+// (error) 未被捕获
+#define ERROR_UNCAUGHT_ERROR            (-6)
+// 括号不匹配
+#define ERROR_PARENTHESES_NOT_MATCH     (-7)
 
 
 /**
@@ -174,5 +186,12 @@ uint32_t rand_helper();
 
 // stack push 自动增长 默认增长大小
 #define STACK_DEFAULT_GROWTH_SIZE 16
+
+// 解释器内部格式化字符串缓冲长度
+// 不要修改
+#define __Format_buff_size__ 30
+
+// repl 提示符
+#define USER_OVERTURE "ps>"
 
 #endif // BASE_SCHEME_FEATURE_H

@@ -53,4 +53,5 @@ UTEST(global_symbol_table, test) {
 
     ASSERT_EQ(context->saves, &__gc_var_dream2__);
     gc_release_var(context);
+    interpreter_destroy(context);
 }
