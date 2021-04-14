@@ -148,6 +148,13 @@ static object gc_mark(context_t context) {
     gc_mark_one_start(context, context->scheme_stack);
 
     // 标记特殊变量
+    gc_mark_one_start(context, context->LAMBDA);
+    gc_mark_one_start(context, context->QUOTE);
+    gc_mark_one_start(context, context->QUASIQUOTE);
+    gc_mark_one_start(context, context->UNQUOTE);
+    gc_mark_one_start(context, context->UNQUOTE_SPLICING);
+    gc_mark_one_start(context, context->FEED_TO);
+
     gc_mark_one_start(context, context->ERROR_HOOK);
     gc_mark_one_start(context, context->COMPILE_HOOK);
 
@@ -320,6 +327,13 @@ static void gc_adjust_ref(context_t context) {
     gc_adjust_ref_one(&(context->syntax_table));
 
     // 调整特殊变量
+    gc_adjust_ref_one(&(context->LAMBDA));
+    gc_adjust_ref_one(&(context->QUOTE));
+    gc_adjust_ref_one(&(context->QUASIQUOTE));
+    gc_adjust_ref_one(&(context->UNQUOTE));
+    gc_adjust_ref_one(&(context->UNQUOTE_SPLICING));
+    gc_adjust_ref_one(&(context->FEED_TO));
+
     gc_adjust_ref_one(&(context->ERROR_HOOK));
     gc_adjust_ref_one(&(context->COMPILE_HOOK));
 

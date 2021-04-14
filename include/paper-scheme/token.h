@@ -33,6 +33,7 @@ EXPORT_API object read_upto(context_t context, char *terminal);
 /**
  * 从 context->in_port 读入一个字符串
  * <p>内部实现, 请勿使用</p>
+ * <p>from tiny_scheme</p>
  * @param context
  * @return 如果失败返回 IMM_UNIT
  */

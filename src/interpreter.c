@@ -18,6 +18,7 @@ EXPORT_API object symbol_is_syntax(context_t context, object symbol) {
 
 /**
  * 从 symbol 获取 syntax
+ * <p>不会触发 GC</p>
  * @param context
  * @param symbol
  * @return syntax, 不存在则返回 IMM_UNIT
@@ -25,8 +26,26 @@ EXPORT_API object symbol_is_syntax(context_t context, object symbol) {
 EXPORT_API object syntax_get_by_symbol(context_t context, object symbol) {
     assert(context != NULL);
     assert(is_symbol(symbol));
+    object syntax = hashmap_get_op(context, context->syntax_table, symbol);
+    assert(is_syntax(syntax));
+    return syntax;
+}
 
-    return hashmap_get_op(context, context->syntax_table, symbol);
+/**
+ * 从 cstr 获取 syntax
+ * @param context
+ * @param symbol
+ * @return syntax, 不存在则返回 IMM_UNIT
+ */
+static GC object syntax_get_by_cstr(context_t context, char *cstr) {
+    assert(context != NULL);
+    assert(cstr != NULL);
+    gc_var2(context, sym, syntax);
+    sym = symbol_make_from_cstr_op(context, cstr);
+    syntax = hashmap_get_op(context, context->syntax_table, sym);
+    assert(is_syntax(syntax));
+    gc_release_var(context);
+    return syntax;
 }
 
 static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode) {
@@ -60,6 +79,9 @@ static GC void assign_proc(context_t context, char *name, enum opcode_e opcode) 
 /******************************************************************************
                               词法分析器相关
 ******************************************************************************/
+
+// x 是 pair 且 cdr(x) 是 IMM_UNIT
+#define ok_abbrev(x)   (is_pair((x)) && is_imm_unit(pair_cdr((x))))
 
 static int64_t binary_decode(const char *s) {
     int64_t x = 0;
@@ -166,28 +188,6 @@ EXPORT_API GC object sharp_const_make_op(context_t context, object str) {
 }
 
 /**
- * <p>如果 str 是 syntax, 则返回 syntax</p>
- * <p>否则返回 原始 symbol</p>
- * @param context
- * @param str string
- * @return syntax/symbol
- */
-static object str_to_syntax_or_symbol(context_t context, object str) {
-    assert(context != NULL);
-    assert(is_string(str));
-    gc_param1(context, str);
-    gc_var1(context, ret);
-
-    ret = string_to_symbol_op(context, str);
-    if (symbol_is_syntax(context, ret)) {
-        ret = syntax_get_by_symbol(context, ret);
-        assert(is_syntax(ret));
-    }
-    gc_release_param(context);
-    return ret;
-}
-
-/**
  * 从字符串构造 symbol, syntax 或者 数字
  * @param context
  * @param str
@@ -213,18 +213,18 @@ EXPORT_API GC object atom_make_op(context_t context, object str) {
         }
         if (!isdigit(ch)) {
             gc_release_param(context);
-            return str_to_syntax_or_symbol(context, str);
+            return string_to_symbol_op(context, str);
         }
     } else if (ch == '.') {
         has_dec_point = 1;
         ch = *cstr_cursor++;
         if (!isdigit(ch)) {
             gc_release_param(context);
-            return str_to_syntax_or_symbol(context, str);
+            return string_to_symbol_op(context, str);
         }
     } else if (!isdigit(ch)) {
         gc_release_param(context);
-        return str_to_syntax_or_symbol(context, str);
+        return string_to_symbol_op(context, str);
     }
 
     for (; (ch = *cstr_cursor) != 0; ++cstr_cursor) {
@@ -268,16 +268,17 @@ EXPORT_API GC object atom_make_op(context_t context, object str) {
 #define TYPE_INTEGER        "\002"
 #define TYPE_REAL           "\003"
 #define TYPE_NATURAL        "\004"
-#define TYPE_CHAR           "\005"
-#define TYPE_STRING         "\006"
-#define TYPE_SYMBOL         "\007"
-#define TYPE_PAIR           "\010"
-#define TYPE_LIST           "\011"
-#define TYPE_VECTOR         "\012"
-#define TYPE_PORT           "\013"
-#define TYPE_INPUT_PORT     "\014"
-#define TYPE_OUTPUT_PORT    "\015"
-#define TYPE_ENVIRONMENT    "\016"
+#define TYPE_NUMBER         "\005"
+#define TYPE_CHAR           "\006"
+#define TYPE_STRING         "\007"
+#define TYPE_SYMBOL         "\010"
+#define TYPE_PAIR           "\011"
+#define TYPE_LIST           "\012"
+#define TYPE_VECTOR         "\013"
+#define TYPE_PORT           "\014"
+#define TYPE_INPUT_PORT     "\015"
+#define TYPE_OUTPUT_PORT    "\016"
+#define TYPE_ENVIRONMENT    "\017"
 
 // 最大参数数量无限制
 #define ARGS_INF            (INT64_MAX-1)
@@ -292,33 +293,36 @@ static int is_real_test(object obj) { return is_doublenum(obj); }
 static int is_natural_test(object obj) { return is_i64(obj) && i64_getvalue(obj) >= 0; }
 
 // 005
-static int is_char_test(object obj) { return is_imm_char(obj); }
+static int is_number_test(object obj) { return is_i64(obj) || is_doublenum(obj); }
 
 // 006
-static int is_string_test(object obj) { return is_string(obj); }
+static int is_char_test(object obj) { return is_imm_char(obj); }
 
 // 007
-static int is_symbol_test(object obj) { return is_symbol(obj); }
+static int is_string_test(object obj) { return is_string(obj); }
 
 // 010
-static int is_pair_test(object obj) { return is_pair(obj); }
+static int is_symbol_test(object obj) { return is_symbol(obj); }
 
 // 011
-static int is_list_test(object obj) { return obj == IMM_UNIT && is_pair(obj); }
+static int is_pair_test(object obj) { return is_pair(obj); }
 
 // 012
-static int is_vector_test(object obj) { return is_vector(obj); }
+static int is_list_test(object obj) { return obj == IMM_UNIT && is_pair(obj); }
 
 // 013
-static int is_port_test(object obj) { return is_port(obj); }
+static int is_vector_test(object obj) { return is_vector(obj); }
 
 // 014
-static int is_input_port_test(object obj) { return is_port_input(obj); }
+static int is_port_test(object obj) { return is_port(obj); }
 
 // 015
-static int is_output_port_test(object obj) { return is_port_output(obj); }
+static int is_input_port_test(object obj) { return is_port_input(obj); }
 
 // 016
+static int is_output_port_test(object obj) { return is_port_output(obj); }
+
+// 017
 static int is_environment_test(object obj) { return is_ext_type_environment(obj); }
 
 typedef int (*type_test_func)(object);
@@ -332,16 +336,17 @@ struct type_test_t {
         {.test = is_i64, .type_kind = "integer"},                       // 002
         {.test = is_real_test, .type_kind = "real number"},             // 003
         {.test = is_natural_test, .type_kind = "non-negative integer"}, // 004
-        {.test = is_char_test, .type_kind = "char"},                    // 005
-        {.test = is_string_test, .type_kind = "string"},                // 006
-        {.test = is_symbol_test, .type_kind = "symbol"},                // 007
-        {.test = is_pair_test, .type_kind = "pair"},                    // 010
-        {.test = is_list_test, .type_kind = "list"},                    // 011
-        {.test = is_vector_test, .type_kind = "vector"},                // 012
-        {.test = is_port_test, .type_kind = "port"},                    // 013
-        {.test = is_input_port_test, .type_kind = "input port"},        // 014
-        {.test = is_output_port_test, .type_kind = "output port"},      // 015
-        {.test = is_environment_test, .type_kind = "environment"},      // 016
+        {.test = is_number_test, .type_kind = "number"},                // 005
+        {.test = is_char_test, .type_kind = "char"},                    // 006
+        {.test = is_string_test, .type_kind = "string"},                // 007
+        {.test = is_symbol_test, .type_kind = "symbol"},                // 010
+        {.test = is_pair_test, .type_kind = "pair"},                    // 011
+        {.test = is_list_test, .type_kind = "list"},                    // 012
+        {.test = is_vector_test, .type_kind = "vector"},                // 013
+        {.test = is_port_test, .type_kind = "port"},                    // 014
+        {.test = is_input_port_test, .type_kind = "input port"},        // 015
+        {.test = is_output_port_test, .type_kind = "output port"},      // 016
+        {.test = is_environment_test, .type_kind = "environment"},      // 017
 };
 
 
@@ -357,6 +362,9 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode);
 // 基础运算
 static object op_exec_compute(context_t context, enum opcode_e opcode);
 
+// 基础对象操作
+static object op_exec_object_operation(context_t context, enum opcode_e opcode);
+
 // 词法分析和字符串输出
 static object op_exec_lexical(context_t context, enum opcode_e opcode);
 
@@ -370,9 +378,36 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode);
  * op_exec_ 分发表内部定义
  */
 op_code_info internal_dispatch_table[] = {
-        {NULL,    0, 0,        TYPE_NONE, OP_READ_SEXP,          op_exec_lexical},
-        {"error", 0, 0,        TYPE_NONE, OP_ERROR,              op_exec_builtin_function},
-        {NULL,    1, ARGS_INF, TYPE_NONE, OP_ERROR_PRINT_OBJECT, op_exec_builtin_function},
+        // op_exec_repl
+        {"load",   1, 1,        TYPE_STRING,  OP_LOAD,                   op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_TOP_LEVEL_SETUP,        op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_TOP_LEVEL,              op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_INTERNAL,          op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL,                   op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_APPLY,                  op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_VALUE_PRINT,            op_exec_repl},
+
+        // op_exec_object_operation
+        {"vector", 0, ARGS_INF, TYPE_NONE,    OP_VECTOR,                 op_exec_object_operation},
+
+        // op_exec_lexical
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_SEXP,              op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_LIST,              op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_DOT,               op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_QUOTE,             op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_UNQUOTE,           op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_QUASIQUOTE,        op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_QUASIQUOTE_VECTOR, op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_UNQUOTE_SPLICING,  op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_READ_VECTOR,            op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_OBJECT,           op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_LIST,             op_exec_lexical},
+        {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_VECTOR,           op_exec_lexical},
+
+        // op_exec_builtin_function
+        {"quit",   0, 1,        TYPE_INTEGER, OP_QUIT,                   op_exec_builtin_function},
+        {"error",  1, ARGS_INF, TYPE_NONE,    OP_ERROR,                  op_exec_builtin_function},
+        {NULL,     1, ARGS_INF, TYPE_NONE,    OP_ERROR_PRINT_OBJECT,     op_exec_builtin_function},
 };
 
 /**
@@ -440,6 +475,8 @@ static int interpreter_default_env_init(context_t context) {
     context->current_env = context->global_environment;
     context->scheme_stack = IMM_UNIT;
 
+    context->print_flag = 0;
+
     // 默认输入输出
     context->in_port = stdio_port_from_file_op(context, stdin, PORT_INPUT);
     context->out_port = stdio_port_from_file_op(context, stdout, PORT_OUTPUT);
@@ -471,6 +508,14 @@ static int interpreter_default_env_init(context_t context) {
     assign_syntax(context, "cons-stream", -1);
     assign_syntax(context, "macro", -1);
     assign_syntax(context, "case", -1);
+
+    // 初始化内部语法符号
+    context->LAMBDA = symbol_make_from_cstr_op(context, "lambda");
+    context->QUOTE = symbol_make_from_cstr_op(context, "quote");
+    context->QUASIQUOTE = symbol_make_from_cstr_op(context, "quasiquote");
+    context->UNQUOTE = symbol_make_from_cstr_op(context, "unquote");
+    context->UNQUOTE_SPLICING = symbol_make_from_cstr_op(context, "unquote-splicing");
+    context->FEED_TO = symbol_make_from_cstr_op(context, "=>");
 
     // 初始化内部 hook 变量
     context->ERROR_HOOK = symbol_make_from_cstr_op(context, "*error-hook*");
@@ -536,7 +581,13 @@ EXPORT_API void interpreter_destroy(context_t context) {
         context->global_type_table[i].to_string = IMM_UNIT;
     }
 
-    // 初始化内部 hook 变量
+    context->LAMBDA = IMM_UNIT;
+    context->QUOTE = IMM_UNIT;
+    context->QUASIQUOTE = IMM_UNIT;
+    context->UNQUOTE = IMM_UNIT;
+    context->UNQUOTE_SPLICING = IMM_UNIT;
+    context->FEED_TO = IMM_UNIT;
+
     context->ERROR_HOOK = IMM_UNIT;
     context->COMPILE_HOOK = IMM_UNIT;
 
@@ -902,6 +953,197 @@ static void file_pop(context_t context) {
     }
 }
 
+/******************************************************************************
+                                  打印输出函数
+******************************************************************************/
+/**
+ * <p>控制符按照 #\ 格式输出</p>
+ * <p>from tiny_scheme</p>
+ * @param context
+ * @param str string
+ * @return string
+ */
+static GC object print_slash_string(context_t context, object str) {
+    assert(context != NULL);
+    gc_param1(context, str);
+    gc_var2(context, ret, buffer);
+    buffer = string_buffer_make_op(context, string_len(str) * 2);
+
+    string_buffer_append_char_op(context, buffer, '"');
+    for (size_t i = 0; i < string_len(str); i++) {
+        int ch = string_index(str, i);
+        if (ch == 0xff || ch == '"' || ch < ' ' || ch == '\\') {
+            string_buffer_append_char_op(context, buffer, '\\');
+            switch (ch) {
+                case '"':
+                    string_buffer_append_char_op(context, buffer, '"');
+                    break;
+                case '\n':
+                    string_buffer_append_char_op(context, buffer, 'n');
+                    break;
+                case '\t':
+                    string_buffer_append_char_op(context, buffer, 't');
+                    break;
+                case '\r':
+                    string_buffer_append_char_op(context, buffer, 'r');
+                    break;
+                case '\\':
+                    string_buffer_append_char_op(context, buffer, '\\');
+                    break;
+                default: {
+                    int d = ch / 16;
+                    string_buffer_append_char_op(context, buffer, 'x');
+                    if (d < 10) {
+                        string_buffer_append_char_op(context, buffer, d + '0');
+                    } else {
+                        string_buffer_append_char_op(context, buffer, d - 10 + 'A');
+                    }
+                    d = ch % 16;
+                    if (d < 10) {
+                        string_buffer_append_char_op(context, buffer, d + '0');
+                    } else {
+                        string_buffer_append_char_op(context, buffer, d - 10 + 'A');
+                    }
+                }
+            }
+        } else {
+            string_buffer_append_char_op(context, buffer, ch);
+        }
+    }
+    string_buffer_append_char_op(context, buffer, '"');
+
+    ret = string_buffer_to_string_op(context, buffer);
+    gc_release_param(context);
+    return ret;
+}
+
+/**
+ * atom->str
+ * <p>from tiny_scheme</p>
+ * @param context
+ * @param obj
+ * @param flag
+ * <li>number   2, 8, 16: 数字的话按照对应进制输出, 否则按照 10 进制</li>
+ * <li>char:    0: 直接输出; 否则输出 #\ 形式</li>
+ * <li>string:  0: 直接输出; 否则输出 #\ 形式</li>
+ * @return
+ */
+static GC object atom_to_string(context_t context, object obj, int flag) {
+    assert(context != NULL);
+    gc_param1(context, obj);
+    gc_var1(context, str);
+
+    char *p;
+
+    if (obj == IMM_UNIT) {
+        p = "()";
+    } else if (obj == IMM_TRUE) {
+        p = "#t";
+    } else if (obj == IMM_FALSE) {
+        p = "#f";
+    } else if (obj == IMM_EOF) {
+        p = "#<EOF>";
+    } else if (is_port(obj)) {
+        p = "#<PORT>";
+    } else if (is_number(obj)) {
+        p = context->str_buffer;
+        if (flag <= 1 || flag == 10) /* flag is the base for numbers if > 1 */ {
+            if (is_i64(obj)) {
+                snprintf(p, INTERNAL_STR_BUFFER_SIZE, "%"PRId64"", i64_getvalue(obj));
+            } else {
+                snprintf(p, INTERNAL_STR_BUFFER_SIZE, "%.10g", doublenum_getvalue(obj));
+                /* r5rs says there must be a '.' (unless 'e'?) */
+                size_t pos = strcspn(p, ".e");
+                if (p[pos] == 0) {
+                    p[pos] = '.'; /* not found, so add '.0' at the end */
+                    p[pos + 1] = '0';
+                    p[pos + 2] = 0;
+                }
+            }
+        } else {
+            int64_t v = i64_getvalue(obj);
+            if (flag == 16) {
+                if (v >= 0)
+                    snprintf(p, INTERNAL_STR_BUFFER_SIZE, "%"PRIx64"", v);
+                else
+                    snprintf(p, INTERNAL_STR_BUFFER_SIZE, "-%"PRIx64"", -v);
+            } else if (flag == 8) {
+                if (v >= 0)
+                    snprintf(p, INTERNAL_STR_BUFFER_SIZE, "%"PRIo64"", v);
+                else
+                    snprintf(p, INTERNAL_STR_BUFFER_SIZE, "-%"PRIo64"", -v);
+            } else if (flag == 2) {
+                uint64_t b = (uint64_t) ((v < 0) ? -v : v);
+                p = &p[INTERNAL_STR_BUFFER_SIZE - 1];
+                *p = 0;
+                do {
+                    *--p = (b & 1u) ? '1' : '0';
+                    b >>= 1u;
+                } while (b != 0);
+                if (v < 0) *--p = '-';
+            }
+        }
+    } else if (is_string(obj)) {
+        if (!flag) {
+            gc_release_param(context);
+            return str;
+        } else {
+            str = print_slash_string(context, obj);
+            gc_release_param(context);
+            return str;
+        }
+    } else if (is_imm_char(obj)) {
+        int c = char_imm_getvalue(obj);
+        p = context->str_buffer;
+        if (!flag) {
+            p[0] = (char) c;
+            p[1] = 0;
+        } else {
+            switch (c) {
+                case ' ':
+                    p = "#\\space";
+                    break;
+                case '\n':
+                    p = "#\\newline";
+                    break;
+                case '\r':
+                    p = "#\\return";
+                    break;
+                case '\t':
+                    p = "#\\tab";
+                    break;
+                default:
+                    if (c < 32) {
+                        snprintf(p, INTERNAL_STR_BUFFER_SIZE, "#\\x%x", c);
+                        break;
+                    }
+                    snprintf(p, INTERNAL_STR_BUFFER_SIZE, "#\\%c", c);
+                    break;
+            }
+        }
+    } else if (is_symbol(obj)) {
+        str = symbol_to_string_op(context, obj);
+        gc_release_param(context);
+        return str;
+    } else {
+        // TODO 添加新类型
+        p = "#<ERROR>";
+    }
+
+    str = string_make_from_cstr_op(context, p);
+    assert(context->saves == &__gc_var_dream1__);
+    gc_release_param(context);
+    return str;
+}
+
+static GC void print_atom(context_t context, object obj, int flag) {
+    gc_param1(context, obj);
+    gc_var1(context, str);
+    str = atom_to_string(context, obj, flag);
+    port_put_string(context, context->out_port, str);
+    gc_release_param(context);
+}
+
 
 /******************************************************************************
                                     元循环
@@ -951,8 +1193,8 @@ static object error_throw(context_t context, const char *message, object obj) {
     return IMM_TRUE;
 }
 
-#define Error_Throw_0(ctx, msg)       return error_throw(ctx, msg, NULL)
-#define Error_Throw_1(ctx, msg, obj)    return error_throw(ctx, msg, obj)
+#define Error_Throw_0_without_release(ctx, msg)       return error_throw((ctx), (msg), (NULL))
+#define Error_Throw_1_without_release(ctx, msg, obj)    return error_throw((ctx), (msg), (obj))
 
 /**
  * 检查内建过程参数
@@ -1009,10 +1251,16 @@ static object builtin_function_args_type_check(context_t context, op_code_info *
     }
 
     if (!ok_flag) {
-        Error_Throw_0(context, context->str_buffer);
+        Error_Throw_0_without_release(context, context->str_buffer);
     } else {
         return IMM_TRUE;
     }
+}
+
+static int is_file_interactive(context_t context) {
+    return stack_len(context->load_stack) == 1 &&
+           stdio_port_get_file(stack_peek_op(context->load_stack)) &&
+           is_stdio_port(context->in_port);
 }
 
 EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode) {
@@ -1044,7 +1292,6 @@ EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode) {
         gc_release_var((context)); \
         return IMM_TRUE; \
     } while(0)
-
 #define s_goto_without_release(context, op) \
     do { \
         (context)->opcode = (op); \
@@ -1052,13 +1299,24 @@ EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode) {
         return IMM_TRUE; \
     } while(0)
 
-#define s_return(context, value)    scheme_stack_return((context), (value))
+#define s_return(context, value) \
+    do { \
+        gc_release_var((context)); \
+        return scheme_stack_return((context), (value)); \
+    } while(0)
+#define s_return_without_release(context, value)  return scheme_stack_return((context), (value))
 
-static int is_file_interactive(context_t context) {
-    return stack_len(context->load_stack) == 1 &&
-           stdio_port_get_file(stack_peek_op(context->load_stack)) &&
-           is_stdio_port(context->in_port);
-}
+#define Error_Throw_0(ctx, msg) \
+    do { \
+        gc_release_var((context)); \
+        return error_throw((ctx), (msg), (NULL)); \
+    } while(0)
+#define Error_Throw_1(ctx, msg, obj) \
+    do { \
+        gc_release_var((context)); \
+        return error_throw((ctx), (msg), (obj)); \
+    } while(0)
+
 
 static object op_exec_repl(context_t context, enum opcode_e opcode) {
     gc_var2(context, tmp1, tmp2);
@@ -1135,8 +1393,42 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
             s_goto(context, OP_READ_SEXP);
 
         case OP_VALUE_PRINT:
+            if (is_file_interactive(context)) {
+                context->print_flag = 1;
+                context->args = context->value;
+                s_goto(context, OP_PRINT_OBJECT);
+            }
         case OP_EVAL:
+            // TODO 完成 OP_EVAL
+            s_return(context, context->code);
         case OP_APPLY:
+            // TODO 完成 OP_APPLY
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
+    return IMM_TRUE;
+}
+
+// 基础对象操作
+static object op_exec_object_operation(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        case OP_VECTOR:
+            size_t len = list_length(context->args);
+            size_t i;
+            if (len < 0) {
+                Error_Throw_1(context, "vector: not a proper list:", context->args);
+            }
+            tmp1 = vector_make_op(context, len);
+            for (i = 0, tmp2 = context->args; is_pair(tmp2); tmp2 = pair_cdr(tmp1), i++) {
+                vector_set(tmp1, i, pair_car(tmp2));
+            }
+            s_return(context, tmp1);
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -1191,9 +1483,10 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                         s_goto(context, OP_READ_SEXP);
                     }
                 case TOKEN_QUOTE:
-                    // ' 引用, 再递归读入 sexp 后由 OP_READ_QUOTE 构造引用
+                    // ' 引用
                     s_save(context, OP_READ_QUOTE, IMM_UNIT, IMM_UNIT);
                     context->token = token(context);
+                    // 读入 sexp 后由 OP_READ_QUOTE 构造引用
                     s_goto(context, OP_READ_SEXP);
                 case TOKEN_BACK_QUOTE:
                     // ` 反引用
@@ -1246,7 +1539,6 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                     } else {
                         s_return(context, tmp2);
                     }
-                    s_return(context, tmp2);
                 case TOKEN_DOUBLE_QUOTE:
                     // "..."  字符串
                     tmp1 = read_string_expr(context);
@@ -1259,13 +1551,167 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                     Error_Throw_0(context, "syntax error: illegal token");
             }
         case OP_READ_LIST:
+            // OP_READ_SEXP 与 OP_READ_LIST 递归读入
+            // value: 来自 OP_READ_LIST 的返回值
+            // args: (list ... obj2 obj1 '()) 逆序
+            context->args = pair_make_op(context, context->value, context->args);
+            context->token = token(context);
+
+            if (context->token == TOKEN_EOF) {
+                // 文件结束
+                s_return(context, IMM_EOF);
+            } else if (context->token == TOKEN_RIGHT_PAREN) {
+                // 遇到右括号, 递归读入结束
+                object ch = port_get_char(context->in_port);
+                // 提前读入一个字符, 因为右括号结束常常是换行
+                if (ch != char_imm_make('\n')) {
+                    port_unget_char(context->in_port, ch);
+                } else if (is_stdio_port(context->in_port)) {
+                    stdio_port_get_line(context->in_port)++;
+                }
+                // 括号层级 -1
+                int64_t deep = i64_getvalue(stack_peek_op(context->bracket_level_stack));
+                tmp1 = i64_make_op(context, deep - 1);
+                stack_set_top_op(context->bracket_level_stack, tmp1);
+                // 最后返回读入的结果
+                s_return(context, reverse_in_place(context, IMM_UNIT, context->args));
+            } else if (context->token == TOKEN_DOT) {
+                // 遇到 .
+                s_save(context, OP_READ_DOT, context->args, IMM_UNIT);
+                context->token = token(context);
+                // 读入剩余的参数组成 list
+                s_goto(context, OP_READ_SEXP);
+            } else {
+                // 其它情况递归读入 list 的项
+                s_save(context, OP_READ_LIST, context->args, IMM_UNIT);
+                s_goto(context, OP_READ_SEXP);
+            }
         case OP_READ_DOT:
+            // (a b c . d)
+            // d 后面必须是右括号, 否则错误
+            if (token(context) != TOKEN_RIGHT_PAREN) {
+                Error_Throw_0(context, "syntax error: illegal dot expression");
+            } else {
+                // 括号层级 -1
+                int64_t deep = i64_getvalue(stack_peek_op(context->bracket_level_stack));
+                tmp1 = i64_make_op(context, deep - 1);
+                stack_set_top_op(context->bracket_level_stack, tmp1);
+                // value 是剩余所有的 object 组成的 list
+                // args 逆序后 尾部是 value
+                s_return(context, reverse_in_place(context, context->value, context->args));
+            }
         case OP_READ_QUOTE:
+            tmp1 = pair_make_op(context, context->value, IMM_UNIT);
+            tmp2 = pair_make_op(context, context->QUOTE, tmp1);
+            s_return(context, tmp2);
         case OP_READ_QUASIQUOTE:
+            tmp1 = pair_make_op(context, context->value, IMM_UNIT);
+            tmp2 = pair_make_op(context, context->QUASIQUOTE, tmp1);
+            s_return(context, tmp2);
+        case OP_READ_QUASIQUOTE_VECTOR:
+            // ,#(...)
+            tmp1 = pair_make_op(context, context->value, IMM_UNIT);
+            tmp2 = pair_make_op(context, context->QUASIQUOTE, tmp1);
+            tmp2 = pair_make_op(context, tmp2, IMM_UNIT);
+            // (apply (vector `,#(...)))
+            tmp1 = symbol_make_from_cstr_op(context, "vector");
+            tmp2 = pair_make_op(context, tmp1, tmp2);
+            tmp1 = symbol_make_from_cstr_op(context, "apply");
+            tmp2 = pair_make_op(context, tmp1, tmp2);
+            s_return(context, tmp2);
+        case OP_READ_UNQUOTE_SPLICING:
+            tmp1 = pair_make_op(context, context->value, IMM_UNIT);
+            tmp2 = pair_make_op(context, context->UNQUOTE_SPLICING, tmp1);
+            s_return(context, tmp2);
+        case OP_READ_UNQUOTE:
+            tmp1 = pair_make_op(context, context->value, IMM_UNIT);
+            tmp2 = pair_make_op(context, context->UNQUOTE, tmp1);
+            s_return(context, tmp2);
         case OP_READ_VECTOR:
+            context->args = context->value;
+            s_goto(context, OP_VECTOR);
+
         case OP_PRINT_OBJECT:
+            // print 过程
+            if (is_vector(context->args)) {
+                port_put_cstr(context, context->out_port, "#(");
+                tmp1 = i64_make_op(context, 0);
+                context->args = pair_make_op(context, context->args, tmp1);
+                s_goto(context, OP_PRINT_VECTOR);
+            } else if (is_ext_type_environment(context->args)) {
+                port_put_cstr(context, context->out_port, "#<ENVIRONMENT>");
+                s_return(context, IMM_TRUE);
+            } else if (!is_pair(context->args)) {
+                // 输出 atom, 在此分支之前应当排除所有除了 pair 以外的类型
+                // TODO 完善 atom 类型检查和输出
+                print_atom(context, context->args, context->print_flag);
+                s_return(context, IMM_TRUE);
+
+                // 后面都是 pair 处理
+            } else if (symbol_equals(context, pair_car(context->args), context->QUOTE) &&
+                       ok_abbrev(pair_cdr(context->args))) {
+                port_put_cstr(context, context->out_port, "'");
+                context->args = pair_cadr(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            } else if (symbol_equals(context, pair_car(context->args), context->QUASIQUOTE) &&
+                       ok_abbrev(pair_cdr(context->args))) {
+                port_put_cstr(context, context->out_port, "`");
+                context->args = pair_cadr(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            } else if (symbol_equals(context, pair_car(context->args), context->UNQUOTE) &&
+                       ok_abbrev(pair_cdr(context->args))) {
+                port_put_cstr(context, context->out_port, ",");
+                context->args = pair_cadr(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            } else if (symbol_equals(context, pair_car(context->args), context->UNQUOTE_SPLICING) &&
+                       ok_abbrev(pair_cdr(context->args))) {
+                port_put_cstr(context, context->out_port, ",@");
+                context->args = pair_cadr(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            } else {
+                // list
+                port_put_cstr(context, context->out_port, "(");
+                s_save(context, OP_PRINT_LIST, pair_cdr(context->args), IMM_UNIT);
+                // 先取出 (car args) 输出, 之后进入 OP_PRINT_LIST 递归输出
+                context->args = pair_car(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            }
         case OP_PRINT_LIST:
+            if (is_pair(context->args)) {
+                s_save(context, OP_PRINT_LIST, pair_cdr(context->args), IMM_UNIT);
+                port_put_cstr(context, context->out_port, " ");
+                context->args = pair_car(context->args);
+                s_goto(context, OP_PRINT_OBJECT);
+            } else if (is_vector(context->args)) {
+                // TODO wtf??
+                s_save(context, OP_PRINT_OBJECT, IMM_UNIT, IMM_UNIT);
+                port_put_cstr(context, context->out_port, " . ");
+                s_goto(context, OP_PRINT_OBJECT);
+            } else {
+                if (context->args != IMM_UNIT) {
+                    port_put_cstr(context, context->out_port, " . ");
+                    print_atom(context, context->args, context->print_flag);
+                }
+                port_put_cstr(context, context->out_port, ")");
+                s_return(context, IMM_TRUE);
+            }
         case OP_PRINT_VECTOR:
+            size_t i = i64_getvalue(pair_cdr(context->args));
+            tmp1 = pair_car(context->args);
+            size_t len = vector_len(tmp1);
+            if (i >= len) {
+                port_put_cstr(context, context->out_port, ")");
+                s_return(context, IMM_TRUE);
+            } else {
+                pair_cdr(context->args) = i64_make_op(context, i + 1);
+                s_save(context, OP_PRINT_VECTOR, context->args, IMM_UNIT);
+                context->args = vector_ref(tmp1, i);
+                if (i != 0) {
+                    // "#(" 后面不用空格
+                    port_put_cstr(context, context->out_port, " ");
+                }
+                s_goto(context, OP_PRINT_OBJECT);
+            }
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -1324,6 +1770,10 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
 
     switch (opcode) {
         case OP_QUIT:
+            if (is_pair(context->args)) {
+                context->ret = (int) i64_getvalue(pair_car(context->args));
+            }
+            return IMM_UNIT;
         case OP_GC:
         case OP_ERROR:
             // args: (error "message" . object)
@@ -1348,6 +1798,7 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
 
             if (context->args != IMM_UNIT) {
                 // 遍历输出所有参数
+                context->print_flag = 1;
                 s_save(context, OP_ERROR_PRINT_OBJECT, pair_cdr(context->args), IMM_UNIT);
                 context->args = pair_car(context->args);
                 s_goto(context, OP_PRINT_OBJECT);
@@ -1398,9 +1849,12 @@ EXPORT_API GC int interpreter_load_cstr(context_t context, const char *cstr) {
     context->repl_mode = 0;
 
     context->in_port = port;
-    return context->ret;
+
+    // 开始运行
+    eval_apply_loop(context, OP_TOP_LEVEL_SETUP);
 
     gc_release_var(context);
+    return context->ret;
 }
 
 EXPORT_API GC int interpreter_load_file(context_t context, FILE *file) {
@@ -1438,7 +1892,10 @@ EXPORT_API GC int interpreter_load_file_with_name(context_t context, FILE *file,
     }
 
     context->in_port = port;
-    return context->ret;
+
+    // 开始运行
+    eval_apply_loop(context, OP_TOP_LEVEL_SETUP);
 
     gc_release_var(context);
+    return context->ret;
 }

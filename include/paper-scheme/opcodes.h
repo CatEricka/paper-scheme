@@ -56,6 +56,9 @@ enum opcode_e {
     OP_REM,
     OP_MOD,
 
+    // op_exec_object_operation
+            OP_VECTOR,
+
     // op_exec_lexical
             OP_READ_SEXP,
     OP_READ_LIST,

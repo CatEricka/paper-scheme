@@ -167,9 +167,9 @@ UTEST(equals_test, value_equals_test) {
 
     char string_buffer_append_obj[] = "this is a string buffer";
     tmp1 = string_make_from_cstr_op(context, string_buffer_append_obj);
-    obj1 = string_buffer_append_string_op(context, obj1, tmp1);
+    string_buffer_append_string_op(context, obj1, tmp1);
     tmp2 = string_make_from_cstr_op(context, string_buffer_append_obj);
-    obj2 = string_buffer_append_string_op(context, obj2, tmp2);
+    string_buffer_append_string_op(context, obj2, tmp2);
     type = context_get_object_type(context, obj1);
     equals_assert = type_info_equals(type);
     equals = object_equals_helper(context, obj1);

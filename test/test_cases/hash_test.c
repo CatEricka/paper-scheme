@@ -175,7 +175,7 @@ UTEST(hash_test, all_value_hash_test) {
 
     char string_buffer_append_obj[] = "this is a string buffer";
     tmp1 = string_make_from_cstr_op(context, string_buffer_append_obj);
-    obj = string_buffer_append_string_op(context, obj, tmp1);
+    string_buffer_append_string_op(context, obj, tmp1);
     type = context_get_object_type(context, obj);
     hash_fn_assert = type_info_hash_code(type);
     hash_fn = object_hash_helper(context, obj);

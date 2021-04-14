@@ -518,7 +518,7 @@ bytes_capacity_increase_op(REF NOTNULL context_t context,
  * @param add_size 新增大小
  * @return 返回原始 string_buffer
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API OUT NOTNULL GC void
 string_buffer_capacity_increase_op(REF NOTNULL context_t context,
                                    NOTNULL IN object str_buffer, size_t add_size);
 
@@ -703,5 +703,27 @@ EXPORT_API object port_seek(REF NOTNULL object port, long offset, int origin);
  * @return port 当前游标位置
  */
 EXPORT_API size_t port_tail(REF NOTNULL object port);
+
+
+/******************************************************************************
+                              list 操作 API
+******************************************************************************/
+/**
+ * list 原地逆序
+ * @param context
+ * @param term 结束符号
+ * @param list
+ * @return list
+ */
+EXPORT_API object reverse_in_place(context_t context, object term, object list);
+
+/**
+ * list 逆序, 创建新的 pair
+ * @param context
+ * @param list
+ * @return
+ */
+EXPORT_API object reverse(context_t context, object list);
+
 
 #endif //BASE_SCHEME_RUNTIME_H

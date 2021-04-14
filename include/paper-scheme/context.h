@@ -141,6 +141,11 @@ struct scheme_context_t {
     int token;
 
     /**
+     * 是否输出 atom 类型
+     */
+    int print_flag;
+
+    /**
      * 内部字符串缓存
      * 希望足够大
      */
@@ -149,6 +154,16 @@ struct scheme_context_t {
     /**
      *                  内部特殊变量
      ****************************************************/
+    // 内部 symbol 变量, 特殊语法实现
+    // lambda
+    object LAMBDA;
+    // 需要标准库实现
+    object QUOTE;
+    object QUASIQUOTE;
+    object UNQUOTE;
+    object UNQUOTE_SPLICING;
+    object FEED_TO;
+
     // TODO 完成内部 HOOK 使用说明和示例
     object ERROR_HOOK;         /* *colon-hook* */
     object COMPILE_HOOK;       /* *compile-hook* */

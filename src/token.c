@@ -38,9 +38,10 @@ EXPORT_API object read_upto(context_t context, char *terminal) {
     assert(context != NULL);
     gc_var1(context, buff);
 
+    buff = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
     object ch = port_get_char(context->in_port);
     while (ch != IMM_EOF && !is_one_of(terminal, ch)) {
-        buff = string_buffer_append_char_op(context, buff, char_imm_getvalue(ch));
+        string_buffer_append_char_op(context, buff, char_imm_getvalue(ch));
         ch = port_get_char(context->in_port);
     }
     // 遇到 EOF 或者 结束符, 将符号送回 port
@@ -53,12 +54,145 @@ EXPORT_API object read_upto(context_t context, char *terminal) {
 /**
  * 从 context->in_port 读入一个字符串
  * <p>内部实现, 请勿使用</p>
+ * <p>from tinyscheme</p>
  * @param context
  * @return 如果失败返回 IMM_UNIT
  */
 EXPORT_API GC object read_string_expr(context_t context) {
     assert(context != NULL);
     // 此时 in_port 刚读入一个 "
+    gc_var1(context, buffer);
+    object c;
+    int tmp_ch;
+    unsigned escape_value = 0;
+    enum {
+        status_normal, status_escape,
+        status_escape_x1, status_escape_x2,
+        status_escape_oct1, status_escape_oct2
+    } state = status_normal;
+
+    do {
+        c = port_get_char(context->in_port);
+        if (c == IMM_EOF) {
+            gc_release_var(context);
+            return IMM_UNIT;
+        }
+        switch (state) {
+            case status_normal:
+                switch (char_imm_getvalue(c)) {
+                    case '\\':
+                        // 转义
+                        state = status_escape;
+                        break;
+                    case '"':
+                        // 结束
+                        gc_release_var(context);
+                        return string_buffer_to_string_op(context, buffer);
+                    default:
+                        // 普通情况
+                        string_buffer_append_imm_char_op(context, buffer, c);
+                        break;
+                }
+                break;
+            case status_escape:
+                switch (char_imm_getvalue(c)) {
+                    case '0':
+                    case '1':
+                    case '2':
+                    case '3':
+                    case '4':
+                    case '5':
+                    case '6':
+                    case '7':
+                        // "\0****"
+                        state = status_escape_oct1;
+                        escape_value = char_imm_getvalue(c) - '0';
+                        break;
+                    case 'x':
+                    case 'X':
+                        // "\x**", 只能最多两个字符
+                        state = status_escape_x1;
+                        escape_value = 0;
+                        break;
+                    case 'n':
+                        string_buffer_append_char_op(context, buffer, '\n');
+                        state = status_normal;
+                        break;
+                    case 't':
+                        string_buffer_append_char_op(context, buffer, '\t');
+                        state = status_normal;
+                        break;
+                    case 'r':
+                        string_buffer_append_char_op(context, buffer, '\r');
+                        state = status_normal;
+                        break;
+                    case '"':
+                        string_buffer_append_char_op(context, buffer, '"');
+                        state = status_normal;
+                        break;
+                    default:
+                        // 其他情况正常读入
+                        string_buffer_append_imm_char_op(context, buffer, c);
+                        state = status_normal;
+                        break;
+                }
+                break;
+            case status_escape_x1:
+            case status_escape_x2:
+                tmp_ch = char_imm_getvalue(c);
+                tmp_ch = toupper(tmp_ch);
+                if (tmp_ch >= '0' && tmp_ch <= 'F') {
+                    if (tmp_ch <= '9') {
+                        escape_value = (escape_value << 4u) + tmp_ch - '0';
+                    } else {
+                        escape_value = (escape_value << 4u) + tmp_ch - 'A' + 10;
+                    }
+                    if (state == status_escape_x1) {
+                        // 读入 \x 后第一个字符
+                        state = status_escape_x2;
+                    } else {
+                        // 读入 \x 后第二个字符, 恢复正常状态
+                        string_buffer_append_char_op(context, buffer, (char) escape_value);
+                        state = status_normal;
+                    }
+                } else {
+                    // \x 转义错误
+                    gc_release_var(context);
+                    return IMM_UNIT;
+                }
+                break;
+            case status_escape_oct1:
+            case status_escape_oct2:
+                tmp_ch = char_imm_getvalue(c);
+                if (tmp_ch < '0' || tmp_ch > '7') {
+                    // 超出正常 8 进制范围
+                    string_buffer_append_char_op(context, buffer, (char) escape_value);
+                    port_unget_char(context->in_port, c);
+                    state = status_normal;
+                } else {
+                    if (state == status_escape_oct2 && escape_value >= 32) {
+                        // 超出转义数值范围
+                        // 最小 \000, 最大 \377
+                        // 最多读入 3 个字符
+                        // 如果第二个字符读入时大小 >= 32 则证明一定超过最大范围
+                        gc_release_var(context);
+                        return IMM_UNIT;
+                    }
+
+                    tmp_ch = char_imm_getvalue(c);
+                    escape_value = (escape_value << 3u) + (tmp_ch - '0');
+
+                    if (state == status_escape_oct1)
+                        state = status_escape_oct2;
+                    else {
+                        string_buffer_append_char_op(context, buffer, (char) escape_value);
+                        state = status_normal;
+                    }
+                }
+                break;
+        }
+    } while (1);
+    gc_release_var(context);
     return IMM_UNIT;
 }
 

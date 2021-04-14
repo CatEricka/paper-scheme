@@ -88,7 +88,6 @@ EXPORT_API OUT NOTNULL GC object doublenum_make_op(REF NOTNULL context_t context
 EXPORT_API OUT NOTNULL GC object
 pair_make_op(REF NOTNULL context_t context, REF NULLABLE object param_car, REF NULLABLE object param_cdr) {
     assert(context != NULL);
-
     gc_param2(context, param_car, param_cdr);
 
     object ret = raw_object_make(context, OBJ_PAIR, object_sizeof_base(pair));
@@ -734,7 +733,7 @@ string_buffer_append_string_op(
     if (str_len + str_buffer_len > buffer_size) {
         // 容量不足
         size_t add_size = (str_len + str_buffer_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE) - buffer_size;
-        str_buffer = string_buffer_capacity_increase_op(context, str_buffer, add_size);
+        string_buffer_capacity_increase_op(context, str_buffer, add_size);
 
         assert(add_size + buffer_size == string_buffer_capacity(str_buffer));
     }
@@ -753,7 +752,7 @@ string_buffer_append_string_op(
  * @param context
  * @param str_buffer string_buffer
  * @param str string
- * @return 修改后的 string_buffer
+ * @return 原始 string_buffer
  */
 EXPORT_API OUT NOTNULL GC object
 string_buffer_append_cstr_op(
@@ -780,7 +779,7 @@ string_buffer_append_cstr_op(
     if (str_len + str_buffer_len > buffer_size) {
         // 容量不足
         size_t add_size = (str_len + str_buffer_len + STRING_BUFFER_DEFAULT_GROWTH_SIZE) - buffer_size;
-        str_buffer = string_buffer_capacity_increase_op(context, str_buffer, add_size);
+        string_buffer_capacity_increase_op(context, str_buffer, add_size);
 
         assert(add_size + buffer_size == string_buffer_capacity(str_buffer));
     }
@@ -810,7 +809,7 @@ string_buffer_append_imm_char_op(
     assert(is_imm_char(imm_char));
 
     gc_param1(context, str_buffer);
-    str_buffer = string_buffer_append_char_op(context, str_buffer, char_imm_getvalue(imm_char));
+    string_buffer_append_char_op(context, str_buffer, char_imm_getvalue(imm_char));
     gc_release_param(context);
     return str_buffer;
 }
@@ -832,7 +831,7 @@ string_buffer_append_char_op(REF NOTNULL context_t context, IN NOTNULL object st
     size_t buffer_len = string_buffer_length(str_buffer);
     if (buffer_len + 1 > string_buffer_capacity(str_buffer)) {
         // 当前 string_buffer_length(str_buffer) + 1, 其中 '+1' 为 新增加的 char
-        str_buffer = string_buffer_capacity_increase_op(context, str_buffer, STRING_BUFFER_DEFAULT_GROWTH_SIZE + 1);
+        string_buffer_capacity_increase_op(context, str_buffer, STRING_BUFFER_DEFAULT_GROWTH_SIZE + 1);
     }
 
     // char 拼接
@@ -1689,9 +1688,8 @@ bytes_capacity_increase_op(REF NOTNULL context_t context,
  * @param context
  * @param str_buffer
  * @param add_size 新增大小
- * @return 返回原始 string_buffer
  */
-EXPORT_API OUT NOTNULL GC object
+EXPORT_API OUT NOTNULL GC void
 string_buffer_capacity_increase_op(REF NOTNULL context_t context,
                                    NOTNULL IN object str_buffer, size_t add_size) {
     assert(context != NULL);
@@ -1707,7 +1705,6 @@ string_buffer_capacity_increase_op(REF NOTNULL context_t context,
     string_buffer_capacity(str_buffer) = bytes_capacity(new_buffer);
 
     gc_release_param(context);
-    return str_buffer;
 }
 
 /**
@@ -2191,7 +2188,7 @@ port_put_char(REF NOTNULL context_t context, REF NOTNULL object port, COPY objec
         } else {
             assert(current == str_buff_len);
 
-            str_buff = string_buffer_append_imm_char_op(context, str_buff, ch);
+            string_buffer_append_imm_char_op(context, str_buff, ch);
             port->value.string_port.current = string_buffer_length(str_buff);
             port->value.string_port.string_buffer_data = str_buff;
         }
@@ -2245,7 +2242,7 @@ port_put_cstr(REF NOTNULL context_t context, REF NOTNULL object port, COPY const
         } else {
             assert(current == str_buff_len);
 
-            str_buff = string_buffer_append_cstr_op(context, str_buff, cstr);
+            string_buffer_append_cstr_op(context, str_buff, cstr);
             port->value.string_port.current = string_buffer_length(str_buff);
             port->value.string_port.string_buffer_data = str_buff;
         }
@@ -2299,7 +2296,7 @@ port_put_string(REF NOTNULL context_t context, REF NOTNULL object port, COPY obj
         } else {
             // current + str_len > str_buff_len
 
-            str_buff = string_buffer_append_string_op(context, str_buff, string);
+            string_buffer_append_string_op(context, str_buff, string);
             port->value.string_port.current = string_buffer_length(str_buff);
             port->value.string_port.string_buffer_data = str_buff;
         }
@@ -2385,4 +2382,48 @@ EXPORT_API size_t port_tail(REF NOTNULL object port) {
     } else {
         return port->value.string_port.current;
     }
+}
+
+/******************************************************************************
+                              list 操作 API
+******************************************************************************/
+/**
+ * <p>list 原地逆序</p>
+ * <p>不会触发 GC</p>
+ * @param context
+ * @param term 结束符号
+ * @param list
+ * @return list
+ */
+EXPORT_API object reverse_in_place(context_t context, object term, object list) {
+    assert(context != NULL);
+    object p = list, result = term, q;
+
+    while (p != IMM_UNIT) {
+        q = pair_cdr(p);
+        pair_cdr(p) = result;
+        result = p;
+        p = q;
+    }
+    return result;
+}
+
+/**
+ * list 逆序, 创建新的 pair
+ * @param context
+ * @param list
+ * @return
+ */
+EXPORT_API object reverse(context_t context, object list) {
+    assert(context != NULL);
+    gc_param1(context, list);
+    gc_var1(context, p);
+    p = IMM_UNIT;
+
+    for (; is_pair(list); list = pair_cdr(list)) {
+        p = pair_make_op(context, pair_car(list), p);
+    }
+
+    gc_release_param(context);
+    return p;
 }
