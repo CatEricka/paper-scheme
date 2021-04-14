@@ -1426,7 +1426,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
     gc_var2(context, tmp1, tmp2);
 
     switch (opcode) {
-        case OP_VECTOR:
+        case OP_VECTOR: {
             int64_t len = list_length(context->args);
             int64_t i;
             if (len < 0) {
@@ -1437,6 +1437,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
                 vector_set(tmp1, i, pair_car(tmp2));
             }
             s_return(context, tmp1);
+        }
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
