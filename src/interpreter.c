@@ -1705,7 +1705,7 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                 port_put_cstr(context, context->out_port, ")");
                 s_return(context, IMM_TRUE);
             }
-        case OP_PRINT_VECTOR:
+        case OP_PRINT_VECTOR: {
             size_t i = i64_getvalue(pair_cdr(context->args));
             tmp1 = pair_car(context->args);
             size_t len = vector_len(tmp1);
@@ -1722,6 +1722,7 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                 }
                 s_goto(context, OP_PRINT_OBJECT);
             }
+        }
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
