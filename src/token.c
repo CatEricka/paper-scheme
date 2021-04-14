@@ -73,8 +73,13 @@ EXPORT_API int token(context_t context) {
         return (TOKEN_EOF);
     }
 
+    int raw_ch;
     c = port_get_char(context->in_port);
-    char raw_ch = char_imm_getvalue(c);
+    if (c == IMM_EOF) {
+        raw_ch = EOF;
+    } else {
+        raw_ch = char_imm_getvalue(c);
+    }
     switch (raw_ch) {
         case EOF:
             return TOKEN_EOF;
