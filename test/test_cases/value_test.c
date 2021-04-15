@@ -7,7 +7,8 @@
  */
 
 UTEST(value_test, all_value_type_function_test) {
-    context_t context = context_make(0x10000, 2, 0x100000);
+    size_t heap = 32 * 1024;
+    context_t context = context_make(heap, 2, heap);
     gc_var4(context, obj, tmp1, tmp2, tmp3);
 
     int64_t start = utest_ns();

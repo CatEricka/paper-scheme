@@ -2,7 +2,8 @@
 #include <paper-scheme/runtime.h>
 
 UTEST(hashset_test, test) {
-    context_t context = context_make(0x10000, 2, 0x100000);
+    size_t heap = 32 * 1024;
+    context_t context = context_make(heap, 2, heap);
     gc_var5(context, obj, set, set2, vector, vector2);
     uint64_t start, time;
 

@@ -2,7 +2,8 @@
 #include <paper-scheme/interpreter.h>
 
 UTEST(opcode_test, op_exec_repl_test) {
-    context_t context = interpreter_create(0x8000000, 2, 0x32000000);
+    size_t heap = 128 * 1024;
+    context_t context = interpreter_create(heap, 2, heap);
     gc_var5(context, var, val, slot, env, obj);
 
     FILE *file = fopen(TEST_RESOURCE_DIR"/test_1.scm", "r");

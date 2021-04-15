@@ -2,7 +2,8 @@
 #include <paper-scheme/runtime.h>
 
 UTEST(weak_hashset_test, strong_ref_test) {
-    context_t context = context_make(0x10000, 2, 0x100000);
+    size_t heap = 32 * 1024;
+    context_t context = context_make(heap, 2, heap);
     gc_var5(context, obj, set, set2, vector, vector2);
     uint64_t start, time;
 
@@ -177,7 +178,8 @@ UTEST(weak_hashset_test, strong_ref_test) {
 }
 
 UTEST(weak_hashset_test, strong_ref_remove_test) {
-    context_t context = context_make(0x10000, 2, 0x100000);
+    size_t heap = 32 * 1024;
+    context_t context = context_make(heap, 2, heap);
     gc_var5(context, obj, set, set2, vector, vector2);
     uint64_t start, time;
 

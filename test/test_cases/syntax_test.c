@@ -2,7 +2,8 @@
 #include <paper-scheme/interpreter.h>
 
 UTEST(syntax_test, keyword) {
-    context_t context = interpreter_create(0x8000000, 2, 0x32000000);
+    size_t heap = 32 * 1024;
+    context_t context = interpreter_create(heap, 2, heap);
     gc_var1(context, sym);
 
     char *syntax_list[] = {

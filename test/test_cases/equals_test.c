@@ -2,7 +2,8 @@
 #include <paper-scheme/runtime.h>
 
 UTEST(equals_test, value_equals_test) {
-    context_t context = context_make(16, 2, 0x10000);;
+    size_t heap = 32 * 1024;
+    context_t context = context_make(16, 2, heap);;
     gc_var4(context, obj1, obj2, tmp1, tmp2);
     equals_fn equals, equals_assert;
     object_type_info_ptr type;
