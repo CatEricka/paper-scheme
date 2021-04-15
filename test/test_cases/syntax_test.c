@@ -10,7 +10,6 @@ UTEST(syntax_test, keyword) {
             "quote",
             "define",
             "if",
-            "else",
             "begin",
             "set!",
             "let",
@@ -30,6 +29,24 @@ UTEST(syntax_test, keyword) {
         ASSERT_EQ(symbol_is_syntax(context, sym), IMM_TRUE);
     }
 
+    sym = symbol_make_from_cstr_op(context, "else");
+    ASSERT_TRUE(find_slot_in_current_env(context, sym, 1) != IMM_UNIT);
+    sym = symbol_make_from_cstr_op(context, "lambda");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "quote");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "quasiquote");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "unquote");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "unquote-splicing");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "=>");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "*error-hook*");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
+    sym = symbol_make_from_cstr_op(context, "*compile-hook*");
+    ASSERT_TRUE(is_imm_true(global_symbol_found(context, sym)));
 
     assert(context->saves == &__gc_var_dream1__);
     gc_release_var(context);

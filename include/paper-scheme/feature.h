@@ -193,6 +193,6 @@ uint32_t rand_helper();
 #define __Format_buff_size__ 30
 
 // repl ÌáÊ¾·û
-#define USER_OVERTURE "ps>"
+#define USER_OVERTURE "ps=>"
 
 #endif // BASE_SCHEME_FEATURE_H

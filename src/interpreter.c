@@ -84,7 +84,7 @@ static GC void assign_proc(context_t context, char *name, enum opcode_e opcode) 
 #define ok_abbrev(x)   (is_pair((x)) && is_imm_unit(pair_cdr((x))))
 
 static int64_t binary_decode(const char *s) {
-    int64_t x = 0;
+    uint64_t x = 0;
 
     while (*s != 0 && (*s == '1' || *s == '0')) {
         x <<= 1u;
@@ -92,7 +92,7 @@ static int64_t binary_decode(const char *s) {
         s++;
     }
 
-    return x;
+    return (int64_t) x;
 }
 /**
  * 根据输入字符串构造 sharp 常量
@@ -466,6 +466,10 @@ static int interpreter_default_env_init(context_t context) {
     context->global_environment = tmp;
     // 设置 env 类型标记
     set_ext_type_environment(context->global_environment);
+    set_immutable(context->global_environment);
+
+    context->current_env = context->global_environment;
+    context->scheme_stack = IMM_UNIT;
 
     // syntax_table
     // 30 看起来很适合, 30 > 17/0.75
@@ -481,9 +485,6 @@ static int interpreter_default_env_init(context_t context) {
     context->value = IMM_UNIT;
     context->args = IMM_UNIT;
     context->code = IMM_UNIT;
-
-    context->current_env = context->global_environment;
-    context->scheme_stack = IMM_UNIT;
 
     context->print_flag = 0;
 
@@ -505,7 +506,6 @@ static int interpreter_default_env_init(context_t context) {
     assign_syntax(context, "quote", -1);
     assign_syntax(context, "define", -1);
     assign_syntax(context, "if", -1);
-    assign_syntax(context, "else", -1);
     assign_syntax(context, "begin", -1);
     assign_syntax(context, "set!", -1);
     assign_syntax(context, "let", -1);
@@ -518,6 +518,10 @@ static int interpreter_default_env_init(context_t context) {
     assign_syntax(context, "cons-stream", -1);
     assign_syntax(context, "macro", -1);
     assign_syntax(context, "case", -1);
+
+    // else hack
+    tmp = symbol_make_from_cstr_op(context, "else");
+    new_slot_in_spec_env(context, tmp, IMM_TRUE, context->global_environment);
 
     // 初始化内部语法符号
     context->LAMBDA = symbol_make_from_cstr_op(context, "lambda");
@@ -794,7 +798,8 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
     context->current_env = stack_frame_env(stack_frame);
 
     context->scheme_stack = pair_cdr(context->scheme_stack);
-    return value;
+    // 此处不应当 return value
+    return IMM_TRUE;
 }
 
 /******************************************************************************
@@ -951,13 +956,21 @@ static GC object file_push(context_t context, object file_name) {
 static void file_pop(context_t context) {
     if (!stack_empty(context->load_stack)) {
         object port = stack_peek_op(context->load_stack);
+
+        // 检查上次文件读入 括号是否匹配
+        context->bracket_level = i64_getvalue(stack_peek_op(context->bracket_level_stack));
+
+        // 出栈
         stack_pop_op(context->load_stack);
         stack_pop_op(context->bracket_level_stack);
 
         assert(port != NULL);
-        stdio_finalizer(context, port);
+        // 正确关闭文件 (如果需要关闭的话)
+        if (is_stdio_port(port)) {
+            stdio_finalizer(context, port);
+        }
+        // 恢复之前的 port
         context->load_port = stack_peek_op(context->load_stack);
-        context->bracket_level = i64_getvalue(stack_peek_op(context->bracket_level_stack));
     }
 }
 
@@ -1002,20 +1015,20 @@ static GC object print_slash_string(context_t context, object str) {
                     int d = ch / 16;
                     string_buffer_append_char_op(context, buffer, 'x');
                     if (d < 10) {
-                        string_buffer_append_char_op(context, buffer, d + '0');
+                        string_buffer_append_char_op(context, buffer, (char) (d + '0'));
                     } else {
-                        string_buffer_append_char_op(context, buffer, d - 10 + 'A');
+                        string_buffer_append_char_op(context, buffer, (char) (d - 10 + 'A'));
                     }
                     d = ch % 16;
                     if (d < 10) {
-                        string_buffer_append_char_op(context, buffer, d + '0');
+                        string_buffer_append_char_op(context, buffer, (char) (d + '0'));
                     } else {
-                        string_buffer_append_char_op(context, buffer, d - 10 + 'A');
+                        string_buffer_append_char_op(context, buffer, (char) (d - 10 + 'A'));
                     }
                 }
             }
         } else {
-            string_buffer_append_char_op(context, buffer, ch);
+            string_buffer_append_char_op(context, buffer, (char) ch);
         }
     }
     string_buffer_append_char_op(context, buffer, '"');
@@ -1170,10 +1183,11 @@ static GC void print_atom(context_t context, object obj, int flag) {
 static object error_throw(context_t context, const char *message, object obj) {
     assert(context != 0);
     gc_param1(context, obj);
-    gc_var2(context, strbuff, str);
+    gc_var5(context, strbuff, str, err_hook, tmp1, code);
 
     char format_buff[__Format_buff_size__];
 
+    // 构造异常信息
     strbuff = string_buffer_make_op(context, 512);
     if (is_stdio_port(context->in_port) && stdio_port_get_file(context->in_port) != stdin) {
         // 显示错误行数
@@ -1186,6 +1200,30 @@ static object error_throw(context_t context, const char *message, object obj) {
     }
     string_buffer_append_cstr_op(context, strbuff, message);
 
+    // *error-hook*
+    err_hook = find_slot_in_current_env(context, context->ERROR_HOOK, 1);
+    if (err_hook != IMM_UNIT) {
+        // 构造 error-hook 表达式参数
+        // '("message" (quote obj))
+        if (obj == NULL) {
+            context->code = IMM_UNIT;
+        } else {
+            tmp1 = pair_make_op(context, obj, IMM_UNIT);
+            code = pair_make_op(context, context->QUOTE, tmp1);
+            code = pair_make_op(context, code, IMM_UNIT);
+        }
+        str = string_buffer_to_string_op(context, strbuff);
+        set_immutable(str);
+        context->code = pair_make_op(context, str, code);
+
+        // 构造表达式
+        context->code = pair_make_op(context, env_slot_value(err_hook), context->code);
+        // 求值
+        context->opcode = OP_EVAL;
+        return IMM_TRUE;
+    }
+
+    // 默认异常处理方法
     if (obj == NULL) {
         context->args = IMM_UNIT;
     } else {
@@ -1267,7 +1305,7 @@ static object builtin_function_args_type_check(context_t context, op_code_info *
 
 static int is_file_interactive(context_t context) {
     return stack_len(context->load_stack) == 1 &&
-           stdio_port_get_file(stack_peek_op(context->load_stack)) &&
+           stdio_port_get_file(stack_peek_op(context->load_stack)) == stdin &&
            is_stdio_port(context->in_port);
 }
 
@@ -1355,7 +1393,12 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
             if (is_port_eof(context->load_port)) {
                 // 如果 load_stack 最后一个文件遇到 EOF, 或者 load_stack 为空
                 // 此时结束解释器循环
-                if (stack_len(context->load_stack) <= 1) {
+                if (stack_len(context->load_stack) == 1) {
+                    file_pop(context);
+                    context->args = IMM_UNIT;
+                    s_goto(context, OP_QUIT);
+                } else if (stack_empty(context->load_stack)) {
+                    // 不太可能运行到这里; 防御性分支
                     context->args = IMM_UNIT;
                     s_goto(context, OP_QUIT);
                 } else {
@@ -1432,7 +1475,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             if (len < 0) {
                 Error_Throw_1(context, "vector: not a proper list:", context->args);
             }
-            tmp1 = vector_make_op(context, len);
+            tmp1 = vector_make_op(context, (size_t) len);
             for (i = 0, tmp2 = context->args; is_pair(tmp2); tmp2 = pair_cdr(tmp2), i++) {
                 vector_set(tmp1, i, pair_car(tmp2));
             }
@@ -1706,7 +1749,7 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                 s_return(context, IMM_TRUE);
             }
         case OP_PRINT_VECTOR: {
-            size_t i = i64_getvalue(pair_cdr(context->args));
+            size_t i = (size_t) i64_getvalue(pair_cdr(context->args));
             tmp1 = pair_car(context->args);
             size_t len = vector_len(tmp1);
             if (i >= len) {
@@ -1783,6 +1826,9 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
         case OP_QUIT:
             if (is_pair(context->args)) {
                 context->ret = (int) i64_getvalue(pair_car(context->args));
+            } else {
+                // 无参数则默认正常退出
+                context->ret = 0;
             }
             return IMM_UNIT;
         case OP_GC:
@@ -1865,6 +1911,9 @@ EXPORT_API GC int interpreter_load_cstr(context_t context, const char *cstr) {
     eval_apply_loop(context, OP_TOP_LEVEL_SETUP);
 
     gc_release_var(context);
+    if (context->ret == 0 && context->bracket_level != 0) {
+        context->ret = ERROR_PARENTHESES_NOT_MATCH;
+    }
     return context->ret;
 }
 
@@ -1879,10 +1928,17 @@ EXPORT_API GC int interpreter_load_file(context_t context, FILE *file) {
 
 EXPORT_API GC int interpreter_load_file_with_name(context_t context, FILE *file, const char *file_name) {
     assert(context != NULL);
-    assert(file != NULL);
-    assert(file_name != NULL);
+    gc_var2(context, port, str);
 
-    gc_var1(context, port);
+    if (file == NULL) {
+        gc_release_var(context);
+        return context->ret;
+    }
+    if (file_name == NULL) {
+        file_name = "<unknown>";
+    }
+    str = string_make_from_cstr_op(context, file_name);
+
     scheme_stack_reset(context);
     context->current_env = context->global_environment;
     stack_clean(context->load_stack);
@@ -1890,11 +1946,13 @@ EXPORT_API GC int interpreter_load_file_with_name(context_t context, FILE *file,
 
     // 填入文件
     port = stdio_port_from_file_op(context, file, PORT_INPUT);
+    stdio_port_get_filename(port) = str;
     context->load_stack = stack_push_auto_increase_op(context, context->load_stack, port, 50);
     context->bracket_level_stack = stack_push_auto_increase_op(context, context->bracket_level_stack, i64_imm_make(0),
                                                                50);
     context->bracket_level = 0;
     context->load_port = port;
+    context->in_port = port;
     context->ret = 0;
     if (file == stdin) {
         context->repl_mode = 1;
@@ -1902,11 +1960,13 @@ EXPORT_API GC int interpreter_load_file_with_name(context_t context, FILE *file,
         context->repl_mode = 0;
     }
 
-    context->in_port = port;
-
     // 开始运行
     eval_apply_loop(context, OP_TOP_LEVEL_SETUP);
 
     gc_release_var(context);
+
+    if (context->ret == 0 && context->bracket_level != 0) {
+        context->ret = ERROR_PARENTHESES_NOT_MATCH;
+    }
     return context->ret;
 }

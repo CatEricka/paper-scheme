@@ -55,6 +55,7 @@ if (ENABLE_UNIT_TESTS)
     # 配置测试
     INCLUDE_DIRECTORIES(test/)
     add_executable(paper-scheme-test "")
+    target_compile_definitions(paper-scheme-test PUBLIC TEST_RESOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/resources")
     target_sources(paper-scheme-test
             PRIVATE
             "test/test_cases/object_test.c"
