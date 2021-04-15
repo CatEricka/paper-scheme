@@ -992,7 +992,7 @@ static GC object print_slash_string(context_t context, object str) {
 
     string_buffer_append_char_op(context, buffer, '"');
     for (size_t i = 0; i < string_len(str); i++) {
-        int ch = string_index(str, i);
+        unsigned char ch = (unsigned char) string_index(str, i);
         if (ch == 0xff || ch == '"' || ch < ' ' || ch == '\\') {
             string_buffer_append_char_op(context, buffer, '\\');
             switch (ch) {
