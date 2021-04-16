@@ -55,6 +55,7 @@ static GC void assign_syntax(context_t context, char *name, enum opcode_e opcode
     gc_var2(context, sym, syntax);
 
     sym = symbol_make_from_cstr_op(context, name);
+    set_immutable(sym);
     syntax = syntax_make_internal(context, sym, opcode);
     hashmap_put_op(context, context->syntax_table, sym, syntax);
 
@@ -69,6 +70,7 @@ static GC void assign_proc(context_t context, char *name, enum opcode_e opcode) 
     gc_var2(context, proc, sym);
 
     sym = symbol_make_from_cstr_op(context, name);
+    set_immutable(sym);
     proc = proc_make_internal(context, sym, opcode);
     new_slot_in_spec_env(context, sym, proc, context->global_environment);
 
@@ -375,6 +377,9 @@ static object op_exec_compute(context_t context, enum opcode_e opcode);
 // 基础对象操作
 static object op_exec_object_operation(context_t context, enum opcode_e opcode);
 
+// I/O 操作
+static object op_exec_io(context_t context, enum opcode_e opcode);
+
 // 词法分析和字符串输出
 static object op_exec_lexical(context_t context, enum opcode_e opcode);
 
@@ -393,12 +398,61 @@ op_code_info internal_dispatch_table[] = {
         {NULL,     0, 0,        TYPE_NONE,    OP_TOP_LEVEL_SETUP,        op_exec_repl},
         {NULL,     0, 0,        TYPE_NONE,    OP_TOP_LEVEL,              op_exec_repl},
         {NULL,     0, 0,        TYPE_NONE,    OP_READ_INTERNAL,          op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL,                   op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_APPLY,                  op_exec_repl},
         {NULL,     0, 0,        TYPE_NONE,    OP_VALUE_PRINT,            op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL,                   op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_EXPAND_MACRO,           op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL_ARGS,              op_exec_repl},
+        {NULL,     0, 0,        TYPE_NONE,    OP_APPLY,                  op_exec_repl},
+        {"gensym", 0, 0,        TYPE_NONE,    OP_GENSYM,                 op_exec_repl},
+
+        // op_exec_syntax
+        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL_EXPANDED_MACRO,    op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LAMBDA0,                op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LAMBDA1,                op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_MAKE_CLOSURE,           op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_GET_CLOSURE_CODE,       op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_QUOTE,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_DEFINE0,                op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_DEFINE1,                op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_MACRO0,                 op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_MACRO1,                 op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_BEGIN,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_IF0,                    op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_IF1,                    op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_SET0,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_SET1,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET0,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET1,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET2,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET_AST0,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET_AST1,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET_AST2,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET_REC0,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET_REC1,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_LET_REC2,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_COND0,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_COND1,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_AND0,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_AND1,                   op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_OR0,                    op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_OR1,                    op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_CASE0,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_CASE1,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_CASE2,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_DELAY,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_FORCE,                  op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_FORCED_P,               op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_SAVE_FORCED,            op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_CONS_STREAM0,           op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_CONS_STREAM1,           op_exec_syntax},
+        {NULL,     0, 0,        TYPE_NONE,    OP_CONTINUATION,           op_exec_syntax},
+
+        // op_exec_compute
 
         // op_exec_object_operation
         {"vector", 0, ARGS_INF, TYPE_NONE,    OP_VECTOR,                 op_exec_object_operation},
+
+        // op_exec_io
 
         // op_exec_lexical
         {NULL,     0, 0,        TYPE_NONE,    OP_READ_SEXP,              op_exec_lexical},
@@ -413,6 +467,8 @@ op_code_info internal_dispatch_table[] = {
         {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_OBJECT,           op_exec_lexical},
         {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_LIST,             op_exec_lexical},
         {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_VECTOR,           op_exec_lexical},
+
+        // op_exec_predicate
 
         // op_exec_builtin_function
         {"quit",   0, 1,        TYPE_INTEGER, OP_QUIT,                   op_exec_builtin_function},
@@ -500,27 +556,28 @@ static int interpreter_default_env_init(context_t context) {
     notnull_or_return(context->dispatch_table, "[ERROR] context->dispatch_table alloc failed.", 0);
     init_opcode(context);
 
-    // TODO 填写 opcode 初始化关键字
+    // 初始化关键字
     // todo 添加关键字 (syntax) 记得修改这里
-    assign_syntax(context, "lambda", -1);
-    assign_syntax(context, "quote", -1);
-    assign_syntax(context, "define", -1);
-    assign_syntax(context, "if", -1);
-    assign_syntax(context, "begin", -1);
-    assign_syntax(context, "set!", -1);
-    assign_syntax(context, "let", -1);
-    assign_syntax(context, "let*", -1);
-    assign_syntax(context, "letrec", -1);
-    assign_syntax(context, "cond", -1);
-    assign_syntax(context, "delay", -1);
-    assign_syntax(context, "and", -1);
-    assign_syntax(context, "or", -1);
-    assign_syntax(context, "cons-stream", -1);
-    assign_syntax(context, "macro", -1);
-    assign_syntax(context, "case", -1);
+    assign_syntax(context, "lambda", OP_LAMBDA0);
+    assign_syntax(context, "quote", OP_QUOTE);
+    assign_syntax(context, "define", OP_DEFINE0);
+    assign_syntax(context, "if", OP_IF0);
+    assign_syntax(context, "begin", OP_BEGIN);
+    assign_syntax(context, "set!", OP_SET0);
+    assign_syntax(context, "let", OP_LET0);
+    assign_syntax(context, "let*", OP_LET_AST0);
+    assign_syntax(context, "letrec", OP_LET_REC0);
+    assign_syntax(context, "cond", OP_COND0);
+    assign_syntax(context, "delay", OP_DELAY);
+    assign_syntax(context, "and", OP_AND0);
+    assign_syntax(context, "or", OP_OR0);
+    assign_syntax(context, "cons-stream", OP_CONS_STREAM0);
+    assign_syntax(context, "macro", OP_MACRO0);
+    assign_syntax(context, "case", OP_CASE0);
 
     // else hack
     tmp = symbol_make_from_cstr_op(context, "else");
+    set_immutable(tmp);
     new_slot_in_spec_env(context, tmp, IMM_TRUE, context->global_environment);
 
     // 初始化内部语法符号
@@ -530,6 +587,13 @@ static int interpreter_default_env_init(context_t context) {
     context->UNQUOTE = symbol_make_from_cstr_op(context, "unquote");
     context->UNQUOTE_SPLICING = symbol_make_from_cstr_op(context, "unquote-splicing");
     context->FEED_TO = symbol_make_from_cstr_op(context, "=>");
+
+    set_immutable(context->LAMBDA);
+    set_immutable(context->QUOTE);
+    set_immutable(context->QUASIQUOTE);
+    set_immutable(context->UNQUOTE);
+    set_immutable(context->UNQUOTE_SPLICING);
+    set_immutable(context->FEED_TO);
 
     // 初始化内部 hook 变量
     context->ERROR_HOOK = symbol_make_from_cstr_op(context, "*error-hook*");
@@ -665,7 +729,6 @@ global_symbol_add_from_symbol_obj(REF NOTNULL context_t context, REF NOTNULL obj
     gc_param1(context, symbol);
 
     symbol = weak_hashset_put_op(context, context->global_symbol_table, symbol);
-    set_immutable(symbol);
     gc_release_param(context);
     return symbol;
 }
@@ -1056,6 +1119,27 @@ static GC object atom_to_string(context_t context, object obj, int flag) {
 
     char *p;
 
+    if (is_ext_type(obj)) {
+        p = context->str_buffer;
+        if (is_ext_type_environment(context->args)) {
+            str = string_make_from_cstr_op(context, "#<ENVIRONMENT>");
+            gc_release_param(context);
+            return str;
+        } else if (is_ext_type_closure(context->args)) {
+            str = string_make_from_cstr_op(context, "#<CLOSURE>");
+            gc_release_param(context);
+            return str;
+        } else if (is_ext_type_macro(context->args)) {
+            str = string_make_from_cstr_op(context, "#<MACRO>");
+            gc_release_param(context);
+            return str;
+        } else if (is_ext_type_continuation(context->args)) {
+            str = string_make_from_cstr_op(context, "#<CONTINUATION>");
+            gc_release_param(context);
+            return str;
+        }
+    }
+
     if (obj == IMM_UNIT) {
         p = "()";
     } else if (obj == IMM_TRUE) {
@@ -1146,8 +1230,19 @@ static GC object atom_to_string(context_t context, object obj, int flag) {
         str = symbol_to_string_op(context, obj);
         gc_release_param(context);
         return str;
+    } else if (is_syntax(obj)) {
+        p = context->str_buffer;
+        snprintf(p, INTERNAL_STR_BUFFER_SIZE, "#<%s SYNTAX %d>", symbol_get_cstr(syntax_get_symbol(obj)),
+                 syntax_get_opcode(obj));
+    } else if (is_promise(obj)) {
+        p = context->str_buffer;
+        p = "#<PROMISE>";
+    } else if (is_proc(obj)) {
+        p = context->str_buffer;
+        snprintf(p, INTERNAL_STR_BUFFER_SIZE, "#<%s PROCEDURE %d>", symbol_get_cstr(proc_get_symbol(obj)),
+                 proc_get_opcode(obj));
     } else {
-        // TODO 添加新类型
+        // todo 添加新类型 记得修改 atom_to_str
         p = "#<ERROR>";
     }
 
@@ -1450,10 +1545,622 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 s_goto(context, OP_PRINT_OBJECT);
             }
         case OP_EVAL:
-            // TODO 完成 OP_EVAL
-            s_return(context, context->code);
+            if (is_symbol(context->code)) {
+                if (is_imm_true(symbol_is_syntax(context, context->code))) {
+                    tmp1 = syntax_get_by_symbol(context, context->code);
+                    s_return(context, tmp1);
+                }
+                tmp1 = find_slot_in_current_env(context, context->code, 1);
+                if (tmp1 != IMM_UNIT) {
+                    s_return(context, env_slot_value(tmp1));
+                } else {
+                    Error_Throw_1(context, "eval: unbound variable:", context->code);
+                }
+            } else if (is_pair(context->code)) {
+                tmp1 = pair_car(context->code);
+                if (is_symbol(tmp1) && is_imm_true(symbol_is_syntax(context, tmp1))) {
+                    context->code = pair_cdr(context->code);
+                    tmp1 = syntax_get_by_symbol(context, tmp1);
+                    s_goto(context, syntax_get_opcode(tmp1));
+                } else {
+                    // 如果 sexp 第一个元素求值结果是宏, 则对宏展开后再求值
+                    s_save(context, OP_EXPAND_MACRO, IMM_UNIT, context->code);
+                    context->code = pair_car(context->code);
+                    // 先对 sexp 第一个元素求值, 之后求值剩余参数直到参数结束
+                    s_goto(context, OP_EVAL);
+                }
+            } else {
+                s_return(context, context->code);
+            }
+        case OP_EXPAND_MACRO:
+            if (is_ext_type_macro(context->value)) {
+                // 宏展开
+                // macro 实际上是个 closure
+                s_save(context, OP_EVAL_EXPANDED_MACRO, IMM_UNIT, IMM_UNIT);
+                context->args = pair_make_op(context, context->code, IMM_UNIT);
+                context->code = context->value;
+                // macro 展开
+                s_goto(context, OP_APPLY);
+            } else {
+                context->code = pair_cdr(context->code);
+                s_goto(context, OP_EVAL_ARGS);
+            }
+        case OP_EVAL_ARGS:
+            context->args = pair_make_op(context, context->value, context->args);
+            if (is_pair(context->code)) {
+                // 还有需要求值的参数
+                s_save(context, OP_EVAL_ARGS, context->args, pair_cdr(context->code));
+                context->code = pair_car(context->code);
+                context->args = IMM_UNIT;
+                s_goto(context, OP_EVAL);
+            } else {
+                // 求值结束, args 最后一个值是 procedure 类型
+                context->args = reverse(context, context->args);
+                context->code = pair_car(context->args);
+                context->args = pair_cdr(context->args);
+                s_goto(context, OP_APPLY);
+            }
         case OP_APPLY:
-            // TODO 完成 OP_APPLY
+            // TODO foreign
+            if (is_proc(context->code)) {
+                s_goto(context, proc_get_opcode(context->code));
+            } else if (is_ext_type_closure(context->code) ||
+                       is_ext_type_macro(context->code)) {
+
+                new_frame_push_spec_env(context, closure_get_env(context->code));
+                // 遍历 closure 参数列表和 context->args 参数
+                for (tmp1 = closure_get_args(tmp1), tmp2 = context->args;
+                     is_pair(tmp1);
+                     tmp1 = pair_cdr(tmp1), tmp2 = pair_cdr(tmp2)) {
+                    if (tmp2 == IMM_UNIT) {
+                        Error_Throw_0(context, "apply: not enough arguments");
+                    } else {
+                        if (is_symbol(pair_car(tmp1))) {
+                            new_slot_in_current_env(context, pair_car(tmp1), pair_car(tmp2));
+                        } else {
+                            Error_Throw_1(context, "syntax error in closure: not a symbol:", pair_car(tmp1));
+                        }
+                    }
+                }
+
+                // args 是 list*, 不以 IMM_UNIT 结尾, 需要额外处理结尾
+                if (is_symbol(tmp1)) {
+                    new_slot_in_current_env(context, tmp1, tmp2);
+                } else {
+                    Error_Throw_1(context, "syntax error in closure: not a symbol:", tmp1);
+                }
+
+                context->code = pair_cdr(closure_get_code(context->code));
+                // 参数已经处理结束
+                context->args = IMM_UNIT;
+                s_goto(context, OP_BEGIN);
+            } else if (is_ext_type_continuation(context->code)) {
+                context->scheme_stack = continuation_get_stack(context->code);
+                if (context->args != IMM_UNIT) {
+                    s_return(context, pair_car(context->args));
+                } else {
+                    s_return(context, IMM_UNIT);
+                }
+            } else {
+                Error_Throw_0(context, "illegal function");
+            }
+        case OP_GENSYM:
+            s_return(context, gensym(context));
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
+    return IMM_TRUE;
+}
+
+static object op_exec_syntax(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        case OP_EVAL_EXPANDED_MACRO:
+            // 对展开后的宏求值
+            context->code = context->value;
+            s_goto(context, OP_EVAL);
+        case OP_LAMBDA0: {
+            tmp1 = find_slot_in_current_env(context, context->COMPILE_HOOK, 1);
+            if (tmp1 == IMM_UNIT) {
+                // 没有编译时 hook
+                context->value = context->code;
+                // 落到 OP_LAMBDA1
+            } else {
+                // 如果找到 *compile-hook*, (apply *compile-hook* `,@'code)
+                // TODO 编写 *compile-hook* 使用手册
+                s_save(context, OP_LAMBDA1, context->args, context->code);
+                context->args = pair_make_op(context, context->code, IMM_UNIT);
+                context->code = env_slot_value(tmp1);
+                s_goto(context, OP_APPLY);
+            }
+        }
+        case OP_LAMBDA1:
+            // closure: (sexp env)
+            tmp1 = closure_make_op(context, context->value, context->current_env);
+            s_return(context, tmp1);
+        case OP_MAKE_CLOSURE:
+            // (make-closure sexp)     use current_env
+            // (make-closure sexp env)
+            tmp1 = pair_car(context->args);
+            if (symbol_equals(context, pair_car(tmp1), context->LAMBDA)) {
+                tmp1 = pair_cdr(context->args);
+            }
+            if (pair_cdr(context->args) == IMM_UNIT) {
+                tmp2 = context->current_env;
+            } else {
+                tmp2 = pair_cadr(context->args);
+            }
+            tmp1 = closure_make_op(context, tmp1, tmp2);
+            s_return(context, tmp1);
+        case OP_GET_CLOSURE_CODE:
+            context->args = pair_car(context->args);
+            if (context->args == IMM_UNIT) {
+                s_return(context, IMM_FALSE);
+            } else if (is_ext_type_closure(context->args) || is_ext_type_macro(context->args)) {
+                tmp1 = pair_make_op(context, context->LAMBDA, closure_get_code(context->args));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
+        case OP_QUOTE:
+            s_return(context, pair_car(context->code));
+        case OP_DEFINE0:
+            if (is_pair(pair_car(context->code))) {
+                // 定义函数
+                // 变量名
+                tmp1 = pair_caar(context->code);
+                // 构造 lambda 表达式
+                tmp2 = pair_make_op(context, pair_cdar(context->code), pair_cdr(context->code));
+                context->code = pair_make_op(context, context->LAMBDA, tmp2);
+            } else {
+                // 定义变量
+                // 变量名
+                tmp1 = pair_car(context->code);
+                // 表达式
+                context->code = pair_cadr(context->code);
+            }
+
+            if (!is_symbol(tmp1)) {
+                Error_Throw_0(context, "variable is not a symbol");
+            }
+            if (is_immutable(tmp1)) {
+                Error_Throw_1(context, "define: unable to alter immutable", tmp1);
+            }
+
+            // symbol 保存在 context->code
+            s_save(context, OP_DEFINE1, IMM_UNIT, tmp1);
+            // 先对 define body 求值, 再回到 OP_DEFINE1 赋值
+            s_goto(context, OP_EVAL);
+        case OP_DEFINE1:
+            tmp1 = find_slot_in_current_env(context, context->code, 0);
+            if (tmp1 != IMM_UNIT) {
+                env_slot_value(tmp1) = context->value;
+            } else {
+                new_slot_in_current_env(context, context->code, context->value);
+            }
+        case OP_MACRO0:
+            if (is_pair(pair_car(context->code))) {
+                // (macro (macro_name form) body...)
+                tmp1 = pair_caar(context->code);
+                // 构造 lambda 表达式
+                tmp2 = pair_make_op(context, pair_cdar(context->code), pair_cdr(context->code));
+                context->code = pair_make_op(context, context->LAMBDA, tmp2);
+            } else {
+                // (macro macro_name (lambda (form) body...)
+                tmp1 = pair_car(context->code);
+                tmp2 = pair_cadr(context->code);
+            }
+
+            if (!is_symbol(tmp1)) {
+                Error_Throw_0(context, "variable is not a symbol");
+            }
+            s_save(context, OP_MACRO1, IMM_UNIT, tmp1);
+            // 对 lambda 表达式求值, 得到闭包
+            s_goto(context, OP_EVAL);
+        case OP_MACRO1:
+            // OP_EVAL 返回值是 macro 闭包
+            set_ext_type_macro(context->value);
+            tmp1 = find_slot_in_current_env(context, context->code, 0);
+            if (tmp1 != IMM_UNIT) {
+                env_slot_value(tmp1) = context->value;
+            } else {
+                new_slot_in_current_env(context, context->code, context->value);
+            }
+        case OP_BEGIN:
+            // (begin value)
+            if (!is_pair(context->code)) {
+                s_return(context, context->code);
+            }
+            // (begin sexp1 sexp2 ...)
+            if (pair_cdr(context->code) != IMM_UNIT) {
+                // 递归求值
+                s_save(context, OP_BEGIN, IMM_UNIT, pair_cdr(context->code));
+            }
+            // begin 表达式最后的 sexp 的值是返回值
+            context->code = pair_cdr(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_IF0:
+            // 保存 两个条件分支
+            s_save(context, OP_IF1, IMM_UNIT, pair_cdr(context->code));
+            // 对测试条件求值
+            context->code = pair_car(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_IF1:
+            // OP_EVAL 求值结果是 context->value
+            if (is_imm_true(context->value)) {
+                context->code = pair_car(context->code);
+            } else {
+                context->code = pair_cadr(context->code);
+                // (if #f 1) => '()
+                // 不知道还有没有其他的处理方式
+            }
+            s_goto(context, OP_EVAL);
+        case OP_LET0:
+            context->args = IMM_UNIT;
+            context->value = context->code;
+            context->code = is_symbol(pair_car(context->code)) ? pair_cadr(context->code) : pair_car(context->code);
+            s_goto(context, OP_LET1);
+        case OP_LET1:
+            // 表达式求值结果存入 args
+            context->args = pair_make_op(context, context->value, context->args);
+            if (is_pair(context->code)) {
+                // 继续对参数求值
+                // code = ((var1 sexp1) (var2 sexp2) ...)
+                // car(code)  =>  (var1 sexp1)
+                // cdar(code) =>  (sexp1 . '())
+                // cdr(code)  =>  ((var2 sexp2) ...)
+                if (!is_pair(pair_car(context->code)) || !is_pair(pair_cdar(context->code))) {
+                    Error_Throw_1(context, "Bad syntax of binding spec in let:", pair_car(context->code));
+                }
+                s_save(context, OP_LET1, context->args, pair_cdr(context->code));
+                // code = sexp1
+                context->code = pair_cadar(context->code);
+                context->args = IMM_UNIT;
+                // 对表达式求值
+                s_goto(context, OP_EVAL);
+            } else {
+                // 参数求值结束, 对参数逆序
+                // 如果是 named let, (car args) => let_name => #<symbol>
+                context->args = reverse(context, context->args);
+                context->code = pair_car(context->args);
+                context->args = pair_cdr(context->args);
+                s_goto(context, OP_LET2);
+            }
+        case OP_LET2:
+            // 将求值的参数插入 env
+            new_frame_push_current_env(context);
+            // 遍历参数并赋值, 直到参数表结束
+            for (tmp1 = is_symbol(pair_car(context->code)) ?
+                        pair_cadr(context->code) : pair_car(context->code), tmp2 = context->args;
+                 tmp2 != IMM_UNIT;
+                 tmp1 = pair_cdr(tmp1), tmp2 = pair_cdr(tmp2)) {
+                new_slot_in_current_env(context, pair_caar(tmp1), pair_car(tmp2));
+            }
+            // 如果是 named symbol, 构造 closure
+            if (is_symbol(pair_car(context->code))) {
+                // 遍历 let 结构, 将 let 绑定的符号名传给 closure
+                // let  => (let let_name ((var1 sexp1) (var2 sexp2) ...) body...)
+                // code => (let_name ((var1 sexp1) (var2 sexp2) ...))
+                // tmp1 => ((var1 sexp1) (var2 sexp2) ...)
+                for (tmp1 = pair_cadr(context->code), context->args = IMM_UNIT;
+                     tmp1 != IMM_UNIT;
+                     tmp1 = pair_cdr(tmp1)) {
+                    if (!is_pair(tmp1)) {
+                        Error_Throw_1(context, "Bad syntax of binding in let :", tmp1);
+                    }
+                    if (list_length(tmp1) < 0) {
+                        // 非法 list
+                        Error_Throw_1(context, "Bad syntax of binding in let: ", tmp1);
+                    }
+                    // pair_caar(tmp1) => var1
+                    context->args = pair_make_op(context, pair_caar(tmp1), context->args);
+                }
+                // let 绑定符号名
+                // tmp1 => (var1 var2 ...)
+                tmp1 = reverse_in_place(context, IMM_UNIT, context->args);
+                // tmp2 => (body...)
+                tmp2 = pair_cddr(context->code);
+                // closure code
+                tmp1 = pair_make_op(context, tmp1, tmp2);
+                // 构造 closure
+                tmp2 = closure_make_op(context, tmp1, context->current_env);
+                // 保存
+                new_slot_in_current_env(context, pair_car(context->code), tmp2);
+                // body... 保存到 code
+                context->code = pair_cddr(context->code);
+                context->args = IMM_UNIT;
+            } else {
+                // 非 named let
+                context->code = pair_cdr(context->code);
+                context->args = IMM_UNIT;
+            }
+            // 跳转到 OP_BEGIN 开始执行 body...
+            s_goto(context, OP_BEGIN);
+        case OP_LET_AST0:
+            // let* => (let* ((var1 sexp1) (var2 sexp2) ...) body...)
+            // code => (((var1 sexp1) (var2 sexp2) ...) body...)
+            if (pair_car(context->code) == IMM_UNIT) {
+                // 没有定义的话
+                new_frame_push_current_env(context);
+                context->code = pair_cdr(context->code);
+                // 直接跳转 OP_BEGIN
+                s_goto(context, OP_BEGIN);
+            }
+            // 否则的话检查 let* 表达式结构
+            // car(code)    =>  ((var1 sexp1) (var2 sexp2) ...)
+            // caar(code)   =>  (var1 sexp1)
+            // cdaar(code)  =>  (sexp1)
+            if (!is_pair(pair_car(context->code)) || !is_pair(pair_caar(context->code)) ||
+                !is_pair(pair_cdaar(context->code))) {
+                Error_Throw_1(context, "Bad syntax of binding spec in let* :", pair_car(context->code));
+            }
+            // 对 sexp1 求值后 push new env_frame
+            s_save(context, OP_LET_AST1, pair_cdr(context->code), pair_car(context->code));
+            // cadaar(code) =>  sexp1
+            context->code = pair_cadaar(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_LET_AST1:
+            new_frame_push_current_env(context);
+            s_goto(context, OP_LET_AST2);
+        case OP_LET_AST2:
+            // 来自 OP_LET_AST0
+            // args         => body...
+            // code         => ((var1 sexp1) (var2 sexp2) ...)
+            // (caar code)  => var1
+            // value        => (eval sexp1)
+            new_slot_in_current_env(context, pair_caar(context->code), context->value);
+            // code 后移
+            // code         => sexp2
+            context->code = pair_cdr(context->code);
+
+            // 如果 code 没有结束, 继续递归求值
+            if (is_pair(context->code)) {
+                s_save(context, OP_LET_AST2, context->args, context->code);
+                // (cadar code) => sexp2
+                context->code = pair_cadar(context->code);
+                context->args = IMM_UNIT;
+                s_goto(context, OP_EVAL);
+            } else {
+                // 全部 sexp_n 求值结束
+                // code     => body...
+                context->code = context->args;
+                context->args = IMM_UNIT;
+                // 跳转到 OP_BEGIN
+                s_goto(context, OP_BEGIN);
+            }
+        case OP_LET_REC0:
+            // letrec   =>  (letrec ((var1 sexp1) (var2 sexp2) ...) body...)
+            new_frame_push_current_env(context);
+            context->args = IMM_UNIT;
+            context->value = context->code;
+            context->code = pair_car(context->code);
+            s_goto(context, OP_LET_REC1);
+        case OP_LET_REC1:
+            // args     =>  ()
+            // code     =>  ((var1 sexp1) (var2 sexp2) ...)
+            // value    =>  (((var1 sexp1) (var2 sexp2) ...) body...)
+
+            context->args = pair_make_op(context, context->value, context->args);
+            // args     =>  ((((var1 sexp1) (var2 sexp2) ...) body...) . ())
+            if (is_pair(context->code)) { /* continue */
+                // (car code)   =>  (var1 sexp1)
+                // (cdar code)  =>  (sexp1)
+                if (!is_pair(pair_car(context->code)) || !is_pair(pair_cdar(context->code))) {
+                    Error_Throw_1(context, "Bad syntax of binding spec in letrec :",
+                                  pair_car(context->code));
+                }
+                // args =>  (((var1 sexp1) (var2 sexp2) ...) . ())
+                // code =>  ((var2 sexp2) ...)
+                // 保存 (cdr code) 用于下一次递归求值
+                s_save(context, OP_LET_REC1, context->args, pair_cdr(context->code));
+                // (cadar code) => sexp1
+                // 对 (var1 sexp1) 中的 sexp1 进行求值
+                context->code = pair_cadar(context->code);
+                context->args = IMM_UNIT;
+                s_goto(context, OP_EVAL);
+            } else {
+                // 求值结束
+                // args =>  ((((var1 sexp1) (var2 sexp2) ...) body...) . (eval_sexp1 eval_sexp2 ...))
+                context->args = reverse(context, context->args);
+                // code =>  (((var1 sexp1) (var2 sexp2) ...) body...)
+                context->code = pair_car(context->args);
+                // args =>  (eval_sexp1 eval_sexp2 ...)
+                context->args = pair_cdr(context->args);
+                s_goto(context, OP_LET_REC2);
+            }
+        case OP_LET_REC2:
+            // 来自 OP_LET_REC1
+            // args         =>  (eval_sexp1 eval_sexp2 ...)
+            // code         =>  (((var1 sexp1) (var2 sexp2) ...) body...)
+            // (caar code)  =>  var1
+            // 遍历参数表, 填充 env
+            // tmp1         =>  ((var1 sexp1) (var2 sexp2) ...)
+            // tmp2         =>  args
+            for (tmp1 = pair_car(context->code), tmp2 = context->args;
+                 tmp2 != IMM_UNIT;
+                 tmp1 = pair_cdr(tmp1), tmp2 = pair_cdr(tmp2)) {
+                // (caar tmp1)  =>  var1
+                // (car tmp2)   =>  eval_sexp1
+                new_slot_in_current_env(context, pair_caar(tmp1), pair_car(tmp2));
+            }
+            // code =>  (body...)
+            context->code = pair_cdr(context->code);
+            context->args = IMM_UNIT;
+            s_goto(context, OP_BEGIN);
+        case OP_SET0:
+            if (is_immutable(pair_car(context->code))) {
+                Error_Throw_1(context, "set!: unable to alter immutable variable", pair_car(context->code));
+            }
+            s_save(context, OP_SET1, IMM_UNIT, pair_car(context->code));
+            context->code = pair_cadr(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_SET1:
+            tmp1 = find_slot_in_current_env(context, context->code, 1);
+            if (tmp1 != IMM_UNIT) {
+                env_slot_value(tmp1) = context->value;
+                s_return(context, context->value);
+            } else {
+                Error_Throw_1(context, "set!: unbound variable:", context->code);
+            }
+        case OP_COND0:
+            // (cond (cond1 sexp1) (cond2 sexp2) ... (else sexp_n))
+            // code         =>  ((cond1 sexp1) (cond2 sexp2) ... (else sexp_n))
+            // (car code)   =>  (cond1 sexp1)
+            if (!is_pair(context->code) || !is_pair(pair_car(context->code))) {
+                Error_Throw_0(context, "syntax error in cond");
+            }
+            s_save(context, OP_COND1, IMM_UNIT, context->code);
+            context->code = pair_caar(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_COND1:
+            // code =>  ((cond1 sexp1) (cond2 sexp2) ... (else sexp_n))
+            if (is_imm_true(context->value)) {
+                // code => (sexp1)
+                //        | (=> (lambda (arg) ...))
+                context->code = pair_cdar(context->code);
+                if (context->code == IMM_UNIT) {
+                    s_return(context, context->value);
+                }
+                if (symbol_equals(context, pair_car(context->code), context->FEED_TO)) {
+                    if (!is_pair(pair_cdr(context->code))) {
+                        Error_Throw_0(context, "syntax error in cond");
+                    }
+                    tmp1 = pair_make_op(context, context->value, IMM_UNIT);
+                    tmp2 = pair_make_op(context, context->QUOTE, tmp1);
+                    tmp2 = pair_make_op(context, tmp2, IMM_UNIT);
+                    // code =>  ((lambda (x) ...) (quote value))
+                    context->code = pair_make_op(context, pair_cadr(context->code), tmp2);
+                    s_goto(context, OP_EVAL);
+                }
+                s_goto(context, OP_BEGIN);
+            } else {
+                // 没结束
+                context->code = pair_cdr(context->code);
+                if (context->code == IMM_UNIT) {
+                    // 找不到则返回 (), 应该不会执行到这里
+                    s_return(context, IMM_UNIT);
+                } else {
+                    // 继续检查 (condition [=>] ...)
+                    s_save(context, OP_COND1, IMM_UNIT, context->code);
+                    context->code = pair_caar(context->code);
+                    s_goto(context, OP_EVAL);
+                }
+            }
+        case OP_AND0:
+            if (context->code == IMM_UNIT) {
+                s_return(context, IMM_TRUE);
+            }
+            s_save(context, OP_AND1, IMM_UNIT, pair_cdr(context->code));
+            context->code = pair_car(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_AND1:
+            if (is_imm_false(context->value)) {
+                s_return(context, context->value);
+            } else if (context->code == IMM_UNIT) {
+                s_return(context, context->value);
+            } else {
+                s_save(context, OP_AND1, IMM_UNIT, pair_cdr(context->code));
+                context->code = pair_car(context->code);
+                s_goto(context, OP_EVAL);
+            }
+        case OP_OR0:
+            if (context->code == IMM_UNIT) {
+                s_return(context, IMM_FALSE);
+            }
+            s_save(context, OP_OR1, IMM_UNIT, pair_cdr(context->code));
+            context->code = pair_car(context->code);
+            s_goto(context, OP_EVAL);
+        case OP_OR1:
+            if (is_imm_true(context->value)) {
+                s_return(context, context->value);
+            } else if (context->code == IMM_UNIT) {
+                s_return(context, context->value);
+            } else {
+                s_save(context, OP_OR1, IMM_UNIT, pair_cdr(context->code));
+                context->code = pair_car(context->code);
+                s_goto(context, OP_EVAL);
+            }
+        case OP_DELAY:
+            // 参数为空的闭包
+            // ('() context->code)
+            tmp1 = pair_make_op(context, IMM_UNIT, context->code);
+            tmp2 = closure_make_op(context, tmp1, context->current_env);
+            tmp2 = promise_make_op(context, tmp2);
+            s_return(context, tmp2);
+        case OP_FORCE:
+            context->code = pair_car(context->args);
+            if (is_promise(context->code)) {
+                if (promise_forced(context->code)) {
+                    s_return(context, promise_get_value(context->code));
+                }
+                s_save(context, OP_SAVE_FORCED, IMM_UNIT, context->code);
+                // 构造 closure
+                context->code = promise_get_value(context->code);
+                context->args = IMM_UNIT;
+                s_goto(context, OP_APPLY);
+            } else {
+                s_return(context, context->code);
+            }
+        case OP_FORCED_P:
+            if (is_promise(pair_car(context->args))) {
+                s_return(context, setbool(promise_forced(pair_car(context->args))));
+            } else {
+                Error_Throw_1(context, "variable is not a promise", pair_car(context->args));
+            }
+        case OP_SAVE_FORCED:
+            promise_get_value(context->code) = context->value;
+            promise_forced(context->code) = 1;
+            s_return(context, context->value);
+        case OP_CONS_STREAM0:
+        case OP_CONS_STREAM1:
+        case OP_CASE0:
+        case OP_CASE1:
+        case OP_CASE2:
+        case OP_CONTINUATION:
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
+    return IMM_TRUE;
+}
+
+static object op_exec_compute(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        case OP_EXP:
+        case OP_LOG:
+        case OP_SIN:
+        case OP_COS:
+        case OP_TAN:
+        case OP_ASIN:
+        case OP_ACOS:
+        case OP_ATAN:
+        case OP_SQRT:
+        case OP_EXPT:
+        case OP_FLOOR:
+        case OP_CEILING:
+        case OP_TRUNCATE:
+        case OP_ROUND:
+        case OP_ADD:
+        case OP_SUB:
+        case OP_MUL:
+        case OP_DIV:
+        case OP_INT_DIV:
+        case OP_REM:
+        case OP_MOD:
+        case OP_CAR:
+        case OP_CDR:
+        case OP_CONS:
+        case OP_SET_CAR:
+        case OP_SET_CDR:
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -1469,6 +2176,26 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
     gc_var2(context, tmp1, tmp2);
 
     switch (opcode) {
+        case OP_INEXACT_TO_EXACT:
+        case OP_CHAR_TO_INT:
+        case OP_INT_TO_CHAR:
+        case OP_CHAR_UPPER:
+        case OP_CHAR_LOWER:
+        case OP_SYMBOL_TO_STRING:
+        case OP_STRING_TO_SYMBOL:
+        case OP_ATOM_TO_STRING:
+        case OP_STRING_TO_ATOM:
+        case OP_MAKE_STRING:
+        case OP_STRING_LENGTH:
+        case OP_STRING_REF:
+        case OP_STRING_SET:
+        case OP_STRING_APPEND:
+        case OP_SUBSTRING:
+        case OP_LIST_AST:
+        case OP_LIST_APPEND:
+        case OP_LIST_REVERSE:
+        case OP_LIST_LENGTH:
+        case OP_ASSQ:
         case OP_VECTOR: {
             int64_t len = list_length(context->args);
             int64_t i;
@@ -1481,6 +2208,45 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             }
             s_return(context, tmp1);
         }
+        case OP_MAKE_VECTOR:
+        case OP_VECTOR_LENGTH:
+        case OP_VECTOR_REF:
+        case OP_VECTOR_SET:
+        case OP_NOT:
+        default:
+            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
+            Error_Throw_0(context, context->str_buffer);
+    }
+
+    gc_release_var(context);
+    return IMM_TRUE;
+}
+
+// I/O 操作
+static object op_exec_io(context_t context, enum opcode_e opcode) {
+    assert(context != NULL);
+    gc_var2(context, tmp1, tmp2);
+
+    switch (opcode) {
+        case OP_CURRENT_INPUT_PORT:
+        case OP_CURRENT_OUTPUT_PORT:
+        case OP_OPEN_INPUT_PORT:
+        case OP_OPEN_OUTPUT_PORT:
+        case OP_OPEN_INPUT_OUTPUT_PORT:
+        case OP_OPEN_OUTPUT_STRING:
+        case OP_OPEN_INPUT_STRING:
+        case OP_OPEN_INPUT_OUTPUT_STRING:
+        case OP_GET_OUTPUT_STRING:
+        case OP_CLOSE_INPUT_PORT:
+        case OP_CLOSE_OUTPUT_PORT:
+        case OP_READ:
+        case OP_READ_CHAR:
+        case OP_WRITE:
+        case OP_WRITE_CHAR:
+        case OP_PEEK_CHAR:
+        case OP_CHAR_READY_P:
+        case OP_SET_INPUT_PORT:
+        case OP_SET_OUTPUT_PORT:
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -1686,17 +2452,28 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
 
         case OP_PRINT_OBJECT:
             // print 过程
-            if (is_vector(context->args)) {
+            // ext type 是普通对象上带有运行时标记, 需要优先处理
+            if (is_ext_type_environment(context->args)) {
+                port_put_cstr(context, context->out_port, "#<ENVIRONMENT>");
+                s_return(context, IMM_TRUE);
+            } else if (is_ext_type_closure(context->args)) {
+                port_put_cstr(context, context->out_port, "#<CLOSURE>");
+                s_return(context, IMM_TRUE);
+            } else if (is_ext_type_macro(context->args)) {
+                port_put_cstr(context, context->out_port, "#<MACRO>");
+                s_return(context, IMM_TRUE);
+            } else if (is_ext_type_continuation(context->args)) {
+                port_put_cstr(context, context->out_port, "#<CONTINUATION>");
+                s_return(context, IMM_TRUE);
+
+                // 后面是常规类型
+            } else if (is_vector(context->args)) {
                 port_put_cstr(context, context->out_port, "#(");
                 tmp1 = i64_make_op(context, 0);
                 context->args = pair_make_op(context, context->args, tmp1);
                 s_goto(context, OP_PRINT_VECTOR);
-            } else if (is_ext_type_environment(context->args)) {
-                port_put_cstr(context, context->out_port, "#<ENVIRONMENT>");
-                s_return(context, IMM_TRUE);
             } else if (!is_pair(context->args)) {
                 // 输出 atom, 在此分支之前应当排除所有除了 pair 以外的类型
-                // TODO 完善 atom 类型检查和输出
                 print_atom(context, context->args, context->print_flag);
                 s_return(context, IMM_TRUE);
 
@@ -1735,11 +2512,6 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
                 port_put_cstr(context, context->out_port, " ");
                 context->args = pair_car(context->args);
                 s_goto(context, OP_PRINT_OBJECT);
-            } else if (is_vector(context->args)) {
-                // TODO wtf??
-                s_save(context, OP_PRINT_OBJECT, IMM_UNIT, IMM_UNIT);
-                port_put_cstr(context, context->out_port, " . ");
-                s_goto(context, OP_PRINT_OBJECT);
             } else {
                 if (context->args != IMM_UNIT) {
                     port_put_cstr(context, context->out_port, " . ");
@@ -1775,40 +2547,126 @@ static object op_exec_lexical(context_t context, enum opcode_e opcode) {
     return IMM_TRUE;
 }
 
-static object op_exec_syntax(context_t context, enum opcode_e opcode) {
-    assert(context != NULL);
-    gc_var2(context, tmp1, tmp2);
-
-    switch (opcode) {
-        default:
-            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
-            Error_Throw_0(context, context->str_buffer);
-    }
-
-    gc_release_var(context);
-    return IMM_TRUE;
-}
-
-static object op_exec_compute(context_t context, enum opcode_e opcode) {
-    assert(context != NULL);
-    gc_var2(context, tmp1, tmp2);
-
-    switch (opcode) {
-        default:
-            snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
-            Error_Throw_0(context, context->str_buffer);
-    }
-
-    gc_release_var(context);
-    return IMM_TRUE;
-}
-
-
 static object op_exec_predicate(context_t context, enum opcode_e opcode) {
     assert(context != NULL);
     gc_var2(context, tmp1, tmp2);
 
     switch (opcode) {
+        case OP_DEFINE_P:
+            tmp1 = context->current_env;
+            if (pair_cdr(context->args) != IMM_UNIT) {
+                tmp1 = pair_cadr(context->args);
+            }
+            assert(is_ext_type_environment(tmp2));
+            tmp2 = find_slot_in_spec_env(context, tmp1, pair_car(context->args), 1);
+            s_return(context, setbool(tmp2 == IMM_UNIT));
+        case OP_CLOSURE_P:
+            // macro 也是 closure
+        case OP_MACRO_P:
+        case OP_BOOLEAN_P: {
+            int f = (pair_car(context->args) == IMM_TRUE) || (pair_car(context->args) == IMM_FALSE);
+            s_return(context, setbool(f));
+        }
+        case OP_EOF_OBJ_P:
+            s_return(context, setbool(pair_car(context->args) == IMM_EOF));
+        case OP_NULL_P:
+            s_return(context, setbool(pair_car(context->args) == IMM_UNIT));
+        case OP_SYMBOL_P:
+            s_return(context, setbool(is_symbol(pair_car(context->args))));
+        case OP_NUMBER_P:
+            s_return(context, setbool(is_number(pair_car(context->args))));
+        case OP_STRING_P:
+            s_return(context, setbool(is_string(pair_car(context->args))));
+        case OP_INTEGER_P:
+            s_return(context, setbool(is_i64(pair_car(context->args))));
+        case OP_REAL_P:
+            s_return(context, setbool(is_doublenum(pair_car(context->args))));
+        case OP_CHAR_P:
+            s_return(context, setbool(is_imm_char(pair_car(context->args))));
+        case OP_CHAR_ALPHABETIC_P: {
+            object ch = pair_car(context->args);
+            if (is_imm_char(ch)) {
+                char c = char_imm_getvalue(ch);
+                int f = isascii(c) && isalpha(c);
+                s_return(context, setbool(f));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
+        }
+        case OP_CHAR_NUMERIC_P: {
+            object ch = pair_car(context->args);
+            if (is_imm_char(ch)) {
+                char c = char_imm_getvalue(ch);
+                int f = isascii(c) && isdigit(c);
+                s_return(context, setbool(f));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
+        }
+        case OP_CHAR_WHITESPACE_P: {
+            object ch = pair_car(context->args);
+            if (is_imm_char(ch)) {
+                char c = char_imm_getvalue(ch);
+                int f = isascii(c) && isspace(c);
+                s_return(context, setbool(f));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
+        }
+        case OP_CHAR_UPPER_CASE_P: {
+            object ch = pair_car(context->args);
+            if (is_imm_char(ch)) {
+                char c = char_imm_getvalue(ch);
+                int f = isascii(c) && isupper(c);
+                s_return(context, setbool(f));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
+        }
+        case OP_CHAR_LOWER_CASE_P: {
+            object ch = pair_car(context->args);
+            if (is_imm_char(ch)) {
+                char c = char_imm_getvalue(ch);
+                int f = isascii(c) && islower(c);
+                s_return(context, setbool(f));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
+        }
+        case OP_PORT_P: {
+            object port = pair_car(context->args);
+            int f = is_port(port);
+            s_return(context, setbool(f));
+        }
+        case OP_INPUT_PORT_P: {
+            object port = pair_car(context->args);
+            int f = is_port_input(port);
+            s_return(context, setbool(f));
+        }
+        case OP_OUT_PUT_P: {
+            object port = pair_car(context->args);
+            int f = is_port_output(port);
+            s_return(context, setbool(f));
+        }
+        case OP_PROCEDURE_P: {
+            // TODO foreign
+            // continuation 也是 procedure
+            object p = pair_car(context->args);
+            int f = is_proc(p) || is_ext_type_closure(p) || is_ext_type_continuation(p);
+            s_return(context, setbool(f));
+        }
+        case OP_PAIR_P:
+            s_return(context, setbool(is_pair(context->args)));
+        case OP_LIST_P:
+            s_return(context, setbool(list_length(pair_car(context->args)) >= 0));
+        case OP_ENVIRONMENT_P:
+            s_return(context, setbool(is_ext_type_environment(pair_car(context->args))));
+        case OP_VECTOR_P:
+            s_return(context, setbool(is_vector(pair_car(context->args))));
+        case OP_EQ:
+            s_return(context, setbool(pair_car(context->args) == pair_cadr(context->args)));
+        case OP_EQV:
+            // TODO eqv()
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -1872,6 +2730,32 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
                     return IMM_UNIT;
                 }
             }
+        case OP_PROC_DISPlAY:
+        case OP_PROC_NEWLINE:
+            if (is_pair(context->args)) {
+                if (pair_car(context->args) != context->out_port) {
+                    tmp1 = pair_make_op(context, context->out_port, IMM_UNIT);
+                    s_save(context, OP_SET_OUTPUT_PORT, tmp1, IMM_UNIT);
+                    context->out_port = pair_car(context->args);
+                }
+            }
+            port_put_cstr(context, context->out_port, "\n");
+            s_return(context, IMM_TRUE);
+        case OP_PROC_EVAL:
+            if (pair_cdr(context->args) != IMM_UNIT) {
+                context->current_env = pair_cadr(context->args);
+            }
+            context->code = pair_car(context->args);
+            s_goto(context, OP_EVAL);
+        case OP_PROC_APPLY:
+            // list *
+            context->code = pair_car(context->args);
+            context->args = list_star(context, pair_cdr(context->args));
+            s_goto(context, OP_APPLY);
+        case OP_INTERACTION_ENV:
+            s_return(context, context->global_environment);
+        case OP_CURRENT_ENV:
+            s_return(context, context->current_env);
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);

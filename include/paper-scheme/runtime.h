@@ -261,6 +261,15 @@ proc_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e o
 EXPORT_API OUT NOTNULL GC object
 syntax_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e opcode);
 
+/**
+ * 构造 promise
+ * @param context
+ * @param value
+ * @return promise
+ */
+EXPORT_API OUT NOTNULL GC object
+promise_make_op(REF NOTNULL context_t context, object value);
+
 // todo 增加新类型记得增加构造函数
 /******************************************************************************
                                 对象操作 API
@@ -691,6 +700,7 @@ port_put_string(REF NOTNULL context_t context, REF NOTNULL object port, COPY obj
 
 /**
  * port 定位
+ * <p>不会触发 GC</p>
  * @param port
  * @param offset 偏移量
  * @param origin 起始位置: 0, 起始; 1, 当前位置; 2, 结束位置
@@ -699,6 +709,7 @@ EXPORT_API object port_seek(REF NOTNULL object port, long offset, int origin);
 
 /**
  * 返回当前 port 位置
+ * <p>不会触发 GC</p>
  * @param port
  * @return port 当前游标位置
  */
@@ -710,6 +721,7 @@ EXPORT_API size_t port_tail(REF NOTNULL object port);
 ******************************************************************************/
 /**
  * list 原地逆序
+ * <p>不会触发 GC</p>
  * @param context
  * @param term 结束符号
  * @param list
@@ -723,7 +735,33 @@ EXPORT_API object reverse_in_place(context_t context, object term, object list);
  * @param list
  * @return
  */
-EXPORT_API object reverse(context_t context, object list);
+EXPORT_API GC object reverse(context_t context, object list);
 
+/**
+ * list*
+ * <p>返回不以 IMM_UNIT 结尾的 list</p>
+ * <p>换句话说去掉原始 list 结尾的 IMM_UNIT</p>
+ * @param context
+ * @param list
+ * @return
+ */
+EXPORT_API GC object list_star(context_t context, object list);
+
+
+/******************************************************************************
+                             运行时类型构造
+******************************************************************************/
+EXPORT_API GC object closure_make_op(context_t context, object sexp, object env);
+
+#define closure_get_code(obj)   (pair_car(obj))
+#define closure_get_args(obj)   (pair_cdar(obj))
+#define closure_get_env(obj)    (pair_cdr(obj))
+
+// 其实就是 closure
+EXPORT_API GC object macro_make_op(context_t context, object sexp, object env);
+
+EXPORT_API GC object continuation_make_op(context_t context, object stack);
+
+#define continuation_get_stack(obj)      (pair_cdr(obj))
 
 #endif //BASE_SCHEME_RUNTIME_H

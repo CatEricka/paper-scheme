@@ -29,24 +29,25 @@ typedef enum object_type_enum {
     OBJ_UNIT,
     OBJ_EOF,
     OBJ_PAIR,
-    OBJ_BYTES,
     OBJ_STRING,
-    OBJ_STRING_BUFFER,
     OBJ_SYMBOL,
     OBJ_VECTOR,
-    OBJ_STACK,
+
+    // 运行时
+            OBJ_STACK,
+    OBJ_BYTES,
+    OBJ_STRING_BUFFER,
     OBJ_STRING_PORT,
     OBJ_STDIO_PORT,
     OBJ_HASH_SET,
     OBJ_HASH_MAP,
-
-    // 运行时
-            OBJ_WEAK_REF,
+    OBJ_WEAK_REF,
     OBJ_WEAK_HASH_SET,
     OBJ_STACK_FRAME,
     OBJ_ENV_SLOT,
     OBJ_PROC,
     OBJ_SYNTAX,
+    OBJ_PROMISE,
 
     // 标记枚举最大值
             OBJECT_TYPE_ENUM_MAX,
@@ -57,6 +58,9 @@ typedef enum object_type_enum {
 typedef enum extern_type_enum {
     EXTERN_TYPE_NONE = 0,
     EXTERN_TYPE_ENVIRONMENT,
+    EXTERN_TYPE_CLOSURE,
+    EXTERN_TYPE_MACRO,
+    EXTERN_TYPE_CONTINUATION,
     // 最大值不能超过 uint8max
             EXTERN_TYPE_MAX
 } extern_type_tag;
@@ -159,14 +163,6 @@ struct object_struct_t {
             object cdr;
         } pair;
 
-        // bytes, 可变
-        struct value_bytes_t {
-            // 用于 hash 计算, 固定不变
-            uint32_t hash;
-            size_t capacity;
-            char data[0];
-        } bytes;
-
         //字符串, 不可变
         struct value_string_t {
             // 用于 hash 计算, 固定不变
@@ -175,17 +171,6 @@ struct object_struct_t {
             size_t len;
             char data[0];
         } string;
-
-        // 字符串缓冲, 可变
-        struct value_string_buffer_t {
-            // 用于 hash 计算, 固定不变
-            uint32_t hash;
-            // 缓冲总长度
-            size_t buffer_size;
-            // 当前长度, 包括 '\0'
-            size_t buffer_length;
-            object bytes_buffer;
-        } string_buffer;
 
         //symbol, 不可变
         struct value_symbol_t {
@@ -205,6 +190,8 @@ struct object_struct_t {
             object data[0];
         } vector;
 
+        /*  运行时结构  */
+
         //栈, 可变
         struct value_stack_t {
             // 用于 hash 计算, 固定不变
@@ -215,6 +202,25 @@ struct object_struct_t {
             size_t length;
             object data[0];
         } stack;
+
+        // bytes, 可变
+        struct value_bytes_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
+            size_t capacity;
+            char data[0];
+        } bytes;
+
+        // 字符串缓冲, 可变
+        struct value_string_buffer_t {
+            // 用于 hash 计算, 固定不变
+            uint32_t hash;
+            // 缓冲总长度
+            size_t buffer_size;
+            // 当前长度, 包括 '\0'
+            size_t buffer_length;
+            object bytes_buffer;
+        } string_buffer;
 
         // 字符串类型输入输出, 可变
         struct value_string_port_t {
@@ -266,7 +272,6 @@ struct object_struct_t {
             object table;
         } hashmap;
 
-        /*  运行时结构  */
         // 弱引用, 可变
         // 注意, 立即数无法被检查是否引用, 因此引用立即数的弱引用是不可靠的
         struct value_weak_ref_t {
@@ -310,19 +315,26 @@ struct object_struct_t {
             object next_env_slot;   // 禁止非解释器内部修改这个字段
         } env_slot;
 
-        // TODO proc 内部过程
+        // proc 内部过程
         struct value_proc_t {
             uint32_t hash;
             enum opcode_e opcode;
             object symbol;
         } proc;
 
-        // TODO syntax 关键字
+        // syntax 关键字
         struct value_syntax_t {
             uint32_t hash;
             enum opcode_e opcode;
             object syntax_name; // symbol
         } syntax;
+
+        // promise
+        struct value_promise_t {
+            uint32_t hash;
+            int32_t forced;
+            object value;
+        } promise;
     } value;
     /*  对齐填充, 对齐到 ALIGN_SIZE, 即 sizeof(void *)  */
 };
@@ -398,6 +410,7 @@ struct object_struct_t {
             - env_slot:         is_env_slot()
             - proc:             TODO is_proc()
             - syntax:           TODO is_syntax()
+            - promise:          TODO is_promise()
         构造:
             - i64:              i64_make_op(), i64_imm_make()
             - imm_char:         char_imm_make()
@@ -422,6 +435,7 @@ struct object_struct_t {
             - env_stack:        env_slot_make_op()
             - proc:             TODO proc_make_internal()
             - syntax:           TODO syntax_make_internal()
+            - promise:          TODO promise_make_internal()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -450,6 +464,7 @@ struct object_struct_t {
             - env_stack:        env_slot_var(), env_slot_value(), env_slot_next()
             - proc:             TODO proc_get_opcode(), proc_get_symbol()
             - syntax:           TODO syntax_get_opcode(), syntax_get_symbol()
+            - promise:          TODO promise_forced()
         操作:
             - list (pair):      TODO list_length()
             - string:           string_append_op()
@@ -463,6 +478,7 @@ struct object_struct_t {
             - weak_ref:         weak_ref_get()
             - weak_hashset:     weak_hashset_contains_op(), weak_hashset_put_op()
                                 weak_hashset_clear_op(), weak_hashset_remove_op()
+            - promise:          TODO promise_get_value(), promise_get_env()
         扩容:
             - bytes:            bytes_capacity_increase_op()
             - string_buffer:    string_buffer_capacity_increase_op()
@@ -689,6 +705,9 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 #define is_imm_true(obj)                ((obj) == IMM_TRUE)
 // 是否为 IMM_FALSE
 #define is_imm_false(obj)               ((obj) == IMM_FALSE)
+
+#define setbool(i)                      ((i) ? (IMM_TRUE) : (IMM_FALSE))
+
 // 是否为 IMM_EOF
 #define is_imm_eof(obj)                 ((obj) == IMM_EOF)
 /**
@@ -788,14 +807,27 @@ EXPORT_API OUT int is_i64(REF NULLABLE object i64);
 #define is_proc(obj)                    (is_object(obj) && ((obj)->type == OBJ_PROC))
 // syntax
 #define is_syntax(obj)                  (is_object(obj) && ((obj)->type == OBJ_SYNTAX))
+// promise
+#define is_promise(obj)                 (is_object(obj) && ((obj)-> type == OBJ_PROMISE))
 
 
 /**
                      附加类型标记, 用于运行时为对象提供特殊标记
 ******************************************************************************/
-#define set_ext_type_tag_none(obj)  ((obj)->extern_type_tag = EXTERN_TYPE_NONE)
-#define set_ext_type_environment(obj) ((obj)->extern_type_tag = EXTERN_TYPE_ENVIRONMENT)
-#define is_ext_type_environment(obj) (is_object(obj) && (obj)->extern_type_tag == EXTERN_TYPE_ENVIRONMENT)
+#define set_ext_type_tag_none(obj)      ((obj)->extern_type_tag = EXTERN_TYPE_NONE)
+#define is_ext_type(obj)                (is_object(obj) && ((obj)->extern_type_tag != EXTERN_TYPE_NONE))
+
+#define set_ext_type_environment(obj)   ((obj)->extern_type_tag = EXTERN_TYPE_ENVIRONMENT)
+#define is_ext_type_environment(obj)    (is_object(obj) && ((obj)->extern_type_tag == EXTERN_TYPE_ENVIRONMENT))
+
+#define set_ext_type_closure(obj) ((obj)->extern_type_tag = EXTERN_TYPE_CLOSURE)
+#define is_ext_type_closure(obj) (is_object(obj) && ((obj)->extern_type_tag == EXTERN_TYPE_CLOSURE))
+
+#define set_ext_type_macro(obj) ((obj)->extern_type_tag = EXTERN_TYPE_MACRO)
+#define is_ext_type_macro(obj) (is_object(obj) && ((obj)->extern_type_tag == EXTERN_TYPE_MACRO))
+
+#define set_ext_type_continuation(obj) ((obj)->extern_type_tag = EXTERN_TYPE_CONTINUATION)
+#define is_ext_type_continuation(obj) (is_object(obj) && ((obj)->extern_type_tag == EXTERN_TYPE_CONTINUATION))
 
 
 /**
@@ -849,11 +881,12 @@ EXPORT_API OUT int64_t i64_getvalue(REF NOTNULL object i64);
 #define pair_cddar(x)       (pair_cdr(pair_cdar(x)))
 #define pair_cdddr(x)       (pair_cdr(pair_cddr(x)))
 #define pair_cadddr(x)      (pair_cadr(pair_cddr(x)))
+#define pair_cadaar(x)      (pair_cadr(pair_caar(x)))
 
 /**
  * 返回 list 长度
  * @param list cons(e1, cons(e2, IMM_UNIT))
- * @return 如果不是 list, 返回 -1, 否则返回 list 长度
+ * @return 如果不是 list, 返回值 < 0, 否则返回 list 长度
  */
 EXPORT_API int64_t list_length(object list);
 
@@ -1088,6 +1121,10 @@ CHECKED OUT int stack_pop_op(REF object stack);
 #define stdio_port_get_file(obj)    ((obj)->value.stdio_port.file)
 #define stdio_port_get_filename(obj)    ((obj)->value.stdio_port.filename)
 #define stdio_port_get_line(obj)    ((obj)->value.stdio_port.current_line)
+
+// promise
+#define promise_forced(obj)         ((obj)->value.promise.forced)
+#define promise_get_value(obj)            ((obj)->value.promise.value)
 /**
                            对象值操作: compare
 ******************************************************************************/

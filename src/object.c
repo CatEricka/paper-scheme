@@ -8,7 +8,7 @@
 /**
  * 返回 list 长度
  * @param list cons(e1, cons(e2, IMM_UNIT))
- * @return
+ * @return 如果不是 list, 返回值 < 0, 否则返回 list 长度
  */
 EXPORT_API int64_t list_length(object list) {
     int i = 0;

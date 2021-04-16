@@ -223,14 +223,16 @@ EXPORT_API int token(context_t context) {
         case EOF:
             return TOKEN_EOF;
         case '(':
+        case '[':
             return TOKEN_LEFT_PAREN;
         case ')':
+        case ']':
             return TOKEN_RIGHT_PAREN;
         case '.':
             c = port_get_char(context->in_port);
             if (is_one_of(" \n\t", c)) {
                 return TOKEN_DOT;
-            } else if (is_one_of(")", c)) {
+            } else if (is_one_of(")]", c)) {
                 return TOKEN_ILLEGAL;
             } else {
                 port_unget_char(context->in_port, c);
@@ -263,7 +265,7 @@ EXPORT_API int token(context_t context) {
         case '#':
             // # hook
             c = port_get_char(context->in_port);
-            if (c == char_imm_make('(')) {
+            if (c == char_imm_make('(') || c == char_imm_make('[')) {
                 return TOKEN_VECTOR;
             } else if (c == char_imm_make('!')) {
                 // #! ×¢ÊÍ

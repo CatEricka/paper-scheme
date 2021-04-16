@@ -21,7 +21,7 @@ enum token_e {
 };
 
 // 终结符: () " \f \t \v \n \r 空格
-#define DELIMITERS "()\";\f\t\v\n\r "
+#define DELIMITERS "()[]\";\f\t\v\n\r "
 
 /**
  * 从 context->in_port 读入直到遇到 terminal

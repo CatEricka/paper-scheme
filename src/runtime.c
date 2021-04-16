@@ -29,7 +29,8 @@ raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_
 
     // 预处理对象头
     ret->magic = OBJECT_HEADER_MAGIC;
-    ret->extern_type_tag = EXTERN_TYPE_NONE;
+    set_ext_type_tag_none(ret);
+    set_mutable(ret);
     ret->type = type;
     ret->marked = 0;
     ret->padding_size = (uint8_t) padding_size;   // 填充大小可能为0
@@ -659,6 +660,29 @@ syntax_make_internal(REF NOTNULL context_t context, object symbol, enum opcode_e
 
     gc_release_param(context);
     return syntax;
+}
+
+/**
+ * 构造 promise
+ * @param context
+ * @param value
+ * @param env
+ * @return promise
+ */
+EXPORT_API OUT NOTNULL GC object
+promise_make_op(REF NOTNULL context_t context, object value) {
+    assert(context != NULL);
+
+    gc_param1(context, value);
+    gc_var1(context, promise);
+
+    promise = raw_object_make(context, OBJ_PROMISE, object_sizeof_base(syntax));
+    promise_forced(promise) = 0;
+    promise_get_value(promise) = value;
+    promise->value.promise.hash = pointer_with_type_to_hash(promise, OBJ_PROMISE);
+
+    gc_release_param(context);
+    return promise;
 }
 
 /******************************************************************************
@@ -2310,6 +2334,7 @@ port_put_string(REF NOTNULL context_t context, REF NOTNULL object port, COPY obj
 
 /**
  * port 定位
+ * <p>不会触发 GC</p>
  * @param port
  * @param offset 偏移量
  * @param origin 起始位置: 0, 起始; 1, 当前位置; 2, 结束位置
@@ -2373,6 +2398,7 @@ EXPORT_API object port_seek(REF NOTNULL object port, long offset, int origin) {
 
 /**
  * 返回当前 port 位置
+ * <p>不会触发 GC</p>
  * @param port
  * @return port 当前游标位置
  */
@@ -2414,7 +2440,7 @@ EXPORT_API object reverse_in_place(context_t context, object term, object list) 
  * @param list
  * @return
  */
-EXPORT_API object reverse(context_t context, object list) {
+EXPORT_API GC object reverse(context_t context, object list) {
     assert(context != NULL);
     gc_param1(context, list);
     gc_var1(context, p);
@@ -2426,4 +2452,77 @@ EXPORT_API object reverse(context_t context, object list) {
 
     gc_release_param(context);
     return p;
+}
+
+/**
+ * list*
+ * <p>返回不以 IMM_UNIT 结尾的 list</p>
+ * <p>换句话说去掉原始 list 结尾的 IMM_UNIT</p>
+ * @param context
+ * @param list
+ * @return
+ */
+EXPORT_API GC object list_star(context_t context, object list) {
+    assert(is_pair(list));
+    gc_param1(context, list);
+    gc_var2(context, cur, list_head);
+
+    if (pair_cdr(list) == IMM_UNIT) {
+        gc_release_param(context);
+        return pair_cdr(list);
+    }
+
+    list_head = pair_make_op(context, pair_car(list), pair_cdr(list));
+    cur = list_head;
+    while (pair_cddr(cur) != IMM_UNIT) {
+        list = pair_make_op(context, pair_car(cur), pair_cdr(cur));
+        if (pair_cddr(cur) != IMM_UNIT) {
+            cur = pair_cdr(list);
+        }
+    }
+
+    pair_cdr(cur) = pair_cadr(cur);
+    gc_release_param(context);
+    return list_head;
+}
+
+
+/******************************************************************************
+                             运行时类型构造
+******************************************************************************/
+EXPORT_API GC object closure_make_op(context_t context, object sexp, object env) {
+    assert(context != NULL);
+    gc_param2(context, sexp, env);
+    gc_var2(context, args_code, closure);
+
+    closure = pair_make_op(context, sexp, env);
+    set_ext_type_closure(closure);
+
+    gc_release_param(context);
+    return closure;
+}
+
+// 其实就是 closure
+EXPORT_API GC object macro_make_op(context_t context, object sexp, object env) {
+    assert(context != NULL);
+    gc_param2(context, sexp, env);
+    gc_var1(context, macro);
+
+    macro = closure_make_op(context, sexp, env);
+    set_ext_type_macro(macro);
+
+    gc_release_param(context);
+    return macro;
+}
+
+EXPORT_API GC object continuation_make_op(context_t context, object stack) {
+    assert(context != NULL);
+    gc_param1(context, stack);
+    gc_var1(context, cont);
+
+    cont = pair_make_op(context, IMM_UNIT, stack);
+    set_ext_type_continuation(stack);
+
+    gc_release_param(context);
+    return cont;
 }
