@@ -2521,7 +2521,7 @@ EXPORT_API GC object continuation_make_op(context_t context, object stack) {
     gc_var1(context, cont);
 
     cont = pair_make_op(context, IMM_UNIT, stack);
-    set_ext_type_continuation(stack);
+    set_ext_type_continuation(cont);
 
     gc_release_param(context);
     return cont;

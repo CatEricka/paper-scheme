@@ -1343,7 +1343,11 @@ static GC object atom_to_string(context_t context, object obj, int flag) {
                  syntax_get_opcode(obj));
     } else if (is_promise(obj)) {
         p = context->str_buffer;
-        p = "#<PROMISE>";
+        if (promise_forced(obj)) {
+            p = "#<forced PROMISE>";
+        } else {
+            p = "#<PROMISE>";
+        }
     } else if (is_proc(obj)) {
         p = context->str_buffer;
         snprintf(p, INTERNAL_STR_BUFFER_SIZE, "#<%s PROCEDURE %d>", symbol_get_cstr(proc_get_symbol(obj)),
@@ -1851,7 +1855,11 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
                 // 变量名
                 tmp1 = pair_car(context->code);
                 // 表达式
-                context->code = pair_cadr(context->code);
+                if (!is_pair(pair_cdr(context->code))) {
+                    context->code = IMM_UNIT;
+                } else {
+                    context->code = pair_cadr(context->code);
+                }
             }
 
             if (!is_symbol(tmp1)) {
@@ -1925,12 +1933,15 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
             s_goto(context, OP_EVAL);
         case OP_IF1:
             // OP_EVAL 求值结果是 context->value
-            if (is_imm_true(context->value)) {
+            if (context->value != IMM_FALSE) {
                 context->code = pair_car(context->code);
             } else {
-                context->code = pair_cadr(context->code);
-                // (if #f 1) => '()
-                // 不知道还有没有其他的处理方式
+                if (!is_pair(pair_cdr(context->code))) {
+                    // (if #f 1) => '()
+                    context->code = pair_cdr(context->code);
+                } else {
+                    context->code = pair_cadr(context->code);
+                }
             }
             s_goto(context, OP_EVAL);
         case OP_LET0:
@@ -2311,7 +2322,7 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
             // call-with-current-continuation
             // (call/cc procedure)
             // value 作为返回值
-            context->code = pair_car(context->code);
+            context->code = pair_car(context->args);
             tmp1 = continuation_make_op(context, context->scheme_stack);
             tmp2 = pair_make_op(context, tmp1, IMM_UNIT);
             // 将当前栈指针 (continuation) 传递给 procedure
