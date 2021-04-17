@@ -105,11 +105,11 @@ enum opcode_e {
     OP_STRING_SET,
     OP_STRING_APPEND,
     OP_SUBSTRING,
-    OP_LIST_AST,        //list*
+    OP_LIST_AST,            //list*
     OP_LIST_APPEND,
     OP_LIST_REVERSE,
     OP_LIST_LENGTH,
-    OP_ASSQ,            // Association Lists
+    OP_ASSQ,                // Association Lists 关联列表
     OP_VECTOR,
     OP_MAKE_VECTOR,
     OP_VECTOR_LENGTH,
@@ -174,6 +174,7 @@ enum opcode_e {
     OP_INPUT_PORT_P,        // input-port?
     OP_OUT_PUT_P,           // output-port?
     OP_PROCEDURE_P,         // procedure?
+    OP_PROMISE_P,           // promise?
     OP_PAIR_P,              // pair?
     OP_LIST_P,              // list?
     OP_ENVIRONMENT_P,       // environment?
@@ -193,7 +194,7 @@ enum opcode_e {
     OP_PROC_APPLY,          // (apply procedure_name [arg ...])
     OP_INTERACTION_ENV,     // (interaction-environment)
     OP_CURRENT_ENV,         // (current-environment)
-    // TODO opcode
+    // OP_CODE 计数
             MAX_OP_CODE,
 };
 

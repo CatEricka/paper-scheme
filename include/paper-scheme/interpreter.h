@@ -13,7 +13,7 @@
  */
 
 
-#include <paper-scheme/runtime.h>
+#include <paper-scheme/number.h>
 #include <paper-scheme/token.h>
 
 
@@ -242,7 +242,7 @@ EXPORT_API GC void new_frame_push_spec_env(context_t context, object old_env);
 
 
 /******************************************************************************
-                                TODO 元循环
+                                 元循环
 ******************************************************************************/
 
 /**

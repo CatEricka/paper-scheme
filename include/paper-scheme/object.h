@@ -408,9 +408,9 @@ struct object_struct_t {
             - weak_hashset:     is_weak_hashset(obj)
             - stack_frame:      is_stack_frame
             - env_slot:         is_env_slot()
-            - proc:             TODO is_proc()
-            - syntax:           TODO is_syntax()
-            - promise:          TODO is_promise()
+            - proc:             is_proc()
+            - syntax:           is_syntax()
+            - promise:          is_promise()
         构造:
             - i64:              i64_make_op(), i64_imm_make()
             - imm_char:         char_imm_make()
@@ -433,9 +433,9 @@ struct object_struct_t {
             - weak_hashset:     weak_hashset_make_op()
             - stack_frame:      stack_frame_make_op()
             - env_stack:        env_slot_make_op()
-            - proc:             TODO proc_make_internal()
-            - syntax:           TODO syntax_make_internal()
-            - promise:          TODO promise_make_internal()
+            - proc:             proc_make_internal()
+            - syntax:           syntax_make_internal()
+            - promise:          promise_make_internal()
         取值:
             - i64:              i64_getvalue()
             - double number:    doublenum_getvalue()
@@ -462,11 +462,11 @@ struct object_struct_t {
             - stack_frame:      stack_frame_op(), stack_frame_args(),
                                 stack_frame_env(), stack_frame_code()
             - env_stack:        env_slot_var(), env_slot_value(), env_slot_next()
-            - proc:             TODO proc_get_opcode(), proc_get_symbol()
-            - syntax:           TODO syntax_get_opcode(), syntax_get_symbol()
-            - promise:          TODO promise_forced()
+            - proc:             proc_get_opcode(), proc_get_symbol()
+            - syntax:           syntax_get_opcode(), syntax_get_symbol()
+            - promise:          promise_forced()
         操作:
-            - list (pair):      TODO list_length()
+            - list (pair):      list_length()
             - string:           string_append_op()
             - string_buffer:    string_buffer_append_string_op(), string_buffer_append_imm_char_op(),
                                 string_buffer_append_char_op()
@@ -478,7 +478,7 @@ struct object_struct_t {
             - weak_ref:         weak_ref_get()
             - weak_hashset:     weak_hashset_contains_op(), weak_hashset_put_op()
                                 weak_hashset_clear_op(), weak_hashset_remove_op()
-            - promise:          TODO promise_get_value(), promise_get_env()
+            - promise:          promise_get_value(), promise_get_env()
         扩容:
             - bytes:            bytes_capacity_increase_op()
             - string_buffer:    string_buffer_capacity_increase_op()
@@ -657,7 +657,7 @@ EXPORT_API OUT size_t aligned_size(IN size_t unaligned_size);
  */
 EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 
-#define is_immutable(obj) ((obj)->immutable)
+#define is_immutable(obj) (is_object(obj) && (obj)->immutable)
 #define set_immutable(obj) ((obj)->immutable = 1)
 #define set_mutable(obj) ((obj)->immutable = 0)
 

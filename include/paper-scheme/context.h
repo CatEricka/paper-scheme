@@ -86,7 +86,6 @@ struct scheme_context_t {
     /**
      *                    解释器寄存器
      ****************************************************/
-    // TODO 解释器寄存器
     /**
      * 参数寄存器, pair / IMM_UNIT
      */
@@ -164,7 +163,7 @@ struct scheme_context_t {
     object UNQUOTE_SPLICING;
     object FEED_TO;
 
-    // TODO 完成内部 HOOK 使用说明和示例
+    // 内部 HOOK
     object ERROR_HOOK;         /* *colon-hook* */
     object COMPILE_HOOK;       /* *compile-hook* */
 

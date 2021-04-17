@@ -542,44 +542,46 @@ op_code_info internal_dispatch_table[] = {
 
         // op_exec_predicate
         {"defined?",                 1, 1,        TYPE_NONE,        OP_DEFINE_P,                 op_exec_predicate},
-        {"closure?",                 1, 1,        TYPE_NONE,        OP_CLOSURE_P,                op_exec_predicate},
-        {"macro?",                   1, 1,        TYPE_NONE,        OP_MACRO_P,                  op_exec_predicate},
-        {"boolean?",                 1, 1,        TYPE_NONE,        OP_BOOLEAN_P,                op_exec_predicate},
-        {"eof-object?",              1, 1,        TYPE_NONE,        OP_EOF_OBJ_P,                op_exec_predicate},
-        {"null?",                    1, 1,        TYPE_NONE,        OP_NULL_P,                   op_exec_predicate},
-        {"symbol?",                  1, 1,        TYPE_ANY,         OP_SYMBOL_P,                 op_exec_predicate},
-        {"number?",                  1, 1,        TYPE_ANY,         OP_NUMBER_P,                 op_exec_predicate},
-        {"string?",                  1, 1,        TYPE_ANY,         OP_STRING_P,                 op_exec_predicate},
-        {"integer?",                 1, 1,        TYPE_ANY,         OP_INTEGER_P,                op_exec_predicate},
-        {"real?",                    1, 1,        TYPE_ANY,         OP_REAL_P,                   op_exec_predicate},
-        {"char?",                    1, 1,        TYPE_ANY,         OP_CHAR_P,                   op_exec_predicate},
-        {"char-alphabetic?",         1, 1,        TYPE_CHAR,        OP_CHAR_ALPHABETIC_P,        op_exec_predicate},
-        {"char-numeric?",            1, 1,        TYPE_CHAR,        OP_CHAR_NUMERIC_P,           op_exec_predicate},
-        {"char-whitespace?",         1, 1,        TYPE_CHAR,        OP_CHAR_WHITESPACE_P,        op_exec_predicate},
-        {"char-upper-case?",         1, 1,        TYPE_CHAR,        OP_CHAR_UPPER_CASE_P,        op_exec_predicate},
-        {"char-lower-case?",         1, 1,        TYPE_CHAR,        OP_CHAR_LOWER_CASE_P,        op_exec_predicate},
-        {"port?",                    1, 1,        TYPE_ANY,         OP_PORT_P,                   op_exec_predicate},
-        {"input-port?",              1, 1,        TYPE_ANY,         OP_INPUT_PORT_P,             op_exec_predicate},
-        {"output-port?",             1, 1,        TYPE_ANY,         OP_OUT_PUT_P,                op_exec_predicate},
-        {"procedure?",               1, 1,        TYPE_ANY,         OP_PROCEDURE_P,              op_exec_predicate},
-        {"pair?",                    1, 1,        TYPE_ANY,         OP_PAIR_P,                   op_exec_predicate},
-        {"list?",                    1, 1,        TYPE_ANY,         OP_LIST_P,                   op_exec_predicate},
-        {"environment?",             1, 1,        TYPE_ANY,         OP_ENVIRONMENT_P,            op_exec_predicate},
-        {"vector?",                  1, 1,        TYPE_ANY,         OP_VECTOR_P,                 op_exec_predicate},
-        {"eq?",                      2, 2,        TYPE_ANY,         OP_EQ,                       op_exec_predicate},
-        {"eqv?",                     2, 2,        TYPE_ANY,         OP_EQV,                      op_exec_predicate},
+        {"closure?",                1, 1,        TYPE_NONE,        OP_CLOSURE_P,          op_exec_predicate},
+        {"macro?",                  1, 1,        TYPE_NONE,        OP_MACRO_P,            op_exec_predicate},
+        {"boolean?",                1, 1,        TYPE_NONE,        OP_BOOLEAN_P,          op_exec_predicate},
+        {"eof-object?",             1, 1,        TYPE_NONE,        OP_EOF_OBJ_P,          op_exec_predicate},
+        {"null?",                   1, 1,        TYPE_NONE,        OP_NULL_P,             op_exec_predicate},
+        {"symbol?",                 1, 1,        TYPE_ANY,         OP_SYMBOL_P,           op_exec_predicate},
+        {"number?",                 1, 1,        TYPE_ANY,         OP_NUMBER_P,           op_exec_predicate},
+        {"string?",                 1, 1,        TYPE_ANY,         OP_STRING_P,           op_exec_predicate},
+        {"integer?",                1, 1,        TYPE_ANY,         OP_INTEGER_P,          op_exec_predicate},
+        {"real?",                   1, 1,        TYPE_ANY,         OP_REAL_P,             op_exec_predicate},
+        {"char?",                   1, 1,        TYPE_ANY,         OP_CHAR_P,             op_exec_predicate},
+        {"char-alphabetic?",        1, 1,        TYPE_CHAR,        OP_CHAR_ALPHABETIC_P,  op_exec_predicate},
+        {"char-numeric?",           1, 1,        TYPE_CHAR,        OP_CHAR_NUMERIC_P,     op_exec_predicate},
+        {"char-whitespace?",        1, 1,        TYPE_CHAR,        OP_CHAR_WHITESPACE_P,  op_exec_predicate},
+        {"char-upper-case?",        1, 1,        TYPE_CHAR,        OP_CHAR_UPPER_CASE_P,  op_exec_predicate},
+        {"char-lower-case?",        1, 1,        TYPE_CHAR,        OP_CHAR_LOWER_CASE_P,  op_exec_predicate},
+        {"port?",                   1, 1,        TYPE_ANY,         OP_PORT_P,             op_exec_predicate},
+        {"input-port?",             1, 1,        TYPE_ANY,         OP_INPUT_PORT_P,       op_exec_predicate},
+        {"output-port?",            1, 1,        TYPE_ANY,         OP_OUT_PUT_P,          op_exec_predicate},
+        {"procedure?",              1, 1,        TYPE_ANY,         OP_PROCEDURE_P,        op_exec_predicate},
+        {"promise?",                1, 1,        TYPE_ANY,         OP_PROMISE_P,          op_exec_predicate},
+        {"pair?",                   1, 1,        TYPE_ANY,         OP_PAIR_P,             op_exec_predicate},
+        {"list?",                   1, 1,        TYPE_ANY,         OP_LIST_P,             op_exec_predicate},
+        {"environment?",            1, 1,        TYPE_ANY,         OP_ENVIRONMENT_P,      op_exec_predicate},
+        {"vector?",                 1, 1,        TYPE_ANY,         OP_VECTOR_P,           op_exec_predicate},
+        {"eq?",                     2, 2,        TYPE_ANY,         OP_EQ,                 op_exec_predicate},
+        {"eqv?",                    2, 2,        TYPE_ANY,         OP_EQV,                op_exec_predicate},
 
         // op_exec_builtin_function
-        {"quit",                     0, 1,        TYPE_INTEGER,     OP_QUIT,                     op_exec_builtin_function},
-        {"debug",                    1, 1,        TYPE_INTEGER,     OP_DEBUG,                    op_exec_builtin_function},
-        {"error",                    1, ARGS_INF, TYPE_NONE,        OP_ERROR,                    op_exec_builtin_function},
-        {NULL,                       1, ARGS_INF, TYPE_NONE,        OP_ERROR_PRINT_OBJECT,       op_exec_builtin_function},
-        {"display",                  1, 2,        TYPE_ANY TYPE_OUTPUT_PORT,          OP_PROC_DISPlAY,   op_exec_builtin_function},
-        {"newline",                  0, 1,        TYPE_OUTPUT_PORT, OP_PROC_NEWLINE,             op_exec_builtin_function},
-        {"eval",                     1, 2,        TYPE_ANY TYPE_ENVIRONMENT,          OP_PROC_EVAL,      op_exec_builtin_function},
-        {"apply",                    1, ARGS_INF, TYPE_NONE,        OP_PROC_APPLY,               op_exec_builtin_function},
-        {"interaction-environment",  0, 0,        TYPE_NONE,        OP_INTERACTION_ENV,          op_exec_builtin_function},
-        {"current-environment",      0, 0,        TYPE_NONE,        OP_CURRENT_ENV,              op_exec_builtin_function},
+        {"quit",                    0, 1,        TYPE_INTEGER,     OP_QUIT,               op_exec_builtin_function},
+        {"debug",                   1, 1,        TYPE_INTEGER,     OP_DEBUG,              op_exec_builtin_function},
+        {"gc",                      0, 0,        TYPE_INTEGER,     OP_GC,                 op_exec_builtin_function},
+        {"error",                   1, ARGS_INF, TYPE_NONE,        OP_ERROR,              op_exec_builtin_function},
+        {NULL,                      1, ARGS_INF, TYPE_NONE,        OP_ERROR_PRINT_OBJECT, op_exec_builtin_function},
+        {"display",                 1, 2,        TYPE_ANY TYPE_OUTPUT_PORT, OP_PROC_DISPlAY, op_exec_builtin_function},
+        {"newline",                 0, 1,        TYPE_OUTPUT_PORT, OP_PROC_NEWLINE,       op_exec_builtin_function},
+        {"eval",                    1, 2,        TYPE_ANY TYPE_ENVIRONMENT, OP_PROC_EVAL,    op_exec_builtin_function},
+        {"apply",                   1, ARGS_INF, TYPE_NONE,        OP_PROC_APPLY,         op_exec_builtin_function},
+        {"interaction-environment", 0, 0,        TYPE_NONE,        OP_INTERACTION_ENV,    op_exec_builtin_function},
+        {"current-environment",     0, 0,        TYPE_NONE,        OP_CURRENT_ENV,        op_exec_builtin_function},
 };
 
 /**
@@ -955,7 +957,7 @@ EXPORT_API object scheme_stack_return(context_t context, object value) {
 
     if (context->scheme_stack == IMM_UNIT) {
         // 栈空
-        // TODO 这是个错误, 应该由元循环处理
+        // 这是个错误, 应该由元循环处理
         return IMM_UNIT;
     }
 
@@ -1805,7 +1807,6 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
                 // 落到 OP_LAMBDA1
             } else {
                 // 如果找到 *compile-hook*, (apply *compile-hook* `,@'code)
-                // TODO 编写 *compile-hook* 使用手册
                 s_save(context, OP_LAMBDA1, context->args, context->code);
                 context->args = pair_make_op(context, context->code, IMM_UNIT);
                 context->code = env_slot_value(tmp1);
@@ -1887,7 +1888,6 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
                 // ((macro_name form) body...)
                 tmp1 = pair_caar(context->code);
                 // 构造 lambda 表达式
-                assert(is_symbol(pair_cadar(context->code)));
                 tmp2 = pair_make_op(context, pair_cdar(context->code), pair_cdr(context->code));
                 context->code = pair_make_op(context, context->LAMBDA, tmp2);
             } else {
@@ -2137,6 +2137,9 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
             context->args = IMM_UNIT;
             s_goto(context, OP_BEGIN);
         case OP_SET0:
+            if (!is_symbol(pair_car(context->code))) {
+                Error_Throw_1(context, "set!: variable cannot be", pair_car(context->code));
+            }
             if (is_immutable(pair_car(context->code))) {
                 Error_Throw_1(context, "set!: unable to alter immutable variable", pair_car(context->code));
             }
@@ -2186,9 +2189,11 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
                 // 没结束
                 context->code = pair_cdr(context->code);
                 if (context->code == IMM_UNIT) {
-                    // 找不到则返回 (), 应该不会执行到这里
                     s_return(context, IMM_UNIT);
                 } else {
+                    if (!is_pair(pair_car(context->code))) {
+                        Error_Throw_0(context, "syntax error in cond");
+                    }
                     // 继续检查 (condition [=>] ...)
                     s_save(context, OP_COND1, IMM_UNIT, context->code);
                     context->code = pair_caar(context->code);
@@ -2895,6 +2900,11 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             int f = is_proc(p) || is_ext_type_closure(p) || is_ext_type_continuation(p);
             s_return(context, setbool(f));
         }
+        case OP_PROMISE_P: {
+            object p = pair_car(context->args);
+            int f = is_promise(p);
+            s_return(context, setbool(f));
+        }
         case OP_PAIR_P:
             s_return(context, setbool(is_pair(context->args)));
         case OP_LIST_P:
@@ -2906,7 +2916,7 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
         case OP_EQ:
             s_return(context, setbool(pair_car(context->args) == pair_cadr(context->args)));
         case OP_EQV:
-            // TODO eqv()
+            s_return(context, setbool(eqv(context, pair_car(context->args), pair_cadr(context->args))));
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -2930,6 +2940,8 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
             }
             return IMM_UNIT;
         case OP_GC:
+            gc_collect(context);
+            s_return(context, IMM_TRUE);
         case OP_DEBUG: {
             int64_t flag = i64_getvalue(pair_car(context->args));
             if (flag) {
