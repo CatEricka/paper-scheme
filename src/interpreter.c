@@ -1306,7 +1306,7 @@ static GC object atom_to_string(context_t context, object obj, int flag) {
     } else if (is_string(obj)) {
         if (!flag) {
             gc_release_param(context);
-            return str;
+            return obj;
         } else {
             str = print_slash_string(context, obj);
             gc_release_param(context);
@@ -3164,7 +3164,19 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
         case OP_STRING_P:
             s_return(context, setbool(is_string(pair_car(context->args))));
         case OP_INTEGER_P:
-            s_return(context, setbool(is_i64(pair_car(context->args))));
+            tmp1 = pair_car(context->args);
+            if (is_i64(tmp1)) {
+                s_return(context, IMM_TRUE);
+            } else if (is_doublenum(tmp1)) {
+                int64_t i = (int64_t)(doublenum_getvalue(tmp1));
+                if ((double)i == doublenum_getvalue(tmp1)) {
+                    s_return(context, IMM_TRUE);
+                } else {
+                    s_return(context, IMM_FALSE);
+                }
+            } else {
+                s_return(context, IMM_FALSE);
+            }
         case OP_REAL_P:
             s_return(context, setbool(is_doublenum(pair_car(context->args))));
         case OP_CHAR_P:
