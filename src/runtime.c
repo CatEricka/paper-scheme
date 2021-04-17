@@ -182,6 +182,28 @@ string_make_from_cstr_op(REF NOTNULL context_t context, COPY const char *cstr) {
 }
 
 /**
+ * 构造 string 类型对象
+ * @param context
+ * @param count 字符数量
+ * @param fill 填充
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+string_make_empty(REF NOTNULL context_t context, int64_t count, char fill) {
+    assert(context != NULL);
+    assert(count >= 0);
+    size_t cstr_len = count + 1;
+
+    object ret = raw_object_make(context, OBJ_STRING,
+                                 object_sizeof_base(string) + sizeof(char) * cstr_len);
+    ret->value.string.len = cstr_len;
+    memset(string_get_cstr(ret), fill, cstr_len);
+    string_get_cstr(ret)[cstr_len - 1] = '\0';
+    ret->value.string.hash = string_hash_helper(ret);
+    return ret;
+}
+
+/**
  * 构造 string_buffer 对象
  * @param context
  * @param char_size char 容量, 注意 string_buffer 不以 '\0' 结束

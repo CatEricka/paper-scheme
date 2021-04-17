@@ -71,6 +71,10 @@ struct scheme_context_t {
      ****************************************************/
     // 调试信息 开关
     int debug;
+#ifdef DEBUG_ONLY
+    // 调试 opcode
+    int tracing_opcode;
+#endif
     // 是否处于 repl 模式
     int repl_mode;
     // 解释器环境是否初始化结束

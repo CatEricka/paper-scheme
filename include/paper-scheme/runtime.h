@@ -84,6 +84,16 @@ EXPORT_API OUT NOTNULL GC object
 string_make_from_cstr_op(REF NOTNULL context_t context, COPY const char *cstr);
 
 /**
+ * 构造 string 类型对象
+ * @param context
+ * @param count 字符数量
+ * @param fill 填充
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+string_make_empty(REF NOTNULL context_t context, int64_t count, char fill);
+
+/**
  * 构造 string_buffer 对象
  * @param context
  * @param char_size char 容量, 注意 string_buffer 不以 '\0' 结束

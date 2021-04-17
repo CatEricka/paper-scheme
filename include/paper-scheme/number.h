@@ -25,6 +25,8 @@ EXPORT_API GC object number_rem(context_t context, object a, object b);
 
 EXPORT_API GC object number_mod(context_t context, object a, object b);
 
+typedef int (*number_compare_func)(object, object);
+
 EXPORT_API int number_eq(object a, object b);
 
 EXPORT_API int number_gt(object a, object b);

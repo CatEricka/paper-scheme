@@ -83,6 +83,11 @@ enum opcode_e {
     OP_INT_DIV,
     OP_REM,
     OP_MOD,
+    OP_NUMBER_EQ,
+    OP_LESS,
+    OP_GRE,
+    OP_LEQ,
+    OP_GEQ,
     OP_CAR,
     OP_CDR,
     OP_CONS,
@@ -194,6 +199,9 @@ enum opcode_e {
     OP_PROC_APPLY,          // (apply procedure_name [arg ...])
     OP_INTERACTION_ENV,     // (interaction-environment)
     OP_CURRENT_ENV,         // (current-environment)
+#ifdef DEBUG_ONLY
+    OP_TRACING_OPCODE,      // (tracing 1/0)
+#endif
     // OP_CODE ¼ÆÊý
             MAX_OP_CODE,
 };
