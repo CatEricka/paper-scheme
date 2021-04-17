@@ -167,14 +167,14 @@ EXPORT_API GC object sharp_const_make_op(context_t context, object str) {
             obj = char_imm_make('\r');
         } else if (!strcmp(string_get_cstr(str) + 1, "tab")) {
             obj = char_imm_make('\t');
-        } else if (string_index(str, 1) == 'x' && string_index(str, 2) != '\0') {
+        } else if (string_index(str, 1) == 'x' && string_index(str, 2) != 0) {
             int hex = 0;
             if (sscanf(string_get_cstr(str) + 2, "%x", &hex) == 1) {
                 if (hex >= 0 && hex <= UCHAR_MAX) {
                     obj = char_imm_make((char) hex);
                 }
             }
-        } else if (string_index(str, 2) != '\0') {
+        } else if (string_index(str, 2) == 0) {
             obj = char_imm_make(string_index(str, 1));
         } else {
             obj = IMM_UNIT;
@@ -1501,7 +1501,7 @@ static object builtin_function_args_type_check(context_t context, op_code_info *
                 break;
             }
 
-            if (type_check[1] != '\0') {
+            if (type_check[1] != 0) {
                 // 重复最后一个测试
                 type_check++;
             }
@@ -2731,7 +2731,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
         }
         case OP_STRING_REF: {
             tmp1 = pair_car(context->args);
-            int64_t index = i64_getvalue(pair_cadr(context->args));
+            size_t index = i64_getvalue(pair_cadr(context->args));
             if (index >= string_len(tmp1)) {
                 Error_Throw_1(context, "string-ref: out of bounds:", pair_car(context->args));
             } else {
@@ -2739,7 +2739,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             }
         }
         case OP_STRING_SET: {
-            int64_t index;
+            size_t index;
             char ch;
 
             tmp1 = pair_car(context->args);
@@ -2747,7 +2747,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
                 Error_Throw_1(context, "string-set!: unable to alter immutable string:", tmp1);
             }
 
-            index = i64_getvalue(pair_cadr(context->args));
+            index = (size_t) i64_getvalue(pair_cadr(context->args));
             if (index >= string_len(tmp1)) {
                 Error_Throw_1(context, "string-set!: out of bounds:", pair_cadr(context->args));
             }

@@ -2,7 +2,7 @@
 #include <paper-scheme/interpreter.h>
 
 UTEST(opcode_test, op_exec_repl_test) {
-    size_t heap = 128 * 1024;
+    size_t heap = 512 * 1024;
     context_t context = interpreter_create(heap, 2, heap);
     gc_var1(context, var);
 

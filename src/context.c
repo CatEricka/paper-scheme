@@ -401,6 +401,23 @@ static struct object_runtime_type_info_t scheme_type_specs[OBJECT_TYPE_ENUM_MAX]
                 .hash_code = syntax_hash_code,
                 .equals = syntax_equals,
         },
+        {
+                .name = (object) "Promise", .tag = OBJ_PROMISE,
+                .getter = IMM_FALSE, .setter = IMM_FALSE, .to_string = IMM_FALSE,
+
+                .member_base = object_offsetof(promise, value),
+                .member_eq_len_base = 1,
+                .member_len_base = 1,
+                .member_meta_len_offset = 0,
+                .member_meta_len_scale = 0,
+
+                .size_base = object_sizeof_base(promise),
+                .size_meta_size_offset = 0,
+                .size_meta_size_scale = 0,
+                .finalizer = NULL,
+                .hash_code = promise_hash_code,
+                .equals = promise_equals,
+        },
         // todo 增加新类型重写 scheme_type_specs
 };
 
@@ -835,6 +852,11 @@ EXPORT_API uint32_t syntax_hash_code(context_t context, object syntax) {
     return syntax->value.syntax.hash;
 }
 
+EXPORT_API uint32_t promise_hash_code(context_t context, object promise) {
+    assert(is_promise(promise));
+    return promise->value.promise.hash;
+}
+
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
     return symbol->value.symbol.hash;
@@ -1025,6 +1047,14 @@ EXPORT_API int syntax_equals(context_t context, object syntax_a, object syntax_b
         return 0;
     } else {
         return syntax_a == syntax_b;
+    }
+}
+
+EXPORT_API int promise_equals(context_t context, object promise_a, object promise_b) {
+    if (!is_promise(promise_a) || !is_promise(promise_b)) {
+        return 0;
+    } else {
+        return promise_a == promise_b;
     }
 }
 

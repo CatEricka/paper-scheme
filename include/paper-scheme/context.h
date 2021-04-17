@@ -378,6 +378,8 @@ EXPORT_API uint32_t proc_hash_code(context_t context, object proc);
 
 EXPORT_API uint32_t syntax_hash_code(context_t context, object syntax);
 
+EXPORT_API uint32_t promise_hash_code(context_t context, object promise);
+
 EXPORT_API uint32_t symbol_hash_code(context_t _context, object symbol);
 
 EXPORT_API uint32_t string_hash_code(context_t _context, object str);
@@ -427,6 +429,8 @@ EXPORT_API int env_slot_equals(context_t context, object slot_a, object slot_b);
 EXPORT_API int proc_equals(context_t context, object proc_a, object proc_b);
 
 EXPORT_API int syntax_equals(context_t context, object syntax_a, object syntax_b);
+
+EXPORT_API int promise_equals(context_t context, object promise_a, object promise_b);
 
 /**
  * symbol ±È½Ï

@@ -3,7 +3,7 @@
 
 
 UTEST(scheme_stack_test, test) {
-    size_t heap = 32 * 1024;
+    size_t heap = 64 * 1024;
     context_t context = interpreter_create(heap, 2, heap);
     gc_var5(context, var, val, slot, env, obj);
 
