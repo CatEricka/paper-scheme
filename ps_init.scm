@@ -449,8 +449,6 @@
                     result)))
          outer-env)))
 
-(define call-with-current-continuation call/cc)
-
 
 ;;;;; atom? and equal? written by a.k
 

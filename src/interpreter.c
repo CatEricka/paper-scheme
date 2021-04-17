@@ -1402,7 +1402,8 @@ static object error_throw(context_t context, const char *message, object obj) {
 
     // 构造异常信息
     strbuff = string_buffer_make_op(context, 512);
-    if (!stack_empty(context->load_stack) && stdio_port_get_file(stack_peek_op(context->load_stack)) != stdin) {
+    if (!stack_empty(context->load_stack) && is_stdio_port(stack_peek_op(context->load_stack)) &&
+        stdio_port_get_file(stack_peek_op(context->load_stack)) != stdin) {
         // 显示错误行数
         tmp1 = stack_peek_op(context->load_stack);
         string_buffer_append_cstr_op(context, strbuff, "(");
@@ -2731,7 +2732,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
         }
         case OP_STRING_REF: {
             tmp1 = pair_car(context->args);
-            size_t index = i64_getvalue(pair_cadr(context->args));
+            size_t index = (size_t) i64_getvalue(pair_cadr(context->args));
             if (index >= string_len(tmp1)) {
                 Error_Throw_1(context, "string-ref: out of bounds:", pair_car(context->args));
             } else {

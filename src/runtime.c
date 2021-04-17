@@ -192,7 +192,7 @@ EXPORT_API OUT NOTNULL GC object
 string_make_empty(REF NOTNULL context_t context, int64_t count, char fill) {
     assert(context != NULL);
     assert(count >= 0);
-    size_t cstr_len = count + 1;
+    size_t cstr_len = (size_t) (count + 1);
 
     object ret = raw_object_make(context, OBJ_STRING,
                                  object_sizeof_base(string) + sizeof(char) * cstr_len);
