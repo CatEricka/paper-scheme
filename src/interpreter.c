@@ -394,86 +394,192 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode);
  */
 op_code_info internal_dispatch_table[] = {
         // op_exec_repl
-        {"load",   1, 1,        TYPE_STRING,  OP_LOAD,                   op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_TOP_LEVEL_SETUP,        op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_TOP_LEVEL,              op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_INTERNAL,          op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_VALUE_PRINT,            op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL,                   op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_EXPAND_MACRO,           op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL_ARGS,              op_exec_repl},
-        {NULL,     0, 0,        TYPE_NONE,    OP_APPLY,                  op_exec_repl},
-        {"gensym", 0, 0,        TYPE_NONE,    OP_GENSYM,                 op_exec_repl},
+        {"load",                     1, 1,        TYPE_STRING,      OP_LOAD,                     op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_TOP_LEVEL_SETUP,          op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_TOP_LEVEL,                op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_INTERNAL,            op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_VALUE_PRINT,              op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_EVAL,                     op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_EVAL_REAL,                op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_EXPAND_MACRO,             op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_EVAL_ARGS,                op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_APPLY,                    op_exec_repl},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_APPLY_REAL,               op_exec_repl},
+        {"gensym",                   0, 0,        TYPE_NONE,        OP_GENSYM,                   op_exec_repl},
 
         // op_exec_syntax
-        {NULL,     0, 0,        TYPE_NONE,    OP_EVAL_EXPANDED_MACRO,    op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LAMBDA0,                op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LAMBDA1,                op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_MAKE_CLOSURE,           op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_GET_CLOSURE_CODE,       op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_QUOTE,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_DEFINE0,                op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_DEFINE1,                op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_MACRO0,                 op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_MACRO1,                 op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_BEGIN,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_IF0,                    op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_IF1,                    op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_SET0,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_SET1,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET0,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET1,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET2,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET_AST0,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET_AST1,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET_AST2,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET_REC0,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET_REC1,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_LET_REC2,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_COND0,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_COND1,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_AND0,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_AND1,                   op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_OR0,                    op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_OR1,                    op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_CASE0,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_CASE1,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_CASE2,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_DELAY,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_FORCE,                  op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_FORCED_P,               op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_SAVE_FORCED,            op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_CONS_STREAM0,           op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_CONS_STREAM1,           op_exec_syntax},
-        {NULL,     0, 0,        TYPE_NONE,    OP_CONTINUATION,           op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_EVAL_EXPANDED_MACRO,      op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LAMBDA0,                  op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LAMBDA1,                  op_exec_syntax},
+        {"make-closure",             1, 2,        TYPE_PAIR TYPE_ENVIRONMENT,         OP_MAKE_CLOSURE,   op_exec_syntax},
+        {"get-closure-code",         1, 1,        TYPE_NONE,        OP_GET_CLOSURE_CODE,         op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_QUOTE,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_DEFINE0,                  op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_DEFINE1,                  op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_MACRO0,                   op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_MACRO1,                   op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_BEGIN,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_IF0,                      op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_IF1,                      op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_SET0,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_SET1,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET0,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET1,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET2,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET_AST0,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET_AST1,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET_AST2,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET_REC0,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET_REC1,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_LET_REC2,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_COND0,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_COND1,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_AND0,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_AND1,                     op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_OR0,                      op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_OR1,                      op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_CASE0,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_CASE1,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_CASE2,                    op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_DELAY,                    op_exec_syntax},
+        {"force",                    1, 1,        TYPE_ANY,         OP_FORCE,                    op_exec_syntax},
+        {"promise-forced?",          1, 1,        TYPE_ANY,         OP_FORCED_P,                 op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_SAVE_FORCED,              op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_CONS_STREAM0,             op_exec_syntax},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_CONS_STREAM1,             op_exec_syntax},
+        {"call/cc",                  1, 1,        TYPE_NONE,        OP_CONTINUATION,             op_exec_syntax},
 
         // op_exec_compute
+        {"exp",                      1, 1,        TYPE_NUMBER,      OP_EXP,                      op_exec_compute},
+        {"log",                      1, 1,        TYPE_NUMBER,      OP_LOG,                      op_exec_compute},
+        {"sin",                      1, 1,        TYPE_NUMBER,      OP_SIN,                      op_exec_compute},
+        {"cos",                      1, 1,        TYPE_NUMBER,      OP_COS,                      op_exec_compute},
+        {"tan",                      1, 1,        TYPE_NUMBER,      OP_TAN,                      op_exec_compute},
+        {"asin",                     1, 1,        TYPE_NUMBER,      OP_ASIN,                     op_exec_compute},
+        {"acos",                     1, 1,        TYPE_NUMBER,      OP_ACOS,                     op_exec_compute},
+        {"atan",                     1, 2,        TYPE_NUMBER,      OP_ATAN,                     op_exec_compute},
+        {"sqrt",                     1, 1,        TYPE_NUMBER,      OP_SQRT,                     op_exec_compute},
+        {"expt",                     2, 2,        TYPE_NUMBER,      OP_EXPT,                     op_exec_compute},
+        {"floor",                    1, 1,        TYPE_NUMBER,      OP_FLOOR,                    op_exec_compute},
+        {"ceiling",                  1, 1,        TYPE_NUMBER,      OP_CEILING,                  op_exec_compute},
+        {"truncate",                 1, 1,        TYPE_NUMBER,      OP_TRUNCATE,                 op_exec_compute},
+        {"round",                    1, 1,        TYPE_NUMBER,      OP_ROUND,                    op_exec_compute},
+        {"+",                        0, ARGS_INF, TYPE_NUMBER,      OP_ADD,                      op_exec_compute},
+        {"-",                        1, ARGS_INF, TYPE_NUMBER,      OP_SUB,                      op_exec_compute},
+        {"*",                        0, ARGS_INF, TYPE_NUMBER,      OP_MUL,                      op_exec_compute},
+        {"/",                        1, ARGS_INF, TYPE_NUMBER,      OP_DIV,                      op_exec_compute},
+        {"quotient",                 1, ARGS_INF, TYPE_INTEGER,     OP_INT_DIV,                  op_exec_compute},
+        {"remainder",                2, 2,        TYPE_INTEGER,     OP_REM,                      op_exec_compute},
+        {"modulo",                   2, 2,        TYPE_INTEGER,     OP_MOD,                      op_exec_compute},
+        {"car",                      1, 1,        TYPE_PAIR,        OP_CAR,                      op_exec_compute},
+        {"cdr",                      1, 1,        TYPE_PAIR,        OP_CDR,                      op_exec_compute},
+        {"cons",                     2, 2,        TYPE_NONE,        OP_CONS,                     op_exec_compute},
+        {"set-car!",                 2, 2,        TYPE_PAIR TYPE_ANY,                 OP_SET_CAR,        op_exec_compute},
+        {"set-cdr!",                 2, 2,        TYPE_PAIR TYPE_ANY,                 OP_SET_CDR,        op_exec_compute},
 
         // op_exec_object_operation
-        {"vector", 0, ARGS_INF, TYPE_NONE,    OP_VECTOR,                 op_exec_object_operation},
+        {"inexact->exact",           1, 1,        TYPE_NUMBER,      OP_INEXACT_TO_EXACT,         op_exec_object_operation},
+        {"char->integer",            1, 1,        TYPE_CHAR,        OP_CHAR_TO_INT,              op_exec_object_operation},
+        {"integer->char",            1, 1,        TYPE_NATURAL,     OP_INT_TO_CHAR,              op_exec_object_operation},
+        {"char-upcase",              1, 1,        TYPE_CHAR,        OP_CHAR_UPPER,               op_exec_object_operation},
+        {"char-downcase",            1, 1,        TYPE_CHAR,        OP_CHAR_LOWER,               op_exec_object_operation},
+        {"symbol->string",           1, 1,        TYPE_SYMBOL,      OP_SYMBOL_TO_STRING,         op_exec_object_operation},
+        {"string->symbol",           1, 1,        TYPE_STRING,      OP_STRING_TO_SYMBOL,         op_exec_object_operation},
+        {"atom->string",             1, 2,        TYPE_ANY TYPE_NATURAL,              OP_ATOM_TO_STRING, op_exec_object_operation},
+        {"string->atom",             1, 2,        TYPE_STRING TYPE_NATURAL,           OP_STRING_TO_ATOM, op_exec_object_operation},
+        {"make-string",              1, 2,        TYPE_NATURAL TYPE_CHAR,             OP_MAKE_STRING,    op_exec_object_operation},
+        {"string-length",            1, 1,        TYPE_STRING,      OP_STRING_LENGTH,            op_exec_object_operation},
+        {"string-ref",               2, 2,        TYPE_STRING TYPE_NATURAL,           OP_STRING_REF,     op_exec_object_operation},
+        {"string-set!",              3, 3,        TYPE_STRING TYPE_NATURAL TYPE_CHAR, OP_STRING_SET,     op_exec_object_operation},
+        {"string-append",            0, ARGS_INF, TYPE_STRING,      OP_STRING_APPEND,            op_exec_object_operation},
+        {"substring",                2, 3,        TYPE_VECTOR TYPE_NATURAL,           OP_SUBSTRING,      op_exec_object_operation},
+        {"list*",                    1, ARGS_INF, TYPE_NONE,        OP_LIST_AST,                 op_exec_object_operation},
+        {"append",                   0, ARGS_INF, TYPE_LIST,        OP_LIST_APPEND,              op_exec_object_operation},
+        {"reverse",                  1, 1,        TYPE_LIST,        OP_LIST_REVERSE,             op_exec_object_operation},
+        {"length",                   1, 1,        TYPE_LIST,        OP_LIST_LENGTH,              op_exec_object_operation},
+        {"assq",                     2, 2,        TYPE_NONE,        OP_ASSQ,                     op_exec_object_operation},
+        {"vector",                   0, ARGS_INF, TYPE_NONE,        OP_VECTOR,                   op_exec_object_operation},
+        {"make-vector",              1, 2,        TYPE_NATURAL TYPE_ANY,              OP_MAKE_VECTOR,    op_exec_object_operation},
+        {"vector-length",            1, 1,        TYPE_VECTOR,      OP_VECTOR_LENGTH,            op_exec_object_operation},
+        {"vector-ref",               2, 2,        TYPE_VECTOR TYPE_NATURAL,           OP_VECTOR_REF,     op_exec_object_operation},
+        {"vector-set!",              3, 3,        TYPE_VECTOR TYPE_NATURAL TYPE_ANY,  OP_VECTOR_SET,     op_exec_object_operation},
+        {"not",                      1, 1,        TYPE_NONE,        OP_NOT,                      op_exec_object_operation},
 
         // op_exec_io
+        {"current-input-port",       0, 0,        TYPE_NONE,        OP_CURRENT_INPUT_PORT,       op_exec_io},
+        {"current-output-port",      0, 0,        TYPE_NONE,        OP_CURRENT_OUTPUT_PORT,      op_exec_io},
+        {"open-input-file",          1, 1,        TYPE_STRING,      OP_OPEN_INPUT_FILE,          op_exec_io},
+        {"open-output-file",         1, 1,        TYPE_STRING,      OP_OPEN_OUTPUT_FILE,         op_exec_io},
+        {"open-input-output-file",   1, 1,        TYPE_STRING,      OP_OPEN_INPUT_OUTPUT_FILE,   op_exec_io},
+        {"open-input-string",        1, 1,        TYPE_STRING,      OP_OPEN_INPUT_STRING,        op_exec_io},
+        {"open-output-string",       0, 1,        TYPE_STRING,      OP_OPEN_OUTPUT_STRING,       op_exec_io},
+        {"open-input-output-string", 1, 1,        TYPE_STRING,      OP_OPEN_INPUT_OUTPUT_STRING, op_exec_io},
+        {"get-output-string",        1, 1,        TYPE_OUTPUT_PORT, OP_GET_OUTPUT_STRING,        op_exec_io},
+        {"close-input-port",         1, 1,        TYPE_INPUT_PORT,  OP_CLOSE_INPUT_PORT,         op_exec_io},
+        {"close-output-port",        1, 1,        TYPE_OUTPUT_PORT, OP_CLOSE_OUTPUT_PORT,        op_exec_io},
+        {"read",                     0, 1,        TYPE_INPUT_PORT,  OP_READ,                     op_exec_io},
+        {"read-char",                0, 1,        TYPE_INPUT_PORT,  OP_READ_CHAR,                op_exec_io},
+        {"write",                    1, 2,        TYPE_ANY TYPE_OUTPUT_PORT,          OP_WRITE,          op_exec_io},
+        {"write-char",               1, 2,        TYPE_CHAR TYPE_OUTPUT_PORT,         OP_WRITE_CHAR,     op_exec_io},
+        {"peek-char",                0, 1,        TYPE_INPUT_PORT,  OP_PEEK_CHAR,                op_exec_io},
+        {"char-ready?",              0, 1,        TYPE_INPUT_PORT,  OP_CHAR_READY_P,             op_exec_io},
+        {"set-input-port",           1, 1,        TYPE_INPUT_PORT,  OP_SET_INPUT_PORT,           op_exec_io},
+        {"set-output-port",          1, 1,        TYPE_OUTPUT_PORT, OP_SET_OUTPUT_PORT,          op_exec_io},
 
         // op_exec_lexical
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_SEXP,              op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_LIST,              op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_DOT,               op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_QUOTE,             op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_UNQUOTE,           op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_QUASIQUOTE,        op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_QUASIQUOTE_VECTOR, op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_UNQUOTE_SPLICING,  op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_READ_VECTOR,            op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_OBJECT,           op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_LIST,             op_exec_lexical},
-        {NULL,     0, 0,        TYPE_NONE,    OP_PRINT_VECTOR,           op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_SEXP,                op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_LIST,                op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_DOT,                 op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_QUOTE,               op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_UNQUOTE,             op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_QUASIQUOTE,          op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_QUASIQUOTE_VECTOR,   op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_UNQUOTE_SPLICING,    op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_READ_VECTOR,              op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_PRINT_OBJECT,             op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_PRINT_LIST,               op_exec_lexical},
+        {NULL,                       0, 0,        TYPE_NONE,        OP_PRINT_VECTOR,             op_exec_lexical},
 
         // op_exec_predicate
+        {"defined?",                 1, 1,        TYPE_NONE,        OP_DEFINE_P,                 op_exec_predicate},
+        {"closure?",                 1, 1,        TYPE_NONE,        OP_CLOSURE_P,                op_exec_predicate},
+        {"macro?",                   1, 1,        TYPE_NONE,        OP_MACRO_P,                  op_exec_predicate},
+        {"boolean?",                 1, 1,        TYPE_NONE,        OP_BOOLEAN_P,                op_exec_predicate},
+        {"eof-object?",              1, 1,        TYPE_NONE,        OP_EOF_OBJ_P,                op_exec_predicate},
+        {"null?",                    1, 1,        TYPE_NONE,        OP_NULL_P,                   op_exec_predicate},
+        {"symbol?",                  1, 1,        TYPE_ANY,         OP_SYMBOL_P,                 op_exec_predicate},
+        {"number?",                  1, 1,        TYPE_ANY,         OP_NUMBER_P,                 op_exec_predicate},
+        {"string?",                  1, 1,        TYPE_ANY,         OP_STRING_P,                 op_exec_predicate},
+        {"integer?",                 1, 1,        TYPE_ANY,         OP_INTEGER_P,                op_exec_predicate},
+        {"real?",                    1, 1,        TYPE_ANY,         OP_REAL_P,                   op_exec_predicate},
+        {"char?",                    1, 1,        TYPE_ANY,         OP_CHAR_P,                   op_exec_predicate},
+        {"char-alphabetic?",         1, 1,        TYPE_CHAR,        OP_CHAR_ALPHABETIC_P,        op_exec_predicate},
+        {"char-numeric?",            1, 1,        TYPE_CHAR,        OP_CHAR_NUMERIC_P,           op_exec_predicate},
+        {"char-whitespace?",         1, 1,        TYPE_CHAR,        OP_CHAR_WHITESPACE_P,        op_exec_predicate},
+        {"char-upper-case?",         1, 1,        TYPE_CHAR,        OP_CHAR_UPPER_CASE_P,        op_exec_predicate},
+        {"char-lower-case?",         1, 1,        TYPE_CHAR,        OP_CHAR_LOWER_CASE_P,        op_exec_predicate},
+        {"port?",                    1, 1,        TYPE_ANY,         OP_PORT_P,                   op_exec_predicate},
+        {"input-port?",              1, 1,        TYPE_ANY,         OP_INPUT_PORT_P,             op_exec_predicate},
+        {"output-port?",             1, 1,        TYPE_ANY,         OP_OUT_PUT_P,                op_exec_predicate},
+        {"procedure?",               1, 1,        TYPE_ANY,         OP_PROCEDURE_P,              op_exec_predicate},
+        {"pair?",                    1, 1,        TYPE_ANY,         OP_PAIR_P,                   op_exec_predicate},
+        {"list?",                    1, 1,        TYPE_ANY,         OP_LIST_P,                   op_exec_predicate},
+        {"environment?",             1, 1,        TYPE_ANY,         OP_ENVIRONMENT_P,            op_exec_predicate},
+        {"vector?",                  1, 1,        TYPE_ANY,         OP_VECTOR_P,                 op_exec_predicate},
+        {"eq?",                      2, 2,        TYPE_ANY,         OP_EQ,                       op_exec_predicate},
+        {"eqv?",                     2, 2,        TYPE_ANY,         OP_EQV,                      op_exec_predicate},
 
         // op_exec_builtin_function
-        {"quit",   0, 1,        TYPE_INTEGER, OP_QUIT,                   op_exec_builtin_function},
-        {"error",  1, ARGS_INF, TYPE_NONE,    OP_ERROR,                  op_exec_builtin_function},
-        {NULL,     1, ARGS_INF, TYPE_NONE,    OP_ERROR_PRINT_OBJECT,     op_exec_builtin_function},
+        {"quit",                     0, 1,        TYPE_INTEGER,     OP_QUIT,                     op_exec_builtin_function},
+        {"debug",                    1, 1,        TYPE_INTEGER,     OP_DEBUG,                    op_exec_builtin_function},
+        {"error",                    1, ARGS_INF, TYPE_NONE,        OP_ERROR,                    op_exec_builtin_function},
+        {NULL,                       1, ARGS_INF, TYPE_NONE,        OP_ERROR_PRINT_OBJECT,       op_exec_builtin_function},
+        {"display",                  1, 2,        TYPE_ANY TYPE_OUTPUT_PORT,          OP_PROC_DISPlAY,   op_exec_builtin_function},
+        {"newline",                  0, 1,        TYPE_OUTPUT_PORT, OP_PROC_NEWLINE,             op_exec_builtin_function},
+        {"eval",                     1, 2,        TYPE_ANY TYPE_ENVIRONMENT,          OP_PROC_EVAL,      op_exec_builtin_function},
+        {"apply",                    1, ARGS_INF, TYPE_NONE,        OP_PROC_APPLY,               op_exec_builtin_function},
+        {"interaction-environment",  0, 0,        TYPE_NONE,        OP_INTERACTION_ENV,          op_exec_builtin_function},
+        {"current-environment",      0, 0,        TYPE_NONE,        OP_CURRENT_ENV,              op_exec_builtin_function},
 };
 
 /**
@@ -553,6 +659,7 @@ static int interpreter_default_env_init(context_t context) {
 
     // 初始化 opcode dispatch_table 和内部 proc
     context->dispatch_table = raw_alloc(sizeof(op_code_info) * MAX_OP_CODE);
+    memset(context->dispatch_table, 0, sizeof(op_code_info) * MAX_OP_CODE);
     notnull_or_return(context->dispatch_table, "[ERROR] context->dispatch_table alloc failed.", 0);
     init_opcode(context);
 
@@ -1410,6 +1517,7 @@ EXPORT_API GC void eval_apply_loop(context_t context, enum opcode_e opcode) {
         // 根据 opcode 取得对应函数
         assert(context->opcode >= 0 && context->opcode <= MAX_OP_CODE);
         op_code_info *vptr = &context->dispatch_table[context->opcode];
+        assert(vptr != NULL);
 
         // 内建函数则检查参数是否正确
         if (vptr->name != NULL) {
@@ -1539,12 +1647,22 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
             s_goto(context, OP_READ_SEXP);
 
         case OP_VALUE_PRINT:
+            if (context->debug) {
+                port_put_cstr(context, context->out_port, "\nReturn: ");
+            }
             if (is_file_interactive(context)) {
                 context->print_flag = 1;
                 context->args = context->value;
                 s_goto(context, OP_PRINT_OBJECT);
             }
         case OP_EVAL:
+            if (context->debug) {
+                s_save(context, OP_EVAL_REAL, context->args, context->code);
+                context->args = context->code;
+                port_put_cstr(context, context->out_port, "\nEval: ");
+                s_goto(context, OP_PRINT_OBJECT);
+            }
+        case OP_EVAL_REAL:
             if (is_symbol(context->code)) {
                 if (is_imm_true(symbol_is_syntax(context, context->code))) {
                     tmp1 = syntax_get_by_symbol(context, context->code);
@@ -1595,12 +1713,21 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 s_goto(context, OP_EVAL);
             } else {
                 // 求值结束, args 最后一个值是 procedure 类型
+                // 如果使用 reverse_in_place 会导致 call/cc 出错, 因为这扭曲了记录
+                // OP_LET1, OP_LET1REC 同
                 context->args = reverse(context, context->args);
                 context->code = pair_car(context->args);
                 context->args = pair_cdr(context->args);
                 s_goto(context, OP_APPLY);
             }
         case OP_APPLY:
+            if (context->debug) {
+                s_save(context, OP_APPLY_REAL, context->args, context->code);
+                context->args = context->code;
+                port_put_cstr(context, context->out_port, "\nApply: ");
+                s_goto(context, OP_PRINT_OBJECT);
+            }
+        case OP_APPLY_REAL:
             // TODO foreign
             if (is_proc(context->code)) {
                 s_goto(context, proc_get_opcode(context->code));
@@ -1609,7 +1736,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
 
                 new_frame_push_spec_env(context, closure_get_env(context->code));
                 // 遍历 closure 参数列表和 context->args 参数
-                for (tmp1 = closure_get_args(tmp1), tmp2 = context->args;
+                for (tmp1 = closure_get_args(context->code), tmp2 = context->args;
                      is_pair(tmp1);
                      tmp1 = pair_cdr(tmp1), tmp2 = pair_cdr(tmp2)) {
                     if (tmp2 == IMM_UNIT) {
@@ -1624,7 +1751,8 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 }
 
                 // args 是 list*, 不以 IMM_UNIT 结尾, 需要额外处理结尾
-                if (is_symbol(tmp1)) {
+                if (tmp1 == IMM_UNIT) {}
+                else if (is_symbol(tmp1)) {
                     new_slot_in_current_env(context, tmp1, tmp2);
                 } else {
                     Error_Throw_1(context, "syntax error in closure: not a symbol:", tmp1);
@@ -1635,6 +1763,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 context->args = IMM_UNIT;
                 s_goto(context, OP_BEGIN);
             } else if (is_ext_type_continuation(context->code)) {
+                // continuation 再次被调用时, 调用参数作为返回值
                 context->scheme_stack = continuation_get_stack(context->code);
                 if (context->args != IMM_UNIT) {
                     s_return(context, pair_car(context->args));
@@ -1703,6 +1832,7 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
                 s_return(context, IMM_FALSE);
             } else if (is_ext_type_closure(context->args) || is_ext_type_macro(context->args)) {
                 tmp1 = pair_make_op(context, context->LAMBDA, closure_get_code(context->args));
+                s_return(context, tmp1);
             } else {
                 s_return(context, IMM_FALSE);
             }
@@ -1742,15 +1872,18 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
             } else {
                 new_slot_in_current_env(context, context->code, context->value);
             }
+            // 返回保存在 context->code 的 symbol
+            s_return(context, context->code);
         case OP_MACRO0:
             if (is_pair(pair_car(context->code))) {
-                // (macro (macro_name form) body...)
+                // ((macro_name form) body...)
                 tmp1 = pair_caar(context->code);
                 // 构造 lambda 表达式
+                assert(is_symbol(pair_cadar(context->code)));
                 tmp2 = pair_make_op(context, pair_cdar(context->code), pair_cdr(context->code));
                 context->code = pair_make_op(context, context->LAMBDA, tmp2);
             } else {
-                // (macro macro_name (lambda (form) body...)
+                // (macro_name (lambda (form) body...)
                 tmp1 = pair_car(context->code);
                 tmp2 = pair_cadr(context->code);
             }
@@ -1770,6 +1903,7 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
             } else {
                 new_slot_in_current_env(context, context->code, context->value);
             }
+            s_return(context, context->code);
         case OP_BEGIN:
             // (begin value)
             if (!is_pair(context->code)) {
@@ -1781,7 +1915,7 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
                 s_save(context, OP_BEGIN, IMM_UNIT, pair_cdr(context->code));
             }
             // begin 表达式最后的 sexp 的值是返回值
-            context->code = pair_cdr(context->code);
+            context->code = pair_car(context->code);
             s_goto(context, OP_EVAL);
         case OP_IF0:
             // 保存 两个条件分支
@@ -2116,11 +2250,75 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
             promise_forced(context->code) = 1;
             s_return(context, context->value);
         case OP_CONS_STREAM0:
+            // (cons-stream a b)    =>  (cons a (delay b))
+            s_save(context, OP_CONS_STREAM1, IMM_UNIT, pair_cdr(context->code));
+            context->code = pair_car(context->code);
+            s_goto(context, OP_EVAL);
         case OP_CONS_STREAM1:
+            // 无参闭包
+            tmp1 = pair_make_op(context, IMM_UNIT, context->code);
+            tmp1 = closure_make_op(context, tmp1, context->current_env);
+            // promise
+            tmp1 = promise_make_op(context, tmp2);
+            tmp2 = pair_make_op(context, context->value, tmp1);
+            s_return(context, tmp2);
         case OP_CASE0:
-        case OP_CASE1:
+            // (case test-expr case-clause ...)
+            s_save(context, OP_CASE1, IMM_UNIT, pair_cdr(context->code));
+            context->code = pair_car(context->code);
+            // 先对 test-expr 求值
+            s_goto(context, OP_EVAL);
+        case OP_CASE1: {
+            // value    =>  eval_test_expr
+            // code     =>  ( [(1 2 3) ...begin]
+            //                [(4 5 6) ...begin] ...)
+            // 遍历 case-clause
+            for (tmp1 = context->code; tmp1 != IMM_UNIT; tmp1 = pair_cdr(tmp1)) {
+                // tmp2 =>  (1 2 3)
+                tmp2 = pair_caar(tmp1);
+                if (!is_pair(tmp2)) {
+                    break;
+                }
+                for (; tmp2 != IMM_UNIT; tmp2 = pair_cdr(tmp2)) {
+                    if (eqv(context, pair_car(tmp2), context->value)) {
+                        break;
+                    }
+                }
+                if (tmp2 != IMM_UNIT) {
+                    break;
+                }
+            }
+            if (tmp1 != IMM_UNIT) {
+                if (is_pair(pair_caar(tmp1))) {
+                    context->code = pair_cdar(tmp1);
+                    s_goto(context, OP_BEGIN);
+                } else {
+                    s_save(context, OP_CASE2, IMM_UNIT, pair_cdar(tmp1));
+                    context->code = pair_caar(tmp1);
+                    s_goto(context, OP_EVAL);
+                }
+            } else {
+                s_return(context, IMM_UNIT);
+            }
+        }
         case OP_CASE2:
+            if (is_imm_true(context->value)) {
+                s_goto(context, OP_BEGIN);
+            } else {
+                s_return(context, IMM_UNIT);
+            }
         case OP_CONTINUATION:
+            // call-with-current-continuation
+            // (call/cc procedure)
+            // value 作为返回值
+            context->code = pair_car(context->code);
+            tmp1 = continuation_make_op(context, context->scheme_stack);
+            tmp2 = pair_make_op(context, tmp1, IMM_UNIT);
+            // 将当前栈指针 (continuation) 传递给 procedure
+            context->args = tmp2;
+            // (apply procedure continuation)
+            // procedure 的返回值作为 call/cc 返回值
+            s_goto(context, OP_APPLY);
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -2157,10 +2355,41 @@ static object op_exec_compute(context_t context, enum opcode_e opcode) {
         case OP_REM:
         case OP_MOD:
         case OP_CAR:
+            // args     =>  (sexp1 sexp2 ...)
+            // sexp1    =>  (a b ...)
+            s_return(context, pair_caar(context->args));
         case OP_CDR:
+            s_return(context, pair_cdar(context->args));
         case OP_CONS:
+            // args     =>  (a . b)
+            // a        =>  a
+            // b        =>  (b)
+            pair_cdr(context->args) = pair_cadr(context->args);
+            s_return(context, context->args);
         case OP_SET_CAR:
+            if (!is_immutable(pair_car(context->args))) {
+                // args:    =>  (sexp1 value)
+                // sexp1:   =>  (a . (b . ...)
+                // value:   =>  (v . ())
+                // caar:    =>  a
+                // cadr:    =>  v
+                pair_caar(context->args) = pair_cadr(context->args);
+                s_return(context, pair_car(context->args));
+            } else {
+                Error_Throw_0(context, "set-car!: unable to alter immutable pair");
+            }
         case OP_SET_CDR:
+            if (!is_immutable(pair_car(context->args))) {
+                // args:    =>  (sexp1 value)
+                // sexp1:   =>  (a . (b . ...)
+                // value:   =>  (v . ())
+                // cdar:    =>  b
+                // cadr:    =>  v
+                pair_cdar(context->args) = pair_cadr(context->args);
+                s_return(context, pair_car(context->args));
+            } else {
+                Error_Throw_0(context, "set-car!: unable to alter immutable pair");
+            }
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "%d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -2230,11 +2459,11 @@ static object op_exec_io(context_t context, enum opcode_e opcode) {
     switch (opcode) {
         case OP_CURRENT_INPUT_PORT:
         case OP_CURRENT_OUTPUT_PORT:
-        case OP_OPEN_INPUT_PORT:
-        case OP_OPEN_OUTPUT_PORT:
-        case OP_OPEN_INPUT_OUTPUT_PORT:
-        case OP_OPEN_OUTPUT_STRING:
+        case OP_OPEN_INPUT_FILE:
+        case OP_OPEN_OUTPUT_FILE:
+        case OP_OPEN_INPUT_OUTPUT_FILE:
         case OP_OPEN_INPUT_STRING:
+        case OP_OPEN_OUTPUT_STRING:
         case OP_OPEN_INPUT_OUTPUT_STRING:
         case OP_GET_OUTPUT_STRING:
         case OP_CLOSE_INPUT_PORT:
@@ -2690,6 +2919,16 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
             }
             return IMM_UNIT;
         case OP_GC:
+        case OP_DEBUG: {
+            int64_t flag = i64_getvalue(pair_car(context->args));
+            if (flag) {
+                context->debug = 1;
+                s_return(context, IMM_TRUE);
+            } else {
+                context->debug = 0;
+                s_return(context, IMM_FALSE);
+            }
+        }
         case OP_ERROR:
             // args: (error "message" . object)
             assert(is_pair(context->args));
@@ -2731,6 +2970,16 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
                 }
             }
         case OP_PROC_DISPlAY:
+            if (is_pair(pair_cdr(context->args))) {
+                if (pair_cadr(context->args) != context->out_port) {
+                    tmp1 = pair_make_op(context, context->out_port, IMM_UNIT);
+                    s_save(context, OP_SET_OUTPUT_PORT, tmp1, IMM_UNIT);
+                    context->out_port = pair_cadr(context->args);
+                }
+            }
+            context->args = pair_car(context->args);
+            context->print_flag = 0;
+            s_goto(context, OP_PRINT_OBJECT);
         case OP_PROC_NEWLINE:
             if (is_pair(context->args)) {
                 if (pair_car(context->args) != context->out_port) {

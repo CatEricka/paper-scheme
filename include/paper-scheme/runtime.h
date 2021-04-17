@@ -754,7 +754,9 @@ EXPORT_API GC object list_star(context_t context, object list);
 EXPORT_API GC object closure_make_op(context_t context, object sexp, object env);
 
 #define closure_get_code(obj)   (pair_car(obj))
-#define closure_get_args(obj)   (pair_cdar(obj))
+// caar => closure args list
+// cdar => sexp body
+#define closure_get_args(obj)   (pair_caar(obj))
 #define closure_get_env(obj)    (pair_cdr(obj))
 
 // 其实就是 closure
@@ -763,5 +765,17 @@ EXPORT_API GC object macro_make_op(context_t context, object sexp, object env);
 EXPORT_API GC object continuation_make_op(context_t context, object stack);
 
 #define continuation_get_stack(obj)      (pair_cdr(obj))
+
+/**
+                           对象值操作: eqv
+******************************************************************************/
+/**
+ * 只作浅比较
+ * @param a
+ * @param b
+ * @return 0 / !0
+ */
+int eqv(context_t context, object a, object b);
+
 
 #endif //BASE_SCHEME_RUNTIME_H

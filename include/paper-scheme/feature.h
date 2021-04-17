@@ -195,4 +195,9 @@ uint32_t rand_helper();
 // repl 提示符
 #define USER_OVERTURE "ps => "
 
+/**
+                                标准库
+******************************************************************************/
+#define PAPER_SCHEME_INIT_DEFAULT_FILENAME "ps_init.scm"
+
 #endif // BASE_SCHEME_FEATURE_H

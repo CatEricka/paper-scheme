@@ -11,10 +11,12 @@ enum opcode_e {
     OP_TOP_LEVEL,
     OP_READ_INTERNAL,
     OP_VALUE_PRINT,
-    OP_EVAL,
+    OP_EVAL,                // eval debug 信息
+    OP_EVAL_REAL,
     OP_EXPAND_MACRO,
     OP_EVAL_ARGS,
-    OP_APPLY,
+    OP_APPLY,               // apply debug 信息
+    OP_APPLY_REAL,
     OP_GENSYM,              // (gensym)
 
     // op_exec_syntax
@@ -48,7 +50,7 @@ enum opcode_e {
     OP_AND1,
     OP_OR0,                 // (or sepx1 sexp2 ...)  短路求值, 返回第一个非 #t 的值
     OP_OR1,
-    OP_CASE0,               // (case val-expr case-clause ...)
+    OP_CASE0,               // (case test-expr case-clause ...)
     OP_CASE1,               // case-clause => [(datum ...) then-body ...]
     OP_CASE2,               //      | [else then-body ...]
     OP_DELAY,               // (delay expr) => promise
@@ -118,11 +120,11 @@ enum opcode_e {
     // op_exec_io
             OP_CURRENT_INPUT_PORT,
     OP_CURRENT_OUTPUT_PORT,
-    OP_OPEN_INPUT_PORT,
-    OP_OPEN_OUTPUT_PORT,
-    OP_OPEN_INPUT_OUTPUT_PORT,
-    OP_OPEN_OUTPUT_STRING,
+    OP_OPEN_INPUT_FILE,
+    OP_OPEN_OUTPUT_FILE,
+    OP_OPEN_INPUT_OUTPUT_FILE,
     OP_OPEN_INPUT_STRING,
+    OP_OPEN_OUTPUT_STRING,
     OP_OPEN_INPUT_OUTPUT_STRING,
     OP_GET_OUTPUT_STRING,
     OP_CLOSE_INPUT_PORT,
@@ -181,6 +183,7 @@ enum opcode_e {
 
     // op_exec_builtin_function
             OP_QUIT,        // (quit) | (quit ret_value)
+    OP_DEBUG,               // (debug 1/0)
     OP_GC,                  // (gc)
     OP_ERROR,               // (error "message" [error_obj ...])
     OP_ERROR_PRINT_OBJECT,

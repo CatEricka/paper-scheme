@@ -2526,3 +2526,34 @@ EXPORT_API GC object continuation_make_op(context_t context, object stack) {
     gc_release_param(context);
     return cont;
 }
+
+/**
+                           对象值操作: eqv
+******************************************************************************/
+/**
+ * 只作浅比较
+ * @param a
+ * @param b
+ * @return 0 / !0
+ */
+int eqv(context_t context, object a, object b) {
+    if (is_string(a)) {
+        return string_equals(context, a, b);
+    } else if (is_i64(a)) {
+        return i64_equals(context, a, b);
+    } else if (is_doublenum(a)) {
+        return d64_equals(context, a, b);
+    } else if (is_syntax(a)) {
+        return is_syntax(b) && (syntax_get_opcode(a) == syntax_get_opcode(b));
+    } else if (is_proc(a)) {
+        return is_proc(b) && (proc_get_opcode(a) == proc_get_opcode(b));
+    } else if (is_pair(a)) {
+        if (is_pair(b)) {
+            return (a == b) || ((pair_car(a) == pair_car(b)) && (pair_cdr(a) == pair_cdr(b)));
+        } else {
+            return 0;
+        }
+    } else {
+        return a == b;
+    }
+}

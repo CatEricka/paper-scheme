@@ -2,8 +2,23 @@
 
 int main() {
     context_t context = interpreter_create(0x800000, 2, 0x80000000);
-    printf("paper-scheme version 0.1 alpha");
-    int ret = interpreter_load_file(context, stdin);
+    printf("paper-scheme version 0.1 alpha\n");
+    int ret = 0;
+
+    // load ps_init.scm
+    FILE *init = fopen(PAPER_SCHEME_INIT_DEFAULT_FILENAME, "r");
+    if (init == NULL) {
+        printf("Error: cannot open "PAPER_SCHEME_INIT_DEFAULT_FILENAME"\n");
+    } else {
+        ret = interpreter_load_file_with_name(context, init, PAPER_SCHEME_INIT_DEFAULT_FILENAME);
+        fclose(init);
+        if (ret != NO_ERROR) {
+            printf("Error: "PAPER_SCHEME_INIT_DEFAULT_FILENAME" load failed\n");
+        }
+    }
+
+    // load stdin
+    ret = interpreter_load_file_with_name(context, stdin, "<stdin>");
 
     assert(context->saves == NULL);
     interpreter_destroy(context);

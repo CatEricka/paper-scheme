@@ -1125,10 +1125,6 @@ CHECKED OUT int stack_pop_op(REF object stack);
 // promise
 #define promise_forced(obj)         ((obj)->value.promise.forced)
 #define promise_get_value(obj)            ((obj)->value.promise.value)
-/**
-                           对象值操作: compare
-******************************************************************************/
-// todo 实现基础对象比较
 
 
 /**
