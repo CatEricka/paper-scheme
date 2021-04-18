@@ -3356,7 +3356,7 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
                 s_return(context, IMM_FALSE);
             }
         case OP_REAL_P:
-            s_return(context, setbool(is_doublenum(pair_car(context->args))));
+            s_return(context, setbool(is_number(pair_car(context->args))));
         case OP_CHAR_P:
             s_return(context, setbool(is_imm_char(pair_car(context->args))));
         case OP_CHAR_ALPHABETIC_P: {
