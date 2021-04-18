@@ -2575,6 +2575,9 @@ static object op_exec_compute(context_t context, enum opcode_e opcode) {
                 case OP_GEQ:
                     compare = number_ge;
                     break;
+                default:
+                    snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "opcode %d: illegal operator", opcode);
+                    Error_Throw_0(context, context->str_buffer);
             }
             tmp1 = pair_car(context->args);
             for (tmp2 = pair_cdr(context->args); tmp2 != IMM_UNIT; tmp2 = pair_cdr(tmp2)) {

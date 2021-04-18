@@ -44,6 +44,8 @@ if (MSVC)
     # fopen()
     target_compile_definitions(paper-scheme-exec PUBLIC "_CRT_SECURE_NO_WARNINGS")
     target_compile_definitions(paper-scheme-lib PUBLIC "_CRT_SECURE_NO_WARNINGS")
+else()
+    target_link_libraries(paper-scheme-lib m)
 endif (MSVC)
 
 # 测试
