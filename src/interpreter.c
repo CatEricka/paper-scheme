@@ -2489,7 +2489,7 @@ static object op_exec_compute(context_t context, enum opcode_e opcode) {
             if (real_result) {
                 s_return(context, doublenum_make_op(context, result));
             } else {
-                s_return(context, i64_make_op(context, result));
+                s_return(context, i64_make_op(context, (int64_t) result));
             }
         }
         case OP_FLOOR:
