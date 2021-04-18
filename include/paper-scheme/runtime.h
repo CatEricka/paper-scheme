@@ -754,7 +754,7 @@ EXPORT_API GC object reverse(context_t context, object list);
  * @param list_b
  * @return
  */
-EXPORT_API GC object reverse_append(context_t context, object list_a, object list_b)
+EXPORT_API GC object reverse_append(context_t context, object list_a, object list_b);
 
 /**
  * list*
