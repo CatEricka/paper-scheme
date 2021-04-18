@@ -2859,12 +2859,11 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
         case OP_LIST_APPEND:
             tmp1 = IMM_UNIT;
             tmp2 = context->args;
-            if (tmp2 == tmp1) {
+            if (tmp2 == IMM_UNIT) {
                 s_return(context, tmp1);
             }
 
-            /* cdr() in the while condition is not a typo. If car() */
-            /* is used (append '() 'a) will return the wrong result.*/
+            // 使用 cdr() 是因为如果使用 car(), (append '() 'a) 的结果会出错
             while (pair_cdr(tmp2) != IMM_UNIT) {
                 tmp1 = reverse_append(context, tmp1, pair_car(tmp2));
                 tmp2 = pair_cdr(tmp2);
@@ -2872,7 +2871,6 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
                     Error_Throw_0(context, "non-list argument to append");
                 }
             }
-
             s_return(context, reverse_in_place(context, pair_car(tmp2), tmp1));
         case OP_LIST_REVERSE:
             s_return(context, reverse(context, pair_car(context->args)));
@@ -2911,14 +2909,49 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             }
             s_return(context, tmp1);
         }
-        case OP_MAKE_VECTOR:
-            // TODO OP_MAKE_VECTOR
-        case OP_VECTOR_LENGTH:
-            // TODO OP_VECTOR_LENGTH
-        case OP_VECTOR_REF:
-            // TODO OP_VECTOR_REF
-        case OP_VECTOR_SET:
-            // TODO OP_VECTOR_SET
+        case OP_MAKE_VECTOR: {
+            tmp1 = IMM_UNIT;
+            int64_t len;
+
+            len = i64_getvalue(pair_car(context->args));
+
+            if (pair_cdr(context->args) != IMM_UNIT) {
+                tmp1 = pair_cadr(context->args);
+            }
+            // 参数检查保证 len 是正数
+            tmp2 = vector_make_op(context, (size_t) len);
+            if (tmp1 != IMM_UNIT) {
+                // 填充 vector
+                for (size_t i = 0; i < vector_len(tmp2); i++) {
+                    vector_ref(tmp2, i) = tmp1;
+                }
+            }
+            s_return(context, tmp2);
+        }
+        case OP_VECTOR_LENGTH: {
+            size_t len = vector_len(pair_car(context->args));
+            tmp1 = i64_make_op(context, (int64_t) len);
+            s_return(context, tmp1);
+        }
+        case OP_VECTOR_REF: {
+            size_t index = (size_t) i64_getvalue(pair_cadr(context->args));
+            if (index >= vector_len(pair_car(context->args))) {
+                Error_Throw_1(context, "vector-ref: out of bounds:", pair_cadr(context->args));
+            }
+            s_return(context, vector_ref(pair_car(context->args), index));
+        }
+        case OP_VECTOR_SET: {
+            if (is_immutable(pair_car(context->args))) {
+                Error_Throw_1(context, "vector-set!: unable to alter immutable vector:", pair_car(context->args));
+            }
+
+            size_t index = (size_t) i64_getvalue(pair_cadr(context->args));
+            if (index >= vector_len(pair_car(context->args))) {
+                Error_Throw_1(context, "vector-set!: out of bounds:", pair_cadr(context->args));
+            }
+            vector_set(pair_car(context->args), index, pair_caddr(context->args));
+            s_return(context, pair_car(context->args));
+        }
         case OP_NOT:
             s_return(context, setbool(pair_car(context->args) == IMM_FALSE));
         default:
