@@ -749,6 +749,9 @@ EXPORT_API void interpreter_destroy(context_t context) {
     // todo ÐÞ¸Ä context ºóÐÞ¸Ä interpreter_destroy
     if (context == NULL) return;
 
+#ifdef DEBUG_ONLY
+    context->tracing_opcode = 0;
+#endif
     context->debug = 0;
     context->repl_mode = 0;
 

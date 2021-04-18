@@ -334,7 +334,6 @@ EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum 
 
 /**
                               获取 hash 值
-                       todo 增加新类型重写 hash 算法
 ******************************************************************************/
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64);
 
@@ -380,13 +379,14 @@ EXPORT_API uint32_t syntax_hash_code(context_t context, object syntax);
 
 EXPORT_API uint32_t promise_hash_code(context_t context, object promise);
 
+// todo 增加新类型重写 hash 算法
+
 EXPORT_API uint32_t symbol_hash_code(context_t _context, object symbol);
 
 EXPORT_API uint32_t string_hash_code(context_t _context, object str);
 
 /**
                           equals 函数 (仅用于 hash 计算)
-                          todo 增加新类型重写 equals 算法
 ******************************************************************************/
 EXPORT_API int i64_equals(context_t context, object i64_a, object i64_b);
 
@@ -431,6 +431,7 @@ EXPORT_API int proc_equals(context_t context, object proc_a, object proc_b);
 EXPORT_API int syntax_equals(context_t context, object syntax_a, object syntax_b);
 
 EXPORT_API int promise_equals(context_t context, object promise_a, object promise_b);
+// todo 增加新类型重写 equals 算法
 
 /**
  * symbol 比较

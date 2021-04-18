@@ -718,7 +718,6 @@ EXPORT_API uint32_t pointer_with_type_to_hash(object ptr, enum object_type_enum 
 
 /**
                               获取 hash 值
-                       todo 增加新类型重写 hash 算法
 ******************************************************************************/
 EXPORT_API uint32_t i64_hash_code(context_t context, object i64) {
     assert(is_i64(i64));
@@ -856,6 +855,7 @@ EXPORT_API uint32_t promise_hash_code(context_t context, object promise) {
     assert(is_promise(promise));
     return promise->value.promise.hash;
 }
+// todo 增加新类型重写 hash 算法
 
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
@@ -1057,6 +1057,7 @@ EXPORT_API int promise_equals(context_t context, object promise_a, object promis
         return promise_a == promise_b;
     }
 }
+// todo 增加新类型重写 equals
 
 /**
  * symbol 比较

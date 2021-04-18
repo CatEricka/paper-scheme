@@ -714,5 +714,3 @@
                      (error "cond-expand : 'not' takes 1 argument")
                      (not (cond-eval (cadr condition)))))
             (else (error "cond-expand : unknown operator" (car condition)))))))
-
-(debug 1)

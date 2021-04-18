@@ -420,6 +420,8 @@ static void gc_adjust_ref(context_t context) {
                     assert(field_len == 1);
                 } else if (is_syntax(obj)) {
                     assert(field_len == 1);
+                } else if (is_promise(obj)) {
+                    assert(field_len == 1);
                 }
 #endif
 
