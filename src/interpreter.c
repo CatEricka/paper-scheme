@@ -2455,8 +2455,43 @@ static object op_exec_compute(context_t context, enum opcode_e opcode) {
                 tmp2 = doublenum_make_op(context, sqrt(doublenum_getvalue(tmp1)));
             }
             s_return(context, tmp2);
-        case OP_EXPT:
-            // TODO EXPT
+        case OP_EXPT: {
+            double result;
+            int real_result = 1;
+            tmp1 = pair_car(context->args);
+            tmp2 = pair_cadr(context->args);
+            if (is_i64(tmp1) && is_i64(tmp2)) {
+                real_result = 0;
+            }
+            double left, right;
+            if (is_i64(tmp1)) {
+                left = (double) i64_getvalue(tmp1);
+            } else {
+                left = doublenum_getvalue(tmp1);
+            }
+            if (is_i64(tmp2)) {
+                right = (double) i64_getvalue(tmp2);
+            } else {
+                right = doublenum_getvalue(tmp2);
+            }
+            // R5RS 兼容
+            // 移除该 if 为 R6RS 兼容
+            if (left == 0 && right < 0) {
+                result = 0.0;
+            } else {
+                result = pow(left, right);
+            }
+            // 确保 int64_t 能容纳这个数
+            if (!real_result) {
+                int64_t result_as_int64 = (int64_t) result;
+                if (result != (double) result_as_int64) real_result = 1;
+            }
+            if (real_result) {
+                s_return(context, doublenum_make_op(context, result));
+            } else {
+                s_return(context, i64_make_op(context, result));
+            }
+        }
         case OP_FLOOR:
             tmp1 = pair_car(context->args);
             if (is_i64(tmp1)) {
@@ -2473,10 +2508,23 @@ static object op_exec_compute(context_t context, enum opcode_e opcode) {
                 tmp2 = doublenum_make_op(context, ceil(doublenum_getvalue(tmp1)));
             }
             s_return(context, tmp2);
-        case OP_TRUNCATE:
-            // TODO TRUNCATE
+        case OP_TRUNCATE: {
+            double x;
+            tmp1 = pair_car(context->args);
+            x = doublenum_getvalue(tmp1);
+            if (x > 0) {
+                s_return(context, doublenum_make_op(context, floor(x)));
+            } else {
+                s_return(context, doublenum_make_op(context, ceil(x)));
+            }
+        }
         case OP_ROUND:
-            // TODO ROUND
+            tmp1 = pair_car(context->args);
+            if (is_i64(tmp1)) {
+                s_return(context, tmp1);
+            } else {
+                s_return(context, doublenum_make_op(context, round_per_R5RS(doublenum_getvalue(tmp1))));
+            }
         case OP_ADD: {
             tmp1 = ZERO;
             for (tmp2 = context->args; tmp2 != IMM_UNIT; tmp2 = pair_cdr(tmp2)) {
@@ -2809,9 +2857,13 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             tmp1 = list_star(context, context->args);
             s_return(context, tmp1);
         case OP_LIST_APPEND:
+            // TODO OP_LIST_APPEND
         case OP_LIST_REVERSE:
+            // TODO OP_LIST_REVERSE
         case OP_LIST_LENGTH:
+            // TODO OP_LIST_LENGTH
         case OP_ASSQ:
+            // TODO OP_ASSQ
         case OP_VECTOR: {
             int64_t len = list_length(context->args);
             int64_t i;
@@ -2825,9 +2877,13 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             s_return(context, tmp1);
         }
         case OP_MAKE_VECTOR:
+            // TODO OP_MAKE_VECTOR
         case OP_VECTOR_LENGTH:
+            // TODO OP_VECTOR_LENGTH
         case OP_VECTOR_REF:
+            // TODO OP_VECTOR_REF
         case OP_VECTOR_SET:
+            // TODO OP_VECTOR_SET
         case OP_NOT:
             s_return(context, setbool(pair_car(context->args) == IMM_FALSE));
         default:
@@ -2846,24 +2902,43 @@ static object op_exec_io(context_t context, enum opcode_e opcode) {
 
     switch (opcode) {
         case OP_CURRENT_INPUT_PORT:
+            // TODO OP_CURRENT_INPUT_PORT
         case OP_CURRENT_OUTPUT_PORT:
+            // TODO OP_CURRENT_OUTPUT_PORT
         case OP_OPEN_INPUT_FILE:
+            // TODO OP_OPEN_INPUT_FILE
         case OP_OPEN_OUTPUT_FILE:
+            // TODO OP_OPEN_OUTPUT_FILE
         case OP_OPEN_INPUT_OUTPUT_FILE:
+            // TODO OP_OPEN_INPUT_OUTPUT_FILE
         case OP_OPEN_INPUT_STRING:
+            // TODO OP_OPEN_INPUT_STRING
         case OP_OPEN_OUTPUT_STRING:
+            // TODO OP_OPEN_OUTPUT_STRING
         case OP_OPEN_INPUT_OUTPUT_STRING:
+            // TODO OP_OPEN_INPUT_OUTPUT_STRING
         case OP_GET_OUTPUT_STRING:
+            // TODO OP_GET_OUTPUT_STRING
         case OP_CLOSE_INPUT_PORT:
+            // TODO OP_CLOSE_INPUT_PORT
         case OP_CLOSE_OUTPUT_PORT:
+            // TODO OP_CLOSE_OUTPUT_PORT
         case OP_READ:
+            // TODO OP_READ
         case OP_READ_CHAR:
+            // TODO OP_READ_CHAR
         case OP_WRITE:
+            // TODO OP_WRITE
         case OP_WRITE_CHAR:
+            // TODO OP_WRITE_CHAR
         case OP_PEEK_CHAR:
+            // TODO OP_PEEK_CHAR
         case OP_CHAR_READY_P:
+            // TODO OP_CHAR_READY_P
         case OP_SET_INPUT_PORT:
+            // TODO OP_SET_INPUT_PORT
         case OP_SET_OUTPUT_PORT:
+            // TODO OP_SET_OUTPUT_PORT
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "opcode %d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -3177,9 +3252,13 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             assert(is_ext_type_environment(tmp1));
             tmp2 = find_slot_in_spec_env(context, tmp1, pair_car(context->args), 1);
             s_return(context, setbool(tmp2 == IMM_UNIT));
-        case OP_CLOSURE_P:
-            // macro 也是 closure
+        case OP_CLOSURE_P: {
+            // macro 也是闭包
+            tmp1 = pair_car(context->args);
+            s_return(context, setbool(is_ext_type_closure(tmp1) || is_ext_type_macro(tmp1)));
+        }
         case OP_MACRO_P:
+            s_return(context, setbool(is_ext_type_macro(pair_car(context->args))));
         case OP_BOOLEAN_P: {
             int f = (pair_car(context->args) == IMM_TRUE) || (pair_car(context->args) == IMM_FALSE);
             s_return(context, setbool(f));
