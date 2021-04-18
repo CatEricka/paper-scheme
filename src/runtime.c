@@ -1069,7 +1069,7 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
     assert(!is_null(v));
 
     gc_param3(context, hashmap, k, v);
-    gc_var7(context, vector, new_vector, old_key, old_value, new_entry, old_entry, entry_list);
+    gc_var8(context, vector, new_vector, old_key, old_value, new_entry, old_entry, entry_list, new_entry_list);
 
     hash_code_fn hash_fn = object_hash_helper(context, k);
     equals_fn equals = object_equals_helper(context, k);
@@ -1121,13 +1121,11 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
         // 转移旧的内容, 需要重新计算 index
         for (size_t i = 0; i < vec_len; i++) {
 
-            // 取出旧的 entry
-            entry_list = vector_ref(vector, i);
+            // 取出旧的 entry_list, 遍历重新计算 index
+            for (entry_list = vector_ref(vector, i); entry_list != IMM_UNIT;) {
 
-            if (entry_list != IMM_UNIT) {
-
-                // 不为空的时候需要进行 entry 重新 hash 并转移
-                // 否则不需要处理, 因为 vector 默认初始化为 IMM_UNIT
+                // 注意必须要对每个 object 重新计算 index
+                // 因为 a, b 对 n 同余, 但是对 2n 不一定同余
                 old_entry = pair_car(entry_list);
                 old_key = pair_car(old_entry);
                 size_t tmp_hash = 0;
@@ -1137,8 +1135,11 @@ hashmap_put_op(REF NOTNULL context_t context, object hashmap, REF NOTNULL object
                 }
                 size_t new_index = tmp_hash % new_len;
 
-                // 旧的 entry_list 的 hash 值应该都是相同的
-                vector_ref(new_vector, new_index) = entry_list;
+                // 重新构建 entry_list 链
+                new_entry_list = entry_list;
+                entry_list = pair_cdr(entry_list);
+                pair_cdr(new_entry_list) = vector_ref(new_vector, new_index);
+                vector_ref(new_vector, new_index) = new_entry_list;
             }
         }
         // 修改 vector
@@ -1444,7 +1445,7 @@ weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashs
     assert(!is_null(obj));
 
     gc_param2(context, weak_hashset, obj);
-    gc_var7(context, table, new_table, entry_list, new_entry, new_weak_ref, ref, old_object);
+    gc_var8(context, table, new_table, entry_list, new_entry_list, new_entry, new_weak_ref, ref, old_object);
 
     hash_code_fn hash_fn = object_hash_helper(context, obj);
     equals_fn equals = object_equals_helper(context, obj);
@@ -1514,9 +1515,7 @@ weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashs
         for (size_t i = 0; i < vector_length; i++) {
 
             // 取出旧的 entry
-            entry_list = vector_ref(table, i);
-
-            if (entry_list != IMM_UNIT) {
+            for (entry_list = vector_ref(table, i); entry_list != IMM_UNIT;) {
                 assert(is_pair(entry_list));
                 // 不为空的时候需要进行 entry 重新 hash 并转移
                 // 否则不需要处理, 因为 vector 默认初始化为 IMM_UNIT
@@ -1532,8 +1531,10 @@ weak_hashset_put_op(REF NOTNULL context_t context, REF NOTNULL object weak_hashs
                 }
                 size_t new_index = tmp_hash % new_length;
 
-                // 旧的 entry_list 的 hash 值应该都是相同的
-                vector_ref(new_table, new_index) = entry_list;
+                new_entry_list = entry_list;
+                entry_list = pair_cdr(entry_list);
+                pair_cdr(new_entry_list) = vector_ref(new_table, new_index);
+                vector_ref(new_table, new_index) = new_entry_list;
             }
         } // 扩容结束
 

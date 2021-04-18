@@ -234,10 +234,12 @@ UTEST(weak_hashset_test, strong_ref_remove_test) {
     // put symbol
     for (size_t i = 0; i < vector_len(vector); i++) {
         weak_hashset_put_op(context, set, vector_ref(vector, i));
+        ASSERT_EQ(weak_hashset_contains_op(context, set, vector_ref(vector, i)), IMM_TRUE);
     }
     ASSERT_EQ(weak_hashset_size_op(context, set), symbols_len);
     for (size_t i = 0; i < vector_len(vector2); i++) {
         weak_hashset_put_op(context, set2, vector_ref(vector2, i));
+        ASSERT_EQ(weak_hashset_contains_op(context, set2, vector_ref(vector2, i)), IMM_TRUE);
     }
     ASSERT_EQ(weak_hashset_size_op(context, set2), other_symbol_len);
 
