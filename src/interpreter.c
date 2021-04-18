@@ -2297,10 +2297,10 @@ static object op_exec_syntax(context_t context, enum opcode_e opcode) {
         case OP_CONS_STREAM1:
             // ÎÞ²Î±Õ°ü
             tmp1 = pair_make_op(context, IMM_UNIT, context->code);
-            tmp1 = closure_make_op(context, tmp1, context->current_env);
+            tmp2 = closure_make_op(context, tmp1, context->current_env);
             // promise
-            tmp1 = promise_make_op(context, tmp2);
-            tmp2 = pair_make_op(context, context->value, tmp1);
+            tmp2 = promise_make_op(context, tmp2);
+            tmp2 = pair_make_op(context, context->value, tmp2);
             s_return(context, tmp2);
         case OP_CASE0:
             // (case test-expr case-clause ...)

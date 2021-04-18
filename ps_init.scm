@@ -16,7 +16,7 @@
 (define (cddar x) (cdr (cdr (car x))))
 (define (cdddr x) (cdr (cdr (cdr x))))
 (define (caaaar x) (car (car (car (car x)))))
-(define (caaadr x) (car (car (car (cdr x)))))
+(define (caaadr x) (car (car (car (cd x)))))
 (define (caadar x) (car (car (cdr (car x)))))
 (define (caaddr x) (car (car (cdr (cdr x)))))
 (define (cadaar x) (car (cdr (car (car x)))))
