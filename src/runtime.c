@@ -2478,6 +2478,33 @@ EXPORT_API GC object reverse(context_t context, object list) {
 }
 
 /**
+ * list 拼接, 构造新的 list (逆序)
+ * @param context
+ * @param list_a
+ * @param list_b
+ * @return
+ */
+EXPORT_API GC object reverse_append(context_t context, object list_a, object list_b) {
+    assert(context != NULL);
+    gc_param2(context, list_a, list_b);
+    gc_var2(context, result, p);
+
+    result = list_a;
+    p = list_b;
+
+    while (is_pair(p)) {
+        result = pair_make_op(context, pair_car(p), result);
+        p = pair_cdr(p);
+    }
+
+    gc_release_param(context);
+    if (p == IMM_UNIT) {
+        return result;
+    }
+    return IMM_FALSE;
+}
+
+/**
  * list*
  * <p>返回不以 IMM_UNIT 结尾的 list</p>
  * <p>换句话说去掉原始 list 结尾的 IMM_UNIT</p>

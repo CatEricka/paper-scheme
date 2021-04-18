@@ -748,6 +748,15 @@ EXPORT_API object reverse_in_place(context_t context, object term, object list);
 EXPORT_API GC object reverse(context_t context, object list);
 
 /**
+ * list 拼接, 构造新的 list (逆序)
+ * @param context
+ * @param list_a
+ * @param list_b
+ * @return
+ */
+EXPORT_API GC object reverse_append(context_t context, object list_a, object list_b)
+
+/**
  * list*
  * <p>返回不以 IMM_UNIT 结尾的 list</p>
  * <p>换句话说去掉原始 list 结尾的 IMM_UNIT</p>
@@ -770,9 +779,9 @@ EXPORT_API GC object closure_make_op(context_t context, object sexp, object env)
 #define closure_get_env(obj)    (pair_cdr(obj))
 
 // 其实就是 closure
-EXPORT_API GC object macro_make_op(context_t context, object sexp, object env);
+              EXPORT_API GC object macro_make_op(context_t context, object sexp, object env);
 
-EXPORT_API GC object continuation_make_op(context_t context, object stack);
+              EXPORT_API GC object continuation_make_op(context_t context, object stack);
 
 #define continuation_get_stack(obj)      (pair_cdr(obj))
 

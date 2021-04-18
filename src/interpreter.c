@@ -2857,13 +2857,48 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             tmp1 = list_star(context, context->args);
             s_return(context, tmp1);
         case OP_LIST_APPEND:
-            // TODO OP_LIST_APPEND
+            tmp1 = IMM_UNIT;
+            tmp2 = context->args;
+            if (tmp2 == tmp1) {
+                s_return(context, tmp1);
+            }
+
+            /* cdr() in the while condition is not a typo. If car() */
+            /* is used (append '() 'a) will return the wrong result.*/
+            while (pair_cdr(tmp2) != IMM_UNIT) {
+                tmp1 = reverse_append(context, tmp1, pair_car(tmp2));
+                tmp2 = pair_cdr(tmp2);
+                if (tmp1 == IMM_FALSE) {
+                    Error_Throw_0(context, "non-list argument to append");
+                }
+            }
+
+            s_return(context, reverse_in_place(context, pair_car(tmp2), tmp1));
         case OP_LIST_REVERSE:
-            // TODO OP_LIST_REVERSE
-        case OP_LIST_LENGTH:
-            // TODO OP_LIST_LENGTH
+            s_return(context, reverse(context, pair_car(context->args)));
+        case OP_LIST_LENGTH: {
+            int64_t len = list_length(pair_car(context->args));
+            if (len < 0) {
+                Error_Throw_1(context, "length: not a list:", pair_car(context->args));
+            } else {
+                tmp1 = i64_make_op(context, len);
+                s_return(context, tmp1);
+            }
+        }
         case OP_ASSQ:
-            // TODO OP_ASSQ
+            tmp1 = pair_car(context->args);
+            for (tmp2 = pair_cadr(context->args); is_pair(tmp2); tmp2 = pair_cdr(tmp2)) {
+                if (!is_pair(pair_car(tmp2))) {
+                    Error_Throw_0(context, "unable to handle non pair element");
+                }
+                if (tmp1 == pair_caar(tmp2))
+                    break;
+            }
+            if (is_pair(tmp2)) {
+                s_return(context, pair_car(tmp2));
+            } else {
+                s_return(context, IMM_FALSE);
+            }
         case OP_VECTOR: {
             int64_t len = list_length(context->args);
             int64_t i;
