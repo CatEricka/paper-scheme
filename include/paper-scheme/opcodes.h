@@ -110,7 +110,7 @@ enum opcode_e {
     OP_STRING_SET,
     OP_STRING_APPEND,
     OP_SUBSTRING,
-    OP_LIST_AST,            //list*
+    OP_LIST_STAR,            //list*
     OP_LIST_APPEND,
     OP_LIST_REVERSE,
     OP_LIST_LENGTH,

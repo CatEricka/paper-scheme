@@ -2492,11 +2492,11 @@ EXPORT_API GC object list_star(context_t context, object list) {
 
     if (pair_cdr(list) == IMM_UNIT) {
         gc_release_param(context);
-        return pair_cdr(list);
+        return pair_car(list);
     }
 
-    list_head = pair_make_op(context, pair_car(list), pair_cdr(list));
-    cur = list_head;
+    cur = pair_make_op(context, pair_car(list), pair_cdr(list));
+    list_head = cur;
     while (pair_cddr(cur) != IMM_UNIT) {
         list = pair_make_op(context, pair_car(cur), pair_cdr(cur));
         if (pair_cddr(cur) != IMM_UNIT) {

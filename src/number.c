@@ -216,7 +216,7 @@ EXPORT_API GC object number_mod(context_t context, object a, object b) {
 
     res = e1 % e2;
     // 模必须和第二个操作数符号相同
-    if (res * e2 < 0) {
+    if ((res > 0 && e2 < 0) || (res < 0 && e2 > 0)) {
         res += e2;
     }
 

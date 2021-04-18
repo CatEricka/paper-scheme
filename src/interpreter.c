@@ -319,7 +319,7 @@ static int is_symbol_test(object obj) { return is_symbol(obj); }
 static int is_pair_test(object obj) { return is_pair(obj); }
 
 // 012
-static int is_list_test(object obj) { return obj == IMM_UNIT && is_pair(obj); }
+static int is_list_test(object obj) { return obj == IMM_UNIT || is_pair(obj); }
 
 // 013
 static int is_vector_test(object obj) { return is_vector(obj); }
@@ -497,7 +497,7 @@ op_code_info internal_dispatch_table[] = {
         {"string-set!", 3, 3, TYPE_STRING TYPE_NATURAL TYPE_CHAR, OP_STRING_SET, op_exec_object_operation},
         {"string-append", 0, ARGS_INF, TYPE_STRING, OP_STRING_APPEND, op_exec_object_operation},
         {"substring", 2, 3, TYPE_VECTOR TYPE_NATURAL, OP_SUBSTRING, op_exec_object_operation},
-        {"list*", 1, ARGS_INF, TYPE_NONE, OP_LIST_AST, op_exec_object_operation},
+        {"list*", 1, ARGS_INF, TYPE_NONE, OP_LIST_STAR, op_exec_object_operation},
         {"append", 0, ARGS_INF, TYPE_LIST, OP_LIST_APPEND, op_exec_object_operation},
         {"reverse", 1, 1, TYPE_LIST, OP_LIST_REVERSE, op_exec_object_operation},
         {"length", 1, 1, TYPE_LIST, OP_LIST_LENGTH, op_exec_object_operation},
@@ -1437,6 +1437,7 @@ static object error_throw(context_t context, const char *message, object obj) {
         context->opcode = OP_EVAL;
         return IMM_TRUE;
     }
+    // *error-hook* end
 
     // 默认异常处理方法
     if (obj == NULL) {
@@ -1698,7 +1699,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 } else {
                     Error_Throw_1(context, "eval: unbound variable:", context->code);
                 }
-            } else if (is_pair(context->code)) {
+            } else if (is_pair(context->code) && !is_ext_type(context->code)) {
                 tmp1 = pair_car(context->code);
                 if (is_symbol(tmp1) && is_imm_true(symbol_is_syntax(context, tmp1))) {
                     context->code = pair_cdr(context->code);
@@ -1747,8 +1748,8 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
         case OP_APPLY:
             if (context->debug) {
                 s_save(context, OP_APPLY_REAL, context->args, context->code);
-                context->args = context->code;
-                port_put_cstr(context, context->out_port, "\nApply: ");
+                context->print_flag = 1;
+                port_put_cstr(context, context->out_port, "\nApply to: ");
                 s_goto(context, OP_PRINT_OBJECT);
             }
         case OP_APPLY_REAL:
@@ -1765,6 +1766,8 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                      tmp1 = pair_cdr(tmp1), tmp2 = pair_cdr(tmp2)) {
                     if (tmp2 == IMM_UNIT) {
                         Error_Throw_0(context, "apply: not enough arguments");
+                    } else if (!is_pair(tmp2)) {
+                        Error_Throw_0(context, "apply: argument 2 must be pair");
                     } else {
                         if (is_symbol(pair_car(tmp1))) {
                             new_slot_in_current_env(context, pair_car(tmp1), pair_car(tmp2));
@@ -2775,8 +2778,30 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             }
             s_return(context, tmp2);
         }
-        case OP_SUBSTRING:
-        case OP_LIST_AST:
+        case OP_SUBSTRING: {
+            int64_t index_start, index_end, length;
+            tmp1 = pair_car(context->args);
+            index_start = i64_getvalue(pair_cadr(context->args));
+            if (index_start > (int64_t) string_len(tmp1)) {
+                Error_Throw_1(context, "substring: start out of bounds:", pair_cadr(context->args));
+            }
+            if (pair_cddr(context->args) != IMM_UNIT) {
+                index_end = i64_getvalue(pair_caddr(context->args));
+                if (index_end > (int64_t) string_len(tmp1) || index_start > index_end) {
+                    Error_Throw_1(context, "substring: end out of bounds:", pair_caddr(context->args));
+                }
+            } else {
+                index_end = string_len(tmp1);
+            }
+            length = index_end - index_start;
+            tmp2 = string_make_empty(context, length, ' ');
+            memcpy(string_get_cstr(tmp2), string_get_cstr(tmp1) + index_start, length);
+            string_get_cstr(tmp2)[length] = 0;
+            s_return(context, tmp2);
+        }
+        case OP_LIST_STAR:
+            tmp1 = list_star(context, context->args);
+            s_return(context, tmp1);
         case OP_LIST_APPEND:
         case OP_LIST_REVERSE:
         case OP_LIST_LENGTH:
@@ -3143,7 +3168,7 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             if (pair_cdr(context->args) != IMM_UNIT) {
                 tmp1 = pair_cadr(context->args);
             }
-            assert(is_ext_type_environment(tmp2));
+            assert(is_ext_type_environment(tmp1));
             tmp2 = find_slot_in_spec_env(context, tmp1, pair_car(context->args), 1);
             s_return(context, setbool(tmp2 == IMM_UNIT));
         case OP_CLOSURE_P:
@@ -3168,8 +3193,8 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             if (is_i64(tmp1)) {
                 s_return(context, IMM_TRUE);
             } else if (is_doublenum(tmp1)) {
-                int64_t i = (int64_t)(doublenum_getvalue(tmp1));
-                if ((double)i == doublenum_getvalue(tmp1)) {
+                int64_t i = (int64_t) (doublenum_getvalue(tmp1));
+                if ((double) i == doublenum_getvalue(tmp1)) {
                     s_return(context, IMM_TRUE);
                 } else {
                     s_return(context, IMM_FALSE);
@@ -3259,7 +3284,7 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             s_return(context, setbool(f));
         }
         case OP_PAIR_P:
-            s_return(context, setbool(is_pair(context->args)));
+            s_return(context, setbool(is_pair(pair_car(context->args))));
         case OP_LIST_P:
             s_return(context, setbool(list_length(pair_car(context->args)) >= 0));
         case OP_ENVIRONMENT_P:
@@ -3374,6 +3399,12 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
             s_goto(context, OP_EVAL);
         case OP_PROC_APPLY:
             // list *
+            if (pair_cdr(context->args) != IMM_UNIT) {
+                tmp1 = pair_cadr(context->args);
+                if (!is_object(tmp1) && tmp1 != IMM_UNIT) {
+                    Error_Throw_0(context, "apply: argument 2 must be list");
+                }
+            }
             context->code = pair_car(context->args);
             context->args = list_star(context, pair_cdr(context->args));
             s_goto(context, OP_APPLY);

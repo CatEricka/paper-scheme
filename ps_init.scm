@@ -32,6 +32,32 @@
 (define (cdddar x) (cdr (cdr (cdr (car x)))))
 (define (cddddr x) (cdr (cdr (cdr (cdr x)))))
 
+;;;; Utility to ease macro creation
+(define (macro-expand form)
+     ((eval (get-closure-code (eval (car form)))) form))
+
+(define (macro-expand-all form)
+   (if (macro? form)
+      (macro-expand-all (macro-expand form))
+      form))
+
+(define *compile-hook* macro-expand-all)
+
+
+(macro (unless form)
+     `(if (not ,(cadr form)) (begin ,@(cddr form))))
+
+(macro (when form)
+     `(if ,(cadr form) (begin ,@(cddr form))))
+
+; DEFINE-MACRO Contributed by Andy Gaynor
+(macro (define-macro dform)
+  (if (symbol? (cadr dform))
+    `(macro ,@(cdr dform))
+    (let ((form (gensym)))
+      `(macro (,(caadr dform) ,form)
+         (apply (lambda ,(cdadr dform) ,@(cddr dform)) (cdr ,form))))))
+
 ; Utilities for math. Notice that inexact->exact is primitive,
 ; but exact->inexact is not.
 (define exact? integer?)
@@ -315,6 +341,117 @@
                                          (foo level (cdr form)))))))))
    (foo 0 (car (cdr l)))))
 
+;;;;;Helper for the dynamic-wind definition.  By Tom Breton (Tehom)
+(define (shared-tail x y)
+   (let ((len-x (length x))
+         (len-y (length y)))
+      (define (shared-tail-helper x y)
+         (if
+            (eq? x y)
+            x
+            (shared-tail-helper (cdr x) (cdr y))))
+
+      (cond
+         ((> len-x len-y)
+            (shared-tail-helper
+               (list-tail x (- len-x len-y))
+               y))
+         ((< len-x len-y)
+            (shared-tail-helper
+               x
+               (list-tail y (- len-y len-x))))
+         (#t (shared-tail-helper x y)))))
+
+;;;;;Dynamic-wind by Tom Breton (Tehom)
+
+;;Guarded because we must only eval this once, because doing so
+;;redefines call/cc in terms of old call/cc
+(unless (defined? 'dynamic-wind)
+   (let
+      ;;These functions are defined in the context of a private list of
+      ;;pairs of before/after procs.
+      (  (*active-windings* '())
+         ;;We'll define some functions into the larger environment, so
+         ;;we need to know it.
+         (outer-env (current-environment)))
+
+      ;;Poor-man's structure operations
+      (define before-func car)
+      (define after-func  cdr)
+      (define make-winding cons)
+
+      ;;Manage active windings
+      (define (activate-winding! new)
+         ((before-func new))
+         (set! *active-windings* (cons new *active-windings*)))
+      (define (deactivate-top-winding!)
+         (let ((old-top (car *active-windings*)))
+            ;;Remove it from the list first so it's not active during its
+            ;;own exit.
+            (set! *active-windings* (cdr *active-windings*))
+            ((after-func old-top))))
+
+      (define (set-active-windings! new-ws)
+         (unless (eq? new-ws *active-windings*)
+            (let ((shared (shared-tail new-ws *active-windings*)))
+
+               ;;Define the looping functions.
+               ;;Exit the old list.  Do deeper ones last.  Don't do
+               ;;any shared ones.
+               (define (pop-many)
+                  (unless (eq? *active-windings* shared)
+                     (deactivate-top-winding!)
+                     (pop-many)))
+               ;;Enter the new list.  Do deeper ones first so that the
+               ;;deeper windings will already be active.  Don't do any
+               ;;shared ones.
+               (define (push-many new-ws)
+                  (unless (eq? new-ws shared)
+                     (push-many (cdr new-ws))
+                     (activate-winding! (car new-ws))))
+
+               ;;Do it.
+               (pop-many)
+               (push-many new-ws))))
+
+      ;;The definitions themselves.
+      (eval
+         `(define call-with-current-continuation
+             ;;It internally uses the built-in call/cc, so capture it.
+             ,(let ((old-c/cc call-with-current-continuation))
+                 (lambda (func)
+                    ;;Use old call/cc to get the continuation.
+                    (old-c/cc
+                       (lambda (continuation)
+                          ;;Call func with not the continuation itself
+                          ;;but a procedure that adjusts the active
+                          ;;windings to what they were when we made
+                          ;;this, and only then calls the
+                          ;;continuation.
+                          (func
+                             (let ((current-ws *active-windings*))
+                                (lambda (x)
+                                   (set-active-windings! current-ws)
+                                   (continuation x)))))))))
+         outer-env)
+      ;;We can't just say "define (dynamic-wind before thunk after)"
+      ;;because the lambda it's defined to lives in this environment,
+      ;;not in the global environment.
+      (eval
+         `(define dynamic-wind
+             ,(lambda (before thunk after)
+                 ;;Make a new winding
+                 (activate-winding! (make-winding before after))
+                 (let ((result (thunk)))
+                    ;;Get rid of the new winding.
+                    (deactivate-top-winding!)
+                    ;;The return value is that of thunk.
+                    result)))
+         outer-env)))
+
+(define call/cc call-with-current-continuation)
+
+
 ;;;;; atom? and equal? written by a.k
 
 ;;;; atom?
@@ -333,6 +470,35 @@
           ((string? x)
                (and (string? y) (string=? x y)))
           (else (eqv? x y))))
+
+;;;; (do ((var init inc) ...) (endtest result ...) body ...)
+;;
+(macro do
+  (lambda (do-macro)
+    (apply (lambda (do vars endtest . body)
+             (let ((do-loop (gensym)))
+               `(letrec ((,do-loop
+                           (lambda ,(map (lambda (x)
+                                           (if (pair? x) (car x) x))
+                                      `,vars)
+                             (if ,(car endtest)
+                               (begin ,@(cdr endtest))
+                               (begin
+                                 ,@body
+                                 (,do-loop
+                                   ,@(map (lambda (x)
+                                            (cond
+                                              ((not (pair? x)) x)
+                                              ((< (length x) 3) (car x))
+                                              (else (car (cdr (cdr x))))))
+                                       `,vars)))))))
+                  (,do-loop
+                    ,@(map (lambda (x)
+                             (if (and (pair? x) (cdr x))
+                               (car (cdr x))
+                               '()))
+                        `,vars)))))
+      do-macro)))
 
 ;;;; generic-member
 (define (generic-member cmp obj lst)
@@ -364,6 +530,146 @@
 
 (define (acons x y z) (cons (cons x y) z))
 
+;;;; Handy for imperative programs
+;;;; Used as: (define-with-return (foo x y) .... (return z) ...)
+(macro (define-with-return form)
+     `(define ,(cadr form)
+          (call/cc (lambda (return) ,@(cddr form)))))
+
+;;;; Simple exception handling
+;
+;    Exceptions are caught as follows:
+;
+;         (catch (do-something to-recover and-return meaningful-value)
+;              (if-something goes-wrong)
+;              (with-these calls))
+;
+;    "Catch" establishes a scope spanning multiple call-frames
+;    until another "catch" is encountered.
+;
+;    Exceptions are thrown with:
+;
+;         (throw "message")
+;
+;    If used outside a (catch ...), reverts to (error "message)
+
+(define *handlers* (list))
+
+(define (push-handler proc)
+     (set! *handlers* (cons proc *handlers*)))
+
+(define (pop-handler)
+     (let ((h (car *handlers*)))
+          (set! *handlers* (cdr *handlers*))
+          h))
+
+(define (more-handlers?)
+     (pair? *handlers*))
+
+(define (throw . x)
+     (if (more-handlers?)
+          (apply (pop-handler))
+          (apply error x)))
+
+(macro (catch form)
+     (let ((label (gensym)))
+          `(call/cc (lambda (exit)
+               (push-handler (lambda () (exit ,(cadr form))))
+               (let ((,label (begin ,@(cddr form))))
+                    (pop-handler)
+                    ,label)))))
+
+(define *error-hook* throw)
+
+
+;;;;; Definition of MAKE-ENVIRONMENT, to be used with two-argument EVAL
+
+(macro (make-environment form)
+     `(apply (lambda ()
+               ,@(cdr form)
+               (current-environment))))
+
+(define-macro (eval-polymorphic x . envl)
+  (display envl)
+  (let* ((env (if (null? envl) (current-environment) (eval (car envl))))
+         (xval (eval x env)))
+    (if (closure? xval)
+      (make-closure (get-closure-code xval) env)
+      xval)))
+
+; Redefine this if you install another package infrastructure
+; Also redefine 'package'
+(define *colon-hook* eval)
+
+;;;;; I/O
+
+(define (input-output-port? p)
+     (and (input-port? p) (output-port? p)))
+
+(define (close-port p)
+     (cond
+          ((input-output-port? p) (close-input-port p) (close-output-port p))
+          ((input-port? p) (close-input-port p))
+          ((output-port? p) (close-output-port p))
+          (else (throw "Not a port" p))))
+
+(define (call-with-input-file s p)
+     (let ((inport (open-input-file s)))
+          (if (eq? inport #f)
+               #f
+               (let ((res (p inport)))
+                    (close-input-port inport)
+                    res))))
+
+(define (call-with-output-file s p)
+     (let ((outport (open-output-file s)))
+          (if (eq? outport #f)
+               #f
+               (let ((res (p outport)))
+                    (close-output-port outport)
+                    res))))
+
+(define (with-input-from-file s p)
+     (let ((inport (open-input-file s)))
+          (if (eq? inport #f)
+               #f
+               (let ((prev-inport (current-input-port)))
+                    (set-input-port inport)
+                    (let ((res (p)))
+                         (close-input-port inport)
+                         (set-input-port prev-inport)
+                         res)))))
+
+(define (with-output-to-file s p)
+     (let ((outport (open-output-file s)))
+          (if (eq? outport #f)
+               #f
+               (let ((prev-outport (current-output-port)))
+                    (set-output-port outport)
+                    (let ((res (p)))
+                         (close-output-port outport)
+                         (set-output-port prev-outport)
+                         res)))))
+
+(define (with-input-output-from-to-files si so p)
+     (let ((inport (open-input-file si))
+           (outport (open-input-file so)))
+          (if (not (and inport outport))
+               (begin
+                    (close-input-port inport)
+                    (close-output-port outport)
+                    #f)
+               (let ((prev-inport (current-input-port))
+                     (prev-outport (current-output-port)))
+                    (set-input-port inport)
+                    (set-output-port outport)
+                    (let ((res (p)))
+                         (close-input-port inport)
+                         (close-output-port outport)
+                         (set-input-port prev-inport)
+                         (set-output-port prev-outport)
+                         res)))))
+
 ; Random number generator (maximum cycle)
 (define *seed* 1)
 (define (random-next)
@@ -374,3 +680,39 @@
                     (* (quotient *seed* q) r)))
           (if (< *seed* 0) (set! *seed* (+ *seed* m)))
           *seed*))
+;; SRFI-0
+;; COND-EXPAND
+;; Implemented as a macro
+(define *features* '(srfi-0 tinyscheme))
+
+(define-macro (cond-expand . cond-action-list)
+  (cond-expand-runtime cond-action-list))
+
+(define (cond-expand-runtime cond-action-list)
+  (if (null? cond-action-list)
+      #t
+      (if (cond-eval (caar cond-action-list))
+          `(begin ,@(cdar cond-action-list))
+          (cond-expand-runtime (cdr cond-action-list)))))
+
+(define (cond-eval-and cond-list)
+  (foldr (lambda (x y) (and (cond-eval x) (cond-eval y))) #t cond-list))
+
+(define (cond-eval-or cond-list)
+  (foldr (lambda (x y) (or (cond-eval x) (cond-eval y))) #f cond-list))
+
+(define (cond-eval condition)
+  (cond
+    ((symbol? condition)
+       (if (member condition *features*) #t #f))
+    ((eq? condition #t) #t)
+    ((eq? condition #f) #f)
+    (else (case (car condition)
+            ((and) (cond-eval-and (cdr condition)))
+            ((or) (cond-eval-or (cdr condition)))
+            ((not) (if (not (null? (cddr condition)))
+                     (error "cond-expand : 'not' takes 1 argument")
+                     (not (cond-eval (cadr condition)))))
+            (else (error "cond-expand : unknown operator" (car condition)))))))
+
+(debug 1)
