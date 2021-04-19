@@ -1756,7 +1756,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 s_goto(context, OP_PRINT_OBJECT);
             }
         case OP_APPLY_REAL:
-            // TODO foreign
+            // TODO ffi 实现
             if (is_proc(context->code)) {
                 s_goto(context, proc_get_opcode(context->code));
             } else if (is_ext_type_closure(context->code) ||
@@ -2970,43 +2970,149 @@ static object op_exec_io(context_t context, enum opcode_e opcode) {
 
     switch (opcode) {
         case OP_CURRENT_INPUT_PORT:
-            // TODO OP_CURRENT_INPUT_PORT
+            s_return(context, context->in_port);
         case OP_CURRENT_OUTPUT_PORT:
-            // TODO OP_CURRENT_OUTPUT_PORT
+            s_return(context, context->out_port);
         case OP_OPEN_INPUT_FILE:
-            // TODO OP_OPEN_INPUT_FILE
         case OP_OPEN_OUTPUT_FILE:
-            // TODO OP_OPEN_OUTPUT_FILE
-        case OP_OPEN_INPUT_OUTPUT_FILE:
-            // TODO OP_OPEN_INPUT_OUTPUT_FILE
+        case OP_OPEN_INPUT_OUTPUT_FILE: {
+            enum port_kind k;
+            switch (opcode) {
+                case OP_OPEN_INPUT_FILE:
+                    k = PORT_INPUT;
+                    break;
+                case OP_OPEN_OUTPUT_FILE:
+                    k = PORT_OUTPUT;
+                    break;
+                case OP_OPEN_INPUT_OUTPUT_FILE:
+                    k = PORT_INPUT | PORT_OUTPUT;
+                    break;
+                default:
+                    snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "opcode %d: illegal operator", opcode);
+                    Error_Throw_0(context, context->str_buffer);
+            }
+            tmp1 = stdio_port_from_filename_op(context, pair_car(context->args), k);
+            if (tmp1 == IMM_UNIT) {
+                s_return(context, IMM_FALSE);
+            } else {
+                s_return(context, tmp1);
+            }
+        }
         case OP_OPEN_INPUT_STRING:
-            // TODO OP_OPEN_INPUT_STRING
+            tmp1 = string_port_input_from_string_op(context, pair_car(context->args));
+            s_return(context, tmp1);
         case OP_OPEN_OUTPUT_STRING:
-            // TODO OP_OPEN_OUTPUT_STRING
+            if (pair_car(context->args) == IMM_UNIT) {
+                tmp1 = string_port_output_use_buffer_op(context);
+                s_return(context, tmp1);
+            } else {
+                tmp1 = string_port_in_out_put_from_string_use_buffer_op(context, pair_car(context->args));
+                s_return(context, tmp1);
+            }
         case OP_OPEN_INPUT_OUTPUT_STRING:
-            // TODO OP_OPEN_INPUT_OUTPUT_STRING
+            if (pair_car(context->args) == IMM_UNIT) {
+                tmp1 = string_port_in_out_put_use_buffer_op(context);
+                s_return(context, tmp1);
+            } else {
+                tmp1 = string_port_in_out_put_from_string_use_buffer_op(context, pair_car(context->args));
+                s_return(context, tmp1);
+            }
         case OP_GET_OUTPUT_STRING:
-            // TODO OP_GET_OUTPUT_STRING
+            tmp1 = pair_car(context->args);
+            if (is_srfi6_port(tmp1)) {
+                tmp1 = tmp1->value.string_port.string_buffer_data;
+                tmp2 = string_buffer_to_string_op(context, tmp1);
+                s_return(context, tmp2);
+            } else if (is_string_port(tmp1)) {
+                tmp1 = tmp1->value.string_port.string_buffer_data;
+                tmp2 = string_make_empty(context, string_len(tmp1), ' ');
+                memcpy(string_get_cstr(tmp2), string_get_cstr(tmp1), string_len(tmp1));
+                s_return(context, tmp2);
+            } else {
+                s_return(context, IMM_FALSE);
+            }
         case OP_CLOSE_INPUT_PORT:
-            // TODO OP_CLOSE_INPUT_PORT
+            tmp1 = pair_car(context->args);
+            if (is_stdio_port(tmp1) && is_stdio_port_input(tmp1)) {
+                stdio_finalizer(context, tmp1);
+                s_return(context, IMM_TRUE);
+            } else if (is_string_port_input(tmp1)) {
+                s_return(context, IMM_TRUE);
+            } else {
+                s_return(context, IMM_FALSE);
+            }
         case OP_CLOSE_OUTPUT_PORT:
-            // TODO OP_CLOSE_OUTPUT_PORT
+            tmp1 = pair_car(context->args);
+            if (is_stdio_port(tmp1) && is_stdio_port_output(tmp1)) {
+                stdio_finalizer(context, tmp1);
+                s_return(context, IMM_TRUE);
+            } else if (is_string_port_output(tmp1)) {
+                s_return(context, IMM_TRUE);
+            } else {
+                s_return(context, IMM_FALSE);
+            }
         case OP_READ:
-            // TODO OP_READ
+            if (!is_pair(context->args)) {
+                s_goto(context, OP_READ_INTERNAL);
+            }
+            tmp1 = pair_car(context->args);
+            if (!is_port_input(tmp1)) {
+                Error_Throw_1(context, "read: not an input port:", tmp1);
+            }
+            if (tmp1 == context->in_port) {
+                s_goto(context, OP_READ_INTERNAL);
+            }
+            tmp2 = context->in_port;
+            tmp2 = pair_make_op(context, tmp2, IMM_UNIT);
+            s_save(context, OP_SET_INPUT_PORT, tmp2, IMM_UNIT);
+            context->in_port = tmp1;
+            s_goto(context, OP_READ_INTERNAL);
         case OP_READ_CHAR:
-            // TODO OP_READ_CHAR
+            if (is_pair(context->args)) {
+                tmp1 = pair_car(context->args);
+            } else {
+                tmp1 = context->in_port;
+            }
+            tmp2 = port_get_char(tmp1);
+            s_return(context, IMM_EOF);
         case OP_WRITE:
-            // TODO OP_WRITE
         case OP_WRITE_CHAR:
-            // TODO OP_WRITE_CHAR
+            if (is_pair(pair_cdr(context->args))) {
+                if (pair_cadr(context->args) != context->out_port) {
+                    tmp1 = pair_make_op(context, context->out_port, IMM_UNIT);
+                    s_save(context, OP_SET_OUTPUT_PORT, tmp1, IMM_UNIT);
+                    context->out_port = pair_cadr(context->args);
+                }
+            }
+            context->args = pair_car(context->args);
+            if (opcode == OP_WRITE) {
+                context->print_flag = 1;
+            }
+            s_goto(context, OP_PRINT_OBJECT);
         case OP_PEEK_CHAR:
-            // TODO OP_PEEK_CHAR
-        case OP_CHAR_READY_P:
-            // TODO OP_CHAR_READY_P
+            if (is_pair(context->args)) {
+                tmp1 = pair_car(context->args);
+            } else {
+                tmp1 = context->in_port;
+            }
+            tmp2 = port_get_char(tmp1);
+            port_unget_char(tmp1, tmp2);
+            s_return(context, IMM_EOF);
+        case OP_CHAR_READY_P: {
+            tmp1 = context->in_port;
+            int res;
+            if (is_pair(context->args)) {
+                tmp1 = pair_car(context->args);
+            }
+            res = is_string_port(tmp1);
+            s_return(context, setbool(res));
+        }
         case OP_SET_INPUT_PORT:
-            // TODO OP_SET_INPUT_PORT
+            context->in_port = pair_car(context->args);
+            s_return(context, context->in_port);
         case OP_SET_OUTPUT_PORT:
-            // TODO OP_SET_OUTPUT_PORT
+            context->out_port = pair_car(context->args);
+            s_return(context, context->out_port);
         default:
             snprintf(context->str_buffer, INTERNAL_STR_BUFFER_SIZE, "opcode %d: illegal operator", opcode);
             Error_Throw_0(context, context->str_buffer);
@@ -3425,7 +3531,7 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             s_return(context, setbool(f));
         }
         case OP_PROCEDURE_P: {
-            // TODO foreign
+            // TODO ffi 实现
             // continuation 也是 procedure
             object p = pair_car(context->args);
             int f = is_proc(p) || is_ext_type_closure(p) || is_ext_type_continuation(p);
