@@ -551,7 +551,10 @@ context_make(IN size_t heap_init_size, IN size_t heap_growth_scale, IN size_t he
 
     // 初始化 gc 相关
     context->gc_collect_on = 1;
-    context->mark_stack_top = NULL;
+    context->mark_stack = raw_alloc(sizeof(gc_mark_stack_t));
+    notnull_or_return(context->mark_stack, "mark_stack alloc failed.", NULL);
+    context->mark_stack->prev = NULL;
+    context->mark_stack_top = 0;
     context->saves = NULL;
 
     // 修改为内部 port 实现; 解释器输入输出
@@ -583,6 +586,10 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     }
     if (context->_internal_scheme_type_specs != NULL) {
         context->_internal_scheme_type_specs = NULL;
+    }
+    if (context->mark_stack != NULL) {
+        raw_free(context->mark_stack);
+        context->mark_stack = NULL;
     }
     heap_destroy(context->heap);
     raw_free(context);

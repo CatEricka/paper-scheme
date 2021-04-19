@@ -26,12 +26,19 @@ typedef struct gc_illusory_dream {
 } *gc_saves_list_t;
 
 /**
- * gc 时遍历图结构用的标记栈
+ * gc 时遍历图结构用的标记栈 node
  */
-typedef struct gc_mark_stack_node_t {
+typedef struct gc_mark_stack_node_struct {
+    // 单个对象的起始和结束偏移量
     object *start, *end;
-    struct gc_mark_stack_node_t *prev;
-} *gc_mark_stack_ptr;
+} gc_mark_stack_node_t;
+
+typedef struct gc_mark_stack_struct {
+    // 前一个 stack
+    struct gc_mark_stack_struct *prev;
+    // 单个 stack 的实际容量
+    gc_mark_stack_node_t stack[GC_MAX_SINGLE_MARK_STACK_DEEP];
+} gc_mark_stack_t;
 
 /**
  * 类型信息
@@ -218,9 +225,9 @@ struct scheme_context_t {
     // 弱引用链, 用于 GC 时扫描对象后标记弱引用
     GC WEAK_REF object weak_ref_chain;
     // gc 标记栈
-    struct gc_mark_stack_node_t mark_stack[GC_MAX_MARK_STACK_DEEP];
+    gc_mark_stack_t *mark_stack;
     // 标记栈顶
-    gc_mark_stack_ptr mark_stack_top;
+    int64_t mark_stack_top;
 
     // 解释器输入输出
     GC object in_port;

@@ -13,42 +13,42 @@
 static void gc_mark_stack_push(context_t context, object *start, object *end) {
     assert(context != NULL);
 
-    if (context->mark_stack_top == NULL) {
-        // 初始状态, 栈顶指针为空, 让栈顶指针指向栈底, 再设置上一个节点为空
-        context->mark_stack_top = context->mark_stack;
-        context->mark_stack_top->prev = NULL;
-    } else if (context->mark_stack_top >= context->mark_stack &&
-               context->mark_stack_top + 1 < context->mark_stack + GC_MAX_MARK_STACK_DEEP) {
-        // 如果默认栈深度够大, 直接增加栈指针即可
-        gc_mark_stack_ptr old = context->mark_stack_top;
-        context->mark_stack_top++;
-        context->mark_stack_top->prev = old;
-    } else {
-        // 默认栈深度不足, 额外分配内存, 分配失败则停机
-        gc_mark_stack_ptr new_mark_stack_node = (gc_mark_stack_ptr) raw_alloc(sizeof(struct gc_mark_stack_node_t));
-        if (new_mark_stack_node == NULL) {
-            fprintf(stderr, "gc stack too deep.\n");
+    if (context->mark_stack_top >= GC_MAX_SINGLE_MARK_STACK_DEEP) {
+        // 栈满, 分配新栈
+        gc_mark_stack_t *new_stack = raw_alloc(sizeof(gc_mark_stack_t));
+        if (new_stack == NULL) {
+            fprintf(stderr, "gc stack too deep, new mark stack alloc failed.\n");
             exit(EXIT_FAILURE_MALLOC_FAILED);
         }
-        new_mark_stack_node->prev = context->mark_stack_top;
-        context->mark_stack_top = new_mark_stack_node;
+        // 重设标记栈
+        new_stack->prev = context->mark_stack;
+        context->mark_stack = new_stack;
+        context->mark_stack_top = 0;
     }
-
-    context->mark_stack_top->start = start;
-    context->mark_stack_top->end = end;
+    gc_mark_stack_node_t *node = &context->mark_stack->stack[context->mark_stack_top];
+    node->start = start;
+    node->end = end;
+    context->mark_stack_top++;
 }
 
 static void gc_mark_stack_pop(context_t context) {
     assert(context != NULL);
 
-    // 更新栈指针
-    gc_mark_stack_ptr old = context->mark_stack_top;
-    context->mark_stack_top = context->mark_stack_top->prev;
-
-    // 旧的栈顶指针如果指向默认栈以外的空间, 则说明需要释放
-    if (old < context->mark_stack || old >= context->mark_stack + GC_MAX_MARK_STACK_DEEP) {
-        printf("old %p, stack %p, top %p\n", old, context->mark_stack, context->mark_stack_top);
-        raw_free(old);
+    // 更新栈顶
+    if (context->mark_stack_top >= 1) {
+        context->mark_stack_top--;
+    } else {
+        // 否则 pop 后栈空, 释放内存
+        assert(context->mark_stack_top == 0);
+        if (context->mark_stack->prev != NULL) {
+            gc_mark_stack_t *pre_stack = context->mark_stack->prev;
+#ifdef USE_DEBUG_GC
+            printf("pop mark_stack: old stack %p, new stack %p\n", context->mark_stack, pre_stack);
+#endif
+            raw_free(context->mark_stack);
+            context->mark_stack = pre_stack;
+            context->mark_stack_top = GC_MAX_SINGLE_MARK_STACK_DEEP;
+        }
     }
 }
 
@@ -116,9 +116,10 @@ static void gc_mark_one_start(context_t context, object obj) {
     assert(context != NULL);
 
     gc_mark_one(context, obj);
-    while (context->mark_stack_top != NULL) {
-        object *start = context->mark_stack_top->start;
-        object *end = context->mark_stack_top->end;
+    while (!(context->mark_stack_top == 0 && context->mark_stack->prev == NULL)) {
+        gc_mark_stack_node_t *node = &context->mark_stack->stack[context->mark_stack_top - 1];
+        object *start = node->start;
+        object *end = node->end;
         gc_mark_stack_pop(context);
         for (; start <= end; start++) {
             gc_mark_one(context, *start);

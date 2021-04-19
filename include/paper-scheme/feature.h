@@ -31,10 +31,7 @@
                                 调试定义
 ******************************************************************************/
 // 使用带有 debug 信息的 gc
-// DEBUG_ONLY 宏, 见 CMakeLists.txt 定义
-#ifdef DEBUG_ONLY
-# define USE_DEBUG_GC 1
-#endif
+# define USE_DEBUG_GC 0
 
 
 /**
@@ -157,7 +154,7 @@ uint32_t rand_helper();
                                 gc 特征
 ******************************************************************************/
 // 初始标记栈深度
-#define GC_MAX_MARK_STACK_DEEP 1024u
+#define GC_MAX_SINGLE_MARK_STACK_DEEP 2048
 
 /**
                                解释器特征
