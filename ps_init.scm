@@ -1,5 +1,5 @@
 ; paper-scheme init
-; version 0.1 alpha
+; version 1.0
 ; thanks to TinySCHEME and MiniSCHEME
 
 ; Per R5RS, up to four deep compositions should be defined

@@ -2,7 +2,7 @@
 
 int main() {
     context_t context = interpreter_create(0x800000, 2, 0x80000000);
-    printf("paper-scheme version 0.1 alpha\n");
+    printf("paper-scheme version 1.0\n");
     int ret = 0;
 
     // load ps_init.scm
