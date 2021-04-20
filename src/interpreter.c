@@ -1746,6 +1746,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 context->args = reverse(context, context->args);
                 context->code = pair_car(context->args);
                 context->args = pair_cdr(context->args);
+                // args 是 list*, 不包含 '()
                 s_goto(context, OP_APPLY);
             }
         case OP_APPLY:
@@ -1780,11 +1781,11 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                     }
                 }
 
-                // args 是 list*, 不以 IMM_UNIT 结尾, 需要额外处理结尾
-                if (tmp1 == IMM_UNIT) {}
-                else if (is_symbol(tmp1)) {
+                // 闭包结构是 list*, 不以 IMM_UNIT 结尾, 需要额外处理结尾
+                // 如果 tmp1 为空说明是无参闭包
+                if (is_symbol(tmp1)) {
                     new_slot_in_current_env(context, tmp1, tmp2);
-                } else {
+                } else if (tmp1 != IMM_UNIT) {
                     Error_Throw_1(context, "syntax error in closure: not a symbol:", tmp1);
                 }
 
