@@ -1,13 +1,15 @@
 # Paper Scheme
 
-简单的 scheme 实现, 元循环实现基于 TinySCHEME (http://tinyscheme.sourceforge.net/home.html)
+简单的 scheme 实现, 元循环实现和标准库基于 TinySCHEME（http://tinyscheme.sourceforge.net/home.html）
+
+标记指针的实现参考了 Chibi-Scheme （https://github.com/ashinn/chibi-scheme）
 
 ## 特征:
 
-- 支持标记-整理 (Mark-Compact) 垃圾回收算法
+- 使用标记-整理 (Mark-Compact) 垃圾回收算法
     - 这意味着所有 C 函数都要对栈上的对象参数谨慎使用, 因为垃圾回收会移动对象
 - 支持 int64_t, char, boolean, '(), EOF 类型的标记指针
-    - 这些都不是真正的对象, 而是带有特殊标记的指针立即数，可以节省内存使用
+    - 这些都不是真正的对象, 而是带有特殊标记的指针立即数（详见 include/paper-scheme/object.h），可以节省内存使用，理论上提高性能
 
 ## 已知问题:
     
@@ -68,4 +70,4 @@ TinySCHEME 的作者 D. Souflis 与贡献者
 
 Mini-Scheme 的作者与贡献者：Atsushi Moriwaki，Akira KIDA，R.C. Secrist
 
-TinySCHEME covered by a BSD-style license
+Chibi-Scheme 的作者 Alex Shinn 与贡献者
