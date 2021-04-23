@@ -391,7 +391,7 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode);
 /**
  * op_exec_ 分发表内部定义
  */
-op_code_info internal_dispatch_table[] = {
+op_code_info const internal_dispatch_table[] = {
         // op_exec_repl
         {"load", 1, 1, TYPE_STRING, OP_LOAD, op_exec_repl},
         {NULL, 0, 0, TYPE_NONE, OP_TOP_LEVEL_SETUP, op_exec_repl},
@@ -597,7 +597,7 @@ op_code_info internal_dispatch_table[] = {
 
 static GC void init_opcode(context_t context) {
     for (size_t i = 0; i < sizeof(internal_dispatch_table) / sizeof(op_code_info); i++) {
-        op_code_info *info = &internal_dispatch_table[i];
+        op_code_info const *info = &internal_dispatch_table[i];
         int op = info->op;
         context->dispatch_table[op].func = info->func;
         context->dispatch_table[op].min_args_length = info->min_args_length;
@@ -796,6 +796,10 @@ EXPORT_API void interpreter_destroy(context_t context) {
     context->save_port = IMM_UNIT;
 
     context->saves = NULL;
+
+    if (context->dispatch_table != NULL) {
+        raw_free(context->dispatch_table);
+    }
 
     // 全局清理, 因为根引用都被清理了
     gc_collect(context);
@@ -2852,7 +2856,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
             }
             length = index_end - index_start;
             tmp2 = string_make_empty(context, length, ' ');
-            memcpy(string_get_cstr(tmp2), string_get_cstr(tmp1) + index_start, length);
+            memcpy(string_get_cstr(tmp2), string_get_cstr(tmp1) + index_start, (size_t) length);
             string_get_cstr(tmp2)[length] = 0;
             s_return(context, tmp2);
         }

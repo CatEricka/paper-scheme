@@ -79,6 +79,11 @@ UTEST(runtime_test, auto_imm_test) {
             ASSERT_EQ(tests[i], i64_getvalue(obj));
         }
     }
+
+    if (tests != NULL) {
+        free(tests);
+    }
+    context_destroy(context);
 }
 
 UTEST(runtime_test, context_runtime_type_test) {

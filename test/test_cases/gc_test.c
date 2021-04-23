@@ -218,6 +218,9 @@ UTEST(gc_test, alloc_test) {
         ASSERT_EQ(objs[i]->value.i64, 3000);
     }
 
+    if (objs != NULL) {
+        free(objs);
+    }
     // �ͷŶѽṹ
     context_destroy(context);
 }

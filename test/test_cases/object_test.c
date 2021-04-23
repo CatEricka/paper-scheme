@@ -142,4 +142,8 @@ UTEST(object_test, i64_imm_test) {
         ASSERT_FALSE(is_object(obj));
         ASSERT_EQ(tests[i], i64_getvalue(obj));
     }
+
+    if (tests != NULL) {
+        free(tests);
+    }
 }

@@ -1,4 +1,5 @@
 ﻿#include <paper-scheme/paper-scheme.h>
+// #include <vld.h>
 
 int main() {
     context_t context = interpreter_create(0x800000, 2, 0x80000000);

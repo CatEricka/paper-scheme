@@ -25,6 +25,8 @@ UTEST(port_test, port_get_char_test) {
     ASSERT_EQ(IMM_EOF, ch);
     ASSERT_TRUE(is_port_eof(port));
     UTEST_PRINTF("\"EOF\n");
+
+    context_destroy(context);
 }
 
 UTEST(port_test, port_unget_char_test) {
@@ -68,6 +70,7 @@ UTEST(port_test, port_unget_char_test) {
     ch = port_get_char(port);
     UTEST_PRINTF("\"EOF\n");
     ASSERT_EQ(IMM_EOF, ch);
+    context_destroy(context);
 }
 
 UTEST(port_test, port_output_test) {
@@ -154,4 +157,6 @@ UTEST(port_test, port_output_test) {
     ASSERT_EQ(IMM_EOF, ch);
     ASSERT_TRUE(is_port_eof(port));
     UTEST_PRINTF("\"EOF\n");
+
+    context_destroy(context);
 }
