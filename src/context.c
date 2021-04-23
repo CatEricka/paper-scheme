@@ -587,9 +587,10 @@ EXPORT_API void context_destroy(IN NOTNULL context_t context) {
     if (context->_internal_scheme_type_specs != NULL) {
         context->_internal_scheme_type_specs = NULL;
     }
-    if (context->mark_stack != NULL) {
-        raw_free(context->mark_stack);
-        context->mark_stack = NULL;
+    while (context->mark_stack != NULL) {
+        gc_mark_stack_t *stack = context->mark_stack;
+        context->mark_stack = context->mark_stack->prev;
+        raw_free(stack);
     }
     heap_destroy(context->heap);
     raw_free(context);

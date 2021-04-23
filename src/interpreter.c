@@ -1438,6 +1438,7 @@ static object error_throw(context_t context, const char *message, object obj) {
         context->code = pair_make_op(context, env_slot_value(err_hook), context->code);
         // 求值
         context->opcode = OP_EVAL;
+        gc_release_param(context);
         return IMM_TRUE;
     }
     // *error-hook* end
@@ -3578,6 +3579,7 @@ static object op_exec_builtin_function(context_t context, enum opcode_e opcode) 
                 // 无参数则默认正常退出
                 context->ret = 0;
             }
+            gc_release_var(context);
             return IMM_UNIT;
         case OP_GC:
             gc_collect(context);

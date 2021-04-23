@@ -213,6 +213,7 @@ string_make_empty(REF NOTNULL context_t context, int64_t count, char fill) {
 EXPORT_API OUT NOTNULL GC object
 string_make_copy(REF NOTNULL context_t context, COPY object str) {
     assert(context != NULL);
+    gc_param1(context, str);
     size_t cstr_len = string_len(str) + 1;
 
     object ret = raw_object_make(context, OBJ_STRING,
@@ -221,6 +222,7 @@ string_make_copy(REF NOTNULL context_t context, COPY object str) {
     memcpy(string_get_cstr(ret), string_get_cstr(str), cstr_len);
     string_get_cstr(ret)[cstr_len - 1] = '\0';
     ret->value.string.hash = string_hash_helper(ret);
+    gc_release_param(context);
     return ret;
 }
 
