@@ -866,11 +866,19 @@ EXPORT_API uint32_t promise_hash_code(context_t context, object promise) {
 
 EXPORT_API uint32_t symbol_hash_code(context_t context, object symbol) {
     assert(is_symbol(symbol));
+    if (is_modified(symbol)) {
+        symbol->value.symbol.hash = symbol_hash_helper(symbol);
+        unset_modified(symbol);
+    }
     return symbol->value.symbol.hash;
 }
 
 EXPORT_API uint32_t string_hash_code(context_t context, object str_obj) {
     assert(is_string(str_obj));
+    if (is_modified(str_obj)) {
+        str_obj->value.string.hash = string_hash_helper(str_obj);
+        unset_modified(str_obj);
+    }
     return str_obj->value.string.hash;
 }
 

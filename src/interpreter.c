@@ -2813,6 +2813,7 @@ static object op_exec_object_operation(context_t context, enum opcode_e opcode) 
 
             ch = char_imm_getvalue(pair_caddr(context->args));
             string_index(tmp1, index) = ch;
+            set_modified(tmp1);
             s_return(context, tmp1);
         }
         case OP_STRING_APPEND: {

@@ -94,6 +94,15 @@ EXPORT_API OUT NOTNULL GC object
 string_make_empty(REF NOTNULL context_t context, int64_t count, char fill);
 
 /**
+ * 拷贝构造 string 类型对象
+ * @param context
+ * @param 被拷贝 string
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+string_make_copy(REF NOTNULL context_t context, COPY object str);
+
+/**
  * 构造 string_buffer 对象
  * @param context
  * @param char_size char 容量, 注意 string_buffer 不以 '\0' 结束

@@ -31,6 +31,7 @@ raw_object_make(REF NOTNULL context_t context, IN object_type_tag type, IN size_
     ret->magic = OBJECT_HEADER_MAGIC;
     set_ext_type_tag_none(ret);
     set_mutable(ret);
+    unset_modified(ret);
     ret->type = type;
     ret->marked = 0;
     ret->padding_size = (uint8_t) padding_size;   // 填充大小可能为0
@@ -204,6 +205,28 @@ string_make_empty(REF NOTNULL context_t context, int64_t count, char fill) {
 }
 
 /**
+ * 拷贝构造 string 类型对象
+ * @param context
+ * @param 被拷贝 string
+ * @return
+ */
+EXPORT_API OUT NOTNULL GC object
+string_make_copy(REF NOTNULL context_t context, COPY object str) {
+    assert(context != NULL);
+    assert(count >= 0);
+    size_t cstr_len = string_len(str) + 1;
+
+    object ret = raw_object_make(context, OBJ_STRING,
+                                 object_sizeof_base(string) + sizeof(char) * cstr_len);
+    ret->value.string.len = cstr_len;
+    memcpy(string_get_cstr(ret), string_get_cstr(str), cstr_len);
+    string_get_cstr(ret)[cstr_len - 1] = '\0';
+    ret->value.string.hash = string_hash_helper(ret);
+    return ret;
+}
+
+
+/**
  * 构造 string_buffer 对象
  * @param context
  * @param char_size char 容量, 注意 string_buffer 不以 '\0' 结束
@@ -324,10 +347,17 @@ string_port_input_from_string_op(REF NOTNULL context_t context, REF NULLABLE obj
     assert(is_string(str));
 
     gc_param1(context, str);
+    gc_var1(context, s);
+
+    if (is_immutable(str)) {
+        s = str;
+    } else {
+        s = string_make_copy(context, str);
+    }
 
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
     ret->value.string_port.kind = PORT_INPUT;
-    ret->value.string_port.string_buffer_data = str;
+    ret->value.string_port.string_buffer_data = s;
     ret->value.string_port.current = 0;
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
@@ -350,7 +380,8 @@ string_port_output_use_buffer_op(REF NOTNULL context_t context) {
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
 
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_SRFI6;
-    ret->value.string_port.string_buffer_data = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
+    str_buffer = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
+    ret->value.string_port.string_buffer_data = str_buffer;
     ret->value.string_port.current = 0;
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
@@ -374,7 +405,8 @@ string_port_in_out_put_use_buffer_op(REF NOTNULL context_t context) {
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
 
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_INPUT | (unsigned) PORT_SRFI6;
-    ret->value.string_port.string_buffer_data = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
+    str_buffer = string_buffer_make_op(context, STRING_BUFFER_DEFAULT_INIT_SIZE);
+    ret->value.string_port.string_buffer_data = str_buffer;
     ret->value.string_port.current = 0;
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 
@@ -399,7 +431,8 @@ string_port_in_out_put_from_string_use_buffer_op(REF NOTNULL context_t context, 
     object ret = raw_object_make(context, OBJ_STRING_PORT, object_sizeof_base(string_port));
 
     ret->value.string_port.kind = (unsigned) PORT_OUTPUT | (unsigned) PORT_INPUT | (unsigned) PORT_SRFI6;
-    ret->value.string_port.string_buffer_data = string_buffer_make_from_string_op(context, str);
+    str_buffer = string_buffer_make_from_string_op(context, str);
+    ret->value.string_port.string_buffer_data = str_buffer;
     ret->value.string_port.current = 0;
     ret->value.string_port.hash = pointer_with_type_to_hash(ret, OBJ_STRING_PORT);
 

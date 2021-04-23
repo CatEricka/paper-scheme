@@ -142,6 +142,8 @@ struct object_struct_t {
     uint8_t marked: 1;
     // 是否为不可变对象
     uint8_t immutable: 1;
+    // 标记对象是否修改过, 用于字符串类型的hash缓存更新
+    uint8_t modified: 1;
     // 对象尾部对齐填充大小
     uint8_t padding_size;
     // 对象类型
@@ -661,6 +663,9 @@ EXPORT_API OUT OUT size_t object_bootstrap_sizeof(REF NOTNULL object obj);
 #define set_immutable(obj) ((obj)->immutable = 1)
 #define set_mutable(obj) ((obj)->immutable = 0)
 
+#define is_modified(obj) ((obj)->modified)
+#define set_modified(obj) ((obj)->modified = 1)
+#define unset_modified(obj) ((obj)->modified = 0)
 
 /**
                            对象值操作: is_a
