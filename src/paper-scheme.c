@@ -19,7 +19,8 @@ int main() {
     }
 
     // load stdin
-    setvbuf(stdout, NULL, _IONBF, 1024);
+    // only debug
+    // setvbuf(stdout, NULL, _IONBF, 1024);
     ret = interpreter_load_file_with_name(context, stdin, "<stdin>");
 
     assert(context->saves == NULL);
