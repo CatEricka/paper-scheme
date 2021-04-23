@@ -316,7 +316,7 @@ static int is_string_test(object obj) { return is_string(obj); }
 static int is_symbol_test(object obj) { return is_symbol(obj); }
 
 // 011
-static int is_pair_test(object obj) { return is_pair(obj); }
+static int is_pair_test(object obj) { return is_pair(obj) && !is_ext_type(obj); }
 
 // 012
 static int is_list_test(object obj) { return obj == IMM_UNIT || is_pair(obj); }
@@ -3545,7 +3545,8 @@ static object op_exec_predicate(context_t context, enum opcode_e opcode) {
             s_return(context, setbool(f));
         }
         case OP_PAIR_P:
-            s_return(context, setbool(is_pair(pair_car(context->args))));
+            tmp1 = pair_car(context->args);
+            s_return(context, setbool(is_pair(tmp1) && !is_ext_type(tmp1)));
         case OP_LIST_P:
             s_return(context, setbool(list_length(pair_car(context->args)) >= 0));
         case OP_ENVIRONMENT_P:

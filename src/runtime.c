@@ -213,7 +213,6 @@ string_make_empty(REF NOTNULL context_t context, int64_t count, char fill) {
 EXPORT_API OUT NOTNULL GC object
 string_make_copy(REF NOTNULL context_t context, COPY object str) {
     assert(context != NULL);
-    assert(count >= 0);
     size_t cstr_len = string_len(str) + 1;
 
     object ret = raw_object_make(context, OBJ_STRING,
