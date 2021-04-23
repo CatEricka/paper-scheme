@@ -13,7 +13,7 @@ int64_t i64_arithmetic_right_shift(int64_t x, size_t n) {
     if (compile_use_arithmetic_right_shift) {
         return x >> n;
     } else {
-        if (x < 0) return (x >> n) | ~(~((size_t) 0u) >> n);
+        if (x < 0) return (x >> n) | ~(~((uint64_t) 0u) >> n);
         else return x >> n;
     }
 }
