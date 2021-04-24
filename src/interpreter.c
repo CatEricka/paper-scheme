@@ -1788,7 +1788,11 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
 
                 // 闭包结构是 list*, 不以 IMM_UNIT 结尾, 需要额外处理结尾
                 // 如果 tmp1 为空说明是无参闭包
-                if (is_symbol(tmp1)) {
+                if (tmp1 == IMM_UNIT) {
+                    if (tmp2 != IMM_UNIT) {
+                        Error_Throw_0(context, "apply: too many arguments");
+                    }
+                } else if (is_symbol(tmp1)) {
                     new_slot_in_current_env(context, tmp1, tmp2);
                 } else if (tmp1 != IMM_UNIT) {
                     Error_Throw_1(context, "syntax error in closure: not a symbol:", tmp1);
