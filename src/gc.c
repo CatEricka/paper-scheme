@@ -42,7 +42,7 @@ static void gc_mark_stack_pop(context_t context) {
         assert(context->mark_stack_top == 0);
         if (context->mark_stack->prev != NULL) {
             gc_mark_stack_t *pre_stack = context->mark_stack->prev;
-#ifdef USE_DEBUG_GC
+#if USE_DEBUG_GC
             printf("pop mark_stack: old stack %p, new stack %p\n", context->mark_stack, pre_stack);
 #endif
             raw_free(context->mark_stack);
