@@ -1751,7 +1751,6 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                 context->args = reverse(context, context->args);
                 context->code = pair_car(context->args);
                 context->args = pair_cdr(context->args);
-                // args 是 list*, 不包含 '()
                 s_goto(context, OP_APPLY);
             }
         case OP_APPLY:
@@ -1770,6 +1769,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
 
                 new_frame_push_spec_env(context, closure_get_env(context->code));
                 // 遍历 closure 参数列表和 context->args 参数
+                // 如果 closure 参数为空说明是无参闭包
                 for (tmp1 = closure_get_args(context->code), tmp2 = context->args;
                      is_pair(tmp1);
                      tmp1 = pair_cdr(tmp1), tmp2 = pair_cdr(tmp2)) {
@@ -1786,8 +1786,7 @@ static object op_exec_repl(context_t context, enum opcode_e opcode) {
                     }
                 }
 
-                // 闭包结构是 list*, 不以 IMM_UNIT 结尾, 需要额外处理结尾
-                // 如果 tmp1 为空说明是无参闭包
+                // 有时 closure 的参数结构是 list* 而不是 list, 兼容这一点
                 if (tmp1 == IMM_UNIT) {
                     if (tmp2 != IMM_UNIT) {
                         Error_Throw_0(context, "apply: too many arguments");
