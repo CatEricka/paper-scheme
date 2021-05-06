@@ -151,7 +151,7 @@ struct scheme_context_t {
     int token;
 
     /**
-     * 是否输出 atom 类型
+     * atom 输出格式标志
      */
     int print_flag;
 
