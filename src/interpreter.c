@@ -2571,7 +2571,7 @@ static object op_exec_compute(context_t context, enum opcode_e opcode) {
             }
             for (; tmp2 != IMM_UNIT; tmp2 = pair_cdr(tmp2)) {
                 if (!is_zero(pair_car(tmp2))) {
-                    tmp1 = number_sub(context, tmp1, pair_car(tmp2));
+                    tmp1 = number_div(context, tmp1, pair_car(tmp2));
                 } else {
                     Error_Throw_0(context, "/: division by zero");
                 }
